@@ -1,0 +1,28 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One:wght@400&family=Inter:wght@400;500;600&family=Nunito:wght@400;500;600;700&display=swap');
+
+html,
+body {
+  @apply bg-forest-700 text-primary-50 font-sans;
+  
+  /* Smooth scrolling for adventure feel */
+  scroll-behavior: smooth;
+}
+
+/* Custom utility classes for adventure theme */
+.gradient-adventure {
+  background: linear-gradient(135deg, #264027 0%, #F28444 50%, #FAE5B3 100%);
+}
+
+.gradient-sunset {
+  background: linear-gradient(135deg, #F28444 0%, #FF935B 100%);
+}
+
+.text-gradient-adventure {
+  background: linear-gradient(135deg, #264027 0%, #F28444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
