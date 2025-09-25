@@ -68,12 +68,12 @@ export default function WhatIsWaypoint() {
 
           {/* Right Visual - Route Tracking */}
           <div className="relative">
-            <div className="bg-gradient-to-br from-primary-100 to-forest-200 rounded-2xl p-8 border-4 border-sunset-400 shadow-2xl">
+            <div className="bg-forest-600 rounded-2xl p-8 border-4 border-sunset-400 shadow-2xl">
               {/* Route Tracking Visualization */}
               <div className="space-y-6">
                 {/* Route Header */}
                 <div className="text-center border-b-2 border-dashed border-sunset-400/50 pb-4">
-                  <h3 className="font-display text-2xl text-forest-700 uppercase tracking-wide">
+                  <h3 className="font-display text-2xl text-sunset-700 uppercase tracking-wide">
                     Live Route Tracking
                   </h3>
                   <p className="text-sm text-forest-600 mt-1 font-semibold">

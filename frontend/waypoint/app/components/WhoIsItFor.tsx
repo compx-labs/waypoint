@@ -4,15 +4,7 @@ export default function WhoIsItFor() {
   return (
     <section className="py-20 bg-primary-50 relative overflow-hidden">
       {/* Mountain silhouette background */}
-      <div 
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: 'url(/marker1.svg)',
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'bottom center'
-        }}
-      />
+      
       
       {/* Content overlay */}
       <div className="relative z-10">
