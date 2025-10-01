@@ -10,6 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import "./wallet-styles.css";
+import "./route-creation-styles.css";
 import { useState, useEffect } from "react";
 
 export const links: Route.LinksFunction = () => [

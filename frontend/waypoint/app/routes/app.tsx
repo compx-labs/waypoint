@@ -1,6 +1,8 @@
 import type { Route } from "./+types/app";
+import { useState } from "react";
 import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
+import RouteCreationModal from "../components/RouteCreationModal";
 
 // Mock data for token streams
 const tokenStreams = [
@@ -38,6 +40,21 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function AppDashboard() {
+  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
+
+  const handleCreateRoute = () => {
+    setIsRouteModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsRouteModalOpen(false);
+  };
+
+  const handleRouteTypeSelect = (routeTypeId: string) => {
+    console.log("Selected route type:", routeTypeId);
+    // TODO: Handle route type selection and navigation to creation flow
+  };
+
   return (
     <div className="min-h-screen bg-primary-100">
       <AppNavigation />
@@ -57,8 +74,12 @@ export default function AppDashboard() {
               </p>
             </div>
 
-            <div className="flex items-center space-x-4 mt-6 lg:mt-0">
-              <button className="bg-forest-500 hover:bg-forest-600 text-primary-100 font-display text-sm uppercase tracking-wider font-bold py-3 px-6 rounded-lg transition-all duration-200 ease-out transform hover:translate-y-0.5 hover:scale-105 shadow-lg hover:shadow-xl border-2 border-forest-400">
+            {/* Desktop Create Button */}
+            <div className="hidden md:flex items-center space-x-4 mt-6 lg:mt-0">
+              <button 
+                onClick={handleCreateRoute}
+                className="bg-forest-500 hover:bg-forest-600 text-primary-100 font-display text-sm uppercase tracking-wider font-bold py-3 px-6 rounded-lg transition-all duration-200 ease-out transform hover:translate-y-0.5 hover:scale-105 shadow-lg hover:shadow-xl border-2 border-forest-400"
+              >
                 + CREATE
               </button>
             </div>
@@ -66,7 +87,7 @@ export default function AppDashboard() {
         </div>
 
         {/* Token Stream Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12 md:mb-12 pb-24 md:pb-0">
           {tokenStreams.map((stream) => (
             <div
               key={stream.id}
@@ -143,7 +164,32 @@ export default function AppDashboard() {
           ))}
         </div>
       </div>
+      
+      {/* Mobile Create Button - Fixed at Bottom */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-primary-100 via-primary-100/95 to-transparent p-4 pt-8">
+        <button 
+          onClick={handleCreateRoute}
+          className="w-full bg-gradient-to-r from-forest-500 to-forest-600 hover:from-forest-600 hover:to-forest-700 text-primary-100 font-display text-base uppercase tracking-wider font-bold py-4 px-8 rounded-xl transition-all duration-200 ease-out active:scale-95 shadow-lg border-2 border-forest-400 flex items-center justify-center space-x-2"
+          style={{ 
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent' 
+          }}
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+          <span>CREATE ROUTE</span>
+        </button>
+      </div>
+      
       <Footer />
+      
+      {/* Route Creation Modal */}
+      <RouteCreationModal
+        isOpen={isRouteModalOpen}
+        onClose={handleCloseModal}
+        onRouteTypeSelect={handleRouteTypeSelect}
+      />
     </div>
   );
 }

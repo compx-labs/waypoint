@@ -1,0 +1,129 @@
+/* Route Creation Modal Styles - Following Waypoint Adventure Theme */
+
+/* Modal backdrop and container */
+.route-creation-modal {
+  font-family: 'JetBrains Mono', 'Space Mono', monospace;
+}
+
+.route-creation-modal .route-modal-title {
+  color: #FDF9F0;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* Route type cards */
+.route-type-card {
+  font-family: 'JetBrains Mono', 'Space Mono', monospace;
+  transition: all 200ms ease-out;
+}
+
+.route-type-card:hover:not(.cursor-not-allowed) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(241, 97, 69, 0.3);
+}
+
+.route-type-card:active:not(.cursor-not-allowed) {
+  transform: translateY(-1px) scale(0.98);
+}
+
+/* Add adventure-themed animation for enabled cards */
+.route-type-card:not(.cursor-not-allowed) {
+  position: relative;
+  overflow: hidden;
+}
+
+.route-type-card:not(.cursor-not-allowed)::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -100%;
+  width: 100%;
+  height: calc(100% + 4px);
+  background: rgba(241, 97, 69, 0.1);
+  opacity: 0;
+  transition: all 0.8s ease;
+  pointer-events: none;
+}
+
+.route-type-card:not(.cursor-not-allowed):hover::before {
+  left: 100%;
+  opacity: 1;
+}
+
+/* Ensure all text in modal uses adventure typography */
+.route-creation-modal * {
+  font-family: 'JetBrains Mono', 'Space Mono', monospace;
+}
+
+/* Close button styling */
+.route-creation-modal button {
+  font-family: 'JetBrains Mono', 'Space Mono', monospace;
+  transition: all 200ms ease-out;
+}
+
+.route-creation-modal button:hover {
+  transform: scale(1.1);
+}
+
+/* Coming soon badge styling */
+.route-creation-modal .coming-soon-badge {
+  background: rgba(3, 95, 90, 0.8);
+  color: rgba(253, 249, 240, 0.7);
+  border: 1px solid rgba(241, 97, 69, 0.3);
+}
+
+/* Mobile drawer specific styles */
+.route-type-card-mobile {
+  font-family: 'JetBrains Mono', 'Space Mono', monospace;
+  transition: all 200ms ease-out;
+}
+
+.route-type-card-mobile:active:not([disabled]) {
+  transform: scale(0.95);
+}
+
+/* Mobile create button styles */
+@media (max-width: 767px) {
+  /* Add bottom padding to account for fixed button */
+  .mobile-content-padding {
+    padding-bottom: 120px;
+  }
+}
+
+/* Smooth drawer animations */
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-drawer-enter {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .mobile-drawer-exit {
+    animation: slideDown 0.3s ease-out;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
