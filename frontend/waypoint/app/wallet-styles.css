@@ -1,0 +1,386 @@
+/* Waypoint Adventure Theme - Wallet Adapter Customization */
+
+/* Main wallet connect button */
+.wallet-button {
+  background: #F16145 !important;
+  color: #FDF9F0 !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 12px 24px !important;
+  border-radius: 12px !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(241, 97, 69, 0.3) !important;
+  transition: all 200ms ease-out !important;
+}
+
+.wallet-button:hover {
+  background: #E94A2D !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 25px rgba(241, 97, 69, 0.4) !important;
+}
+
+.wallet-button:active {
+  transform: translateY(-1px) scale(0.98) !important;
+}
+
+/* Modal backdrop and container */
+.wallet-selector-modal {
+  background: rgba(3, 95, 90, 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Modal content */
+.wallet-selector-modal .ant-modal-content {
+  background: #035F5A !important;
+  border-radius: 16px !important;
+  border: 2px solid rgba(241, 97, 69, 0.2) !important;
+  box-shadow: 0 12px 35px rgba(3, 95, 90, 0.3), 0 4px 8px rgba(3, 95, 90, 0.2) !important;
+}
+
+/* Modal title */
+.wallet-modal-title {
+  color: #FDF9F0 !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 700 !important;
+  font-size: 1.25rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  text-align: center !important;
+  margin-bottom: 1.5rem !important;
+}
+
+/* Individual wallet option buttons */
+.wallet-connect-button {
+  background: rgba(253, 249, 240, 0.1) !important;
+  border: 2px solid rgba(241, 97, 69, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  margin: 8px 0 !important;
+  transition: all 200ms ease-out !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.wallet-connect-button:hover {
+  background: rgba(241, 97, 69, 0.2) !important;
+  border-color: rgba(241, 97, 69, 0.6) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 20px rgba(241, 97, 69, 0.3) !important;
+}
+
+/* Wallet name text */
+.wallet-name-wrapper {
+  color: #FDF9F0 !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Wallet icons */
+.wallet-selector-icon {
+  filter: brightness(1.1) contrast(1.1) !important;
+  border-radius: 8px !important;
+}
+
+/* Install wallet button */
+.wallet-connect-install {
+  background: transparent !important;
+  color: #F16145 !important;
+  border: 2px solid #F16145 !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  transition: all 200ms ease-out !important;
+}
+
+.wallet-connect-install:hover {
+  background: #F16145 !important;
+  color: #FDF9F0 !important;
+  transform: scale(1.05) !important;
+}
+
+/* Aptos Connect specific styling */
+.aptos-connect-button {
+  background: #3BAC98 !important;
+  border: 2px solid rgba(59, 172, 152, 0.5) !important;
+  border-radius: 12px !important;
+  color: #FDF9F0 !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.aptos-connect-button:hover {
+  background: #57BDAF !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 20px rgba(59, 172, 152, 0.4) !important;
+}
+
+/* Privacy policy and powered by text */
+.aptos-connect-privacy-policy-text,
+.aptos-connect-powered-by {
+  color: rgba(253, 249, 240, 0.8) !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-size: 0.75rem !important;
+}
+
+.aptos-connect-privacy-policy-link {
+  color: #F16145 !important;
+  text-decoration: underline !important;
+}
+
+.aptos-connect-privacy-policy-link:hover {
+  color: #F1AB99 !important;
+}
+
+/* About Aptos Connect modal styling */
+.about-aptos-connect-title {
+  color: #FDF9F0 !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+}
+
+.about-aptos-connect-description {
+  color: rgba(253, 249, 240, 0.9) !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  line-height: 1.6 !important;
+}
+
+/* Screen indicators for about modal */
+.about-aptos-connect-screen-indicator {
+  background: rgba(241, 97, 69, 0.3) !important;
+  border-radius: 50% !important;
+}
+
+.about-aptos-connect-screen-indicator.active {
+  background: #F16145 !important;
+}
+
+/* Connected wallet display (when wallet is connected) */
+.wallet-button[aria-expanded="true"] {
+  background: #035F5A !important;
+  border-color: rgba(59, 172, 152, 0.5) !important;
+}
+
+/* Custom scrollbar for modal */
+.wallet-selector-modal ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.wallet-selector-modal ::-webkit-scrollbar-track {
+  background: rgba(253, 249, 240, 0.1);
+  border-radius: 4px;
+}
+
+.wallet-selector-modal ::-webkit-scrollbar-thumb {
+  background: rgba(241, 97, 69, 0.6);
+  border-radius: 4px;
+}
+
+.wallet-selector-modal ::-webkit-scrollbar-thumb:hover {
+  background: rgba(241, 97, 69, 0.8);
+}
+
+/* Input field styling (for email/phone input) */
+.wallet-selector-modal input[type="text"],
+.wallet-selector-modal input[type="email"],
+.wallet-selector-modal input[type="tel"],
+.wallet-selector-modal .ant-input {
+  background: rgba(253, 249, 240, 0.1) !important;
+  border: 2px solid rgba(241, 97, 69, 0.3) !important;
+  border-radius: 12px !important;
+  color: #FDF9F0 !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 500 !important;
+  padding: 12px 16px !important;
+  font-size: 0.875rem !important;
+  backdrop-filter: blur(8px) !important;
+  transition: all 200ms ease-out !important;
+}
+
+.wallet-selector-modal input::placeholder {
+  color: rgba(253, 249, 240, 0.6) !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+}
+
+.wallet-selector-modal input:focus,
+.wallet-selector-modal .ant-input:focus,
+.wallet-selector-modal .ant-input-focused {
+  border-color: rgba(241, 97, 69, 0.8) !important;
+  box-shadow: 0 0 0 2px rgba(241, 97, 69, 0.2) !important;
+  outline: none !important;
+}
+
+/* Social login buttons (Google, Apple, etc.) */
+.wallet-selector-modal .ant-btn,
+.aptos-connect-button,
+button[data-testid*="google"],
+button[data-testid*="apple"] {
+  background: rgba(253, 249, 240, 0.1) !important;
+  border: 2px solid rgba(241, 97, 69, 0.3) !important;
+  border-radius: 12px !important;
+  color: #FDF9F0 !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 12px 24px !important;
+  height: auto !important;
+  min-height: 48px !important;
+  backdrop-filter: blur(8px) !important;
+  transition: all 200ms ease-out !important;
+  width: 100% !important;
+  margin: 8px 0 !important;
+}
+
+.wallet-selector-modal .ant-btn:hover,
+.aptos-connect-button:hover,
+button[data-testid*="google"]:hover,
+button[data-testid*="apple"]:hover {
+  background: rgba(241, 97, 69, 0.2) !important;
+  border-color: rgba(241, 97, 69, 0.6) !important;
+  color: #FDF9F0 !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 20px rgba(241, 97, 69, 0.3) !important;
+}
+
+/* More Wallets section */
+.wallet-selector-modal button:contains("More Wallets"),
+button[class*="more-wallets"],
+.wallet-menu-wrapper button:last-child {
+  background: transparent !important;
+  border: 2px dashed rgba(241, 97, 69, 0.5) !important;
+  border-radius: 12px !important;
+  color: #F16145 !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 12px 24px !important;
+  transition: all 200ms ease-out !important;
+  margin-top: 16px !important;
+}
+
+.wallet-selector-modal button:contains("More Wallets"):hover,
+button[class*="more-wallets"]:hover {
+  background: rgba(241, 97, 69, 0.1) !important;
+  border-style: solid !important;
+  border-color: #F16145 !important;
+  transform: translateY(-1px) scale(1.01) !important;
+}
+
+/* Divider text ("Or") */
+.wallet-selector-modal .ant-divider,
+.wallet-selector-modal div:contains("Or") {
+  color: rgba(253, 249, 240, 0.8) !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  margin: 24px 0 !important;
+}
+
+.wallet-selector-modal .ant-divider::before,
+.wallet-selector-modal .ant-divider::after {
+  border-top: 1px solid rgba(241, 97, 69, 0.3) !important;
+}
+
+/* Learn more about Aptos Connect */
+.about-aptos-connect-trigger,
+a[href*="aptos-connect"] {
+  color: #F16145 !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid transparent !important;
+  transition: all 200ms ease-out !important;
+}
+
+.about-aptos-connect-trigger:hover,
+a[href*="aptos-connect"]:hover {
+  color: #F1AB99 !important;
+  border-bottom-color: #F1AB99 !important;
+}
+
+/* Fix modal body padding and spacing */
+.wallet-selector-modal .ant-modal-body {
+  padding: 32px !important;
+}
+
+/* Close button styling */
+.wallet-selector-modal .ant-modal-close {
+  color: rgba(253, 249, 240, 0.8) !important;
+  font-size: 18px !important;
+  transition: all 200ms ease-out !important;
+}
+
+.wallet-selector-modal .ant-modal-close:hover {
+  color: #F16145 !important;
+  transform: scale(1.1) !important;
+}
+
+/* Add adventure-themed animation */
+.wallet-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.wallet-button::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -100%;
+  width: 100%;
+  height: calc(100% + 4px);
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transition: all 0.8s ease;
+}
+
+.wallet-button:hover::before {
+  left: 100%;
+  opacity: 1;
+}
+
+/* Additional specific selectors for better coverage */
+.wallet-selector-modal [class*="ant-"],
+.wallet-selector-modal [class*="aptos-"] {
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+}
+
+/* Ensure all text in modal uses adventure typography */
+.wallet-selector-modal * {
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+}
+
+/* Target any remaining white backgrounds */
+.wallet-selector-modal .ant-modal-content > div,
+.wallet-selector-modal [style*="background: white"],
+.wallet-selector-modal [style*="background-color: white"] {
+  background: none !important;
+}
+
+/* Target all buttons inside the modal for consistency */
+.wallet-selector-modal button:not(.ant-modal-close) {
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-radius: 12px !important;
+  transition: all 200ms ease-out !important;
+}

@@ -1,5 +1,6 @@
 import type { Route } from "./+types/app";
 import AppNavigation from "../components/AppNavigation";
+import Footer from "../components/Footer";
 
 // Mock data for token streams
 const tokenStreams = [
@@ -38,7 +39,7 @@ export function meta({}: Route.MetaArgs) {
 
 export default function AppDashboard() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-forest-800 via-forest-700 to-forest-900">
+    <div className="min-h-screen bg-primary-100">
       <AppNavigation />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -46,10 +47,10 @@ export default function AppDashboard() {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-6">
             <div>
-              <h1 className="text-4xl lg:text-5xl font-display font-bold text-primary-100 uppercase tracking-wide mb-4">
+              <h1 className="text-4xl lg:text-5xl font-display font-bold text-forest-800 uppercase tracking-wide mb-4">
                 Your Routes
               </h1>
-              <p className="text-lg text-primary-200 leading-relaxed max-w-4xl">
+              <p className="text-lg text-forest-800 leading-relaxed max-w-4xl">
                 Create and manage token routes to send payments, vesting
                 schedules, or subscriptions over time. Route tokens gradually to
                 recipients with customizable unlock schedules and cliff periods.
@@ -142,6 +143,7 @@ export default function AppDashboard() {
           ))}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

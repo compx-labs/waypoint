@@ -9,8 +9,15 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@aptos-labs/ts-sdk": "^5.1.0",
+    "@aptos-labs/wallet-adapter-ant-design": "^5.2.0",
+    "@aptos-labs/wallet-adapter-react": "^7.1.0",
     "@react-router/node": "^7.7.1",
     "@react-router/serve": "^7.7.1",
+    "@telegram-apps/bridge": "^2.11.0",
+    "@wallet-standard/core": "^1.1.1",
+    "aptos": "^1.21.0",
+    "framer-motion": "^12.23.22",
     "isbot": "^5.1.27",
     "lucide-react": "^0.544.0",
     "react": "^19.1.0",

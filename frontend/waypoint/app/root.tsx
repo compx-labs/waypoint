@@ -9,6 +9,8 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import "./wallet-styles.css";
+import { useState, useEffect } from "react";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -42,7 +44,38 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const [WalletProvider, setWalletProvider] = useState<any>(null);
+  const [Network, setNetwork] = useState<any>(null);
+
+  useEffect(() => {
+    // Dynamically import wallet adapter CSS (loaded before our custom styles)
+    import("@aptos-labs/wallet-adapter-ant-design/dist/index.css");
+    
+    // Dynamically import wallet adapter components
+    Promise.all([
+      import("@aptos-labs/wallet-adapter-react"),
+      import("@aptos-labs/ts-sdk")
+    ]).then(([adapterModule, sdkModule]) => {
+      setWalletProvider(() => adapterModule.AptosWalletAdapterProvider);
+      setNetwork(sdkModule.Network);
+    });
+  }, []);
+
+  if (!WalletProvider || !Network) {
+    return <Outlet />;
+  }
+
+  return (
+    <WalletProvider
+      autoConnect={true}
+      dappConfig={{ network: Network.TESTNET }}
+      onError={(error: any) => {
+        console.log("Wallet adapter error:", error);
+      }}
+    >
+      <Outlet />
+    </WalletProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

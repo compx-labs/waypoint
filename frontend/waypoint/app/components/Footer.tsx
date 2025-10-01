@@ -81,7 +81,7 @@ export default function Footer() {
               <img
                 src="/logo.svg"
                 alt="Waypoint"
-                className="h-8 w-auto rounded-full"
+                className="h-8 w-auto rounded-full bg-stone-200 p-0.5"
               />
               <h3 className="font-display text-2xl font-bold text-primary-100 uppercase tracking-wider">
                 WAYPOINT
@@ -120,7 +120,7 @@ export default function Footer() {
               <a href="#" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
                 Adventure Guide
               </a>
-              <a href="#" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
+              <a href="https://app.compx.io" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
                 CompX Website ↗
               </a>
               <a href="#" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
@@ -150,7 +150,8 @@ export default function Footer() {
               ))}
             </div>
             
-            <button className="bg-sunset-500 hover:bg-sunset-600 text-primary-100 font-display text-sm uppercase tracking-wider font-bold py-3 px-6 rounded-lg transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl border border-sunset-400">
+            <button onClick={() => window.open("https://app.compx.io", "_blank")}
+            className="bg-sunset-500 hover:bg-sunset-600 text-primary-100 font-display text-sm uppercase tracking-wider font-bold py-3 px-6 rounded-lg transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl border border-sunset-400">
               Visit CompX ↗
             </button>
           </div>

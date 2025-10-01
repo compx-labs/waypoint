@@ -1,4 +1,14 @@
+import { useState, useEffect } from "react";
+
 export default function AppNavigation() {
+  const [WalletSelector, setWalletSelector] = useState<any>(null);
+
+  useEffect(() => {
+    // Dynamically import WalletSelector only on the client side
+    import("@aptos-labs/wallet-adapter-ant-design").then((module) => {
+      setWalletSelector(() => module.WalletSelector);
+    });
+  }, []);
   return (
     <nav className="bg-gradient-to-r from-forest-900 to-forest-800 border-b border-forest-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,19 +33,19 @@ export default function AppNavigation() {
                 href="/app"
                 className="text-primary-200 hover:text-primary-100 font-display text-sm uppercase tracking-wide transition-colors duration-200 border-b-2 border-sunset-500"
               >
-                Routes
-              </a>
-              <a
-                href="/app/portfolio"
-                className="text-primary-300 hover:text-primary-100 font-display text-sm uppercase tracking-wide transition-colors duration-200 hover:border-b-2 hover:border-sunset-500"
-              >
-                Portfolio
+                Your Routes
               </a>
               <a
                 href="/app/analytics"
                 className="text-primary-300 hover:text-primary-100 font-display text-sm uppercase tracking-wide transition-colors duration-200 hover:border-b-2 hover:border-sunset-500"
               >
                 Analytics
+              </a>
+              <a
+                href="/app/docs"
+                className="text-primary-300 hover:text-primary-100 font-display text-sm uppercase tracking-wide transition-colors duration-200 hover:border-b-2 hover:border-sunset-500"
+              >
+                Docs
               </a>
             </div>
           </div>
@@ -45,10 +55,8 @@ export default function AppNavigation() {
             {/* Network Selector */}
             
 
-            {/* Connect Wallet Button */}
-            <button className="bg-sunset-500 hover:bg-sunset-600 text-primary-100 font-display text-sm uppercase tracking-wider font-bold py-3 px-6 rounded-lg transition-all duration-200 ease-out transform hover:translate-y-0.5 hover:scale-105 shadow-lg hover:shadow-xl border border-sunset-400">
-              Connect Wallet
-            </button>
+            {/* Wallet Selector */}
+            {WalletSelector && <WalletSelector />}
 
             {/* Mobile Menu Button */}
             <button className="md:hidden text-primary-300 hover:text-primary-100 p-2">
