@@ -5,5 +5,6 @@ export default [
   route("/app", "routes/app.tsx"),
   route("/app/analytics", "routes/analytics.tsx"),
   route("/app/docs", "routes/docs.tsx"),
+  route("/app/token/:tokenId", "routes/token-routes.tsx"),
   route("/create-route", "routes/create-route.tsx")
 ] satisfies RouteConfig;

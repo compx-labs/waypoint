@@ -5,16 +5,23 @@ interface RouteCardProps {
 }
 
 export default function RouteCard({ stream }: RouteCardProps) {
+  const handleCardClick = () => {
+    window.location.href = `/app/token/${stream.id}`;
+  };
+
   return (
-    <div className="bg-gradient-to-br from-forest-800 to-forest-900 border border-forest-600 rounded-xl p-6 hover:border-sunset-500 transition-all duration-200 hover:transform hover:scale-105 shadow-lg hover:shadow-xl">
+    <div 
+      className="bg-gradient-to-br from-forest-800 to-forest-900 border border-forest-600 rounded-xl p-6 hover:border-sunset-500 transition-all duration-200 hover:transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer"
+      onClick={handleCardClick}
+    >
       {/* Token Header */}
       <div className="flex items-center space-x-3 mb-4">
-        <div
-          className={`w-10 h-10 ${stream.color} rounded-full flex items-center justify-center`}
-        >
-          <span className="text-primary-100 font-display font-bold text-lg">
-            {stream.symbol}
-          </span>
+        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white p-1">
+          <img
+            src={stream.logoSrc}
+            alt={`${stream.name} logo`}
+            className="w-full h-full object-contain"
+          />
         </div>
         <div className="flex-1">
           <h3 className="text-primary-100 font-display font-semibold text-sm uppercase tracking-wide truncate">

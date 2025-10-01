@@ -6,6 +6,7 @@ export interface TokenStream {
   name: string;
   symbol: string;
   color: string;
+  logoSrc: string;
   tvl: string;
   totalStreams: number;
   incoming: { count: number; value: string };
