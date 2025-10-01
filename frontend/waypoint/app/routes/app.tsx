@@ -52,7 +52,8 @@ export default function AppDashboard() {
 
   const handleRouteTypeSelect = (routeTypeId: string) => {
     console.log("Selected route type:", routeTypeId);
-    // TODO: Handle route type selection and navigation to creation flow
+    // Navigate to route creation wizard with the selected type
+    window.location.href = `/create-route?type=${routeTypeId}`;
   };
 
   return (
