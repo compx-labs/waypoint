@@ -4,9 +4,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [
-    reactRouter({
-      ssr: false, // Disable SSR for static deployment
-    }),
+    reactRouter(), // SSR is opt-in, so this is already static by default
     tsconfigPaths(),
   ],
 });
