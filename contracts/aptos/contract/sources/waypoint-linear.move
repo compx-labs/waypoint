@@ -17,8 +17,7 @@ module waypoint::linear_stream_fa {
     use aptos_framework::primary_fungible_store;
     use std::vector;
     use aptos_framework::dispatchable_fungible_asset;
-    use aptos_framework::object;
-    use aptos_framework::event;
+
 
     /// Errors
     const E_NOT_ADMIN: u64 = 1;

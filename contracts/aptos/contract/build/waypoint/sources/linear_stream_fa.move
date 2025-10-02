@@ -17,8 +17,7 @@ module waypoint::linear_stream_fa {
     use aptos_framework::primary_fungible_store;
     use std::vector;
     use aptos_framework::dispatchable_fungible_asset;
-    use aptos_framework::object;
-    use aptos_framework::event;
+
 
     /// Errors
     const E_NOT_ADMIN: u64 = 1;
@@ -360,6 +359,63 @@ module waypoint::linear_stream_fa {
         let bal_final = primary_fungible_store::balance(sender_addr, fa);
         // Should now be 1000 total
         assert!(bal_final == 1000, 201);
+    }
+    #[test(aptos_framework = @0x1,
+sender = @waypoint)]
+    fun test_multiple_partial_claims(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Routes, Route {
+        // Init storage + start the test clock
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        timestamp::update_global_time_for_test(1_000_000); // 1s
+
+        // --- Create a test FA and mint to sender ---
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0, // decimals
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+        let sender_addr = signer::address_of(sender);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
+
+        // --- Create the route: 1000 over 10 seconds (start=0, end=10) ---
+        create_route_and_fund(sender, fa, 1_000, 0, 10, sender_addr);
+        let rs = list_routes();
+        let route_addr = rs[rs.length() - 1];
+        let route_obj =
+            aptos_framework::object::address_to_object<aptos_framework::object::ObjectCore>(
+                route_addr
+            );
+
+        // Balance right after funding: seed (1000) - deposit (1000) = 0
+        let bal_after_fund = primary_fungible_store::balance(sender_addr, fa);
+        assert!(bal_after_fund == 0, 300);
+
+        // --- First partial claim at t=3s: expect +300 ---
+        timestamp::update_global_time_for_test(3_000_000);
+        claim(sender, route_obj);
+        let bal_after_t3 = primary_fungible_store::balance(sender_addr, fa);
+        assert!(bal_after_t3 == 300, 301);
+
+        // --- Second partial claim at t=7s: expect +400 (total 700) ---
+        timestamp::update_global_time_for_test(7_000_000);
+        claim(sender, route_obj);
+        let bal_after_t7 = primary_fungible_store::balance(sender_addr, fa);
+        assert!(bal_after_t7 == 700, 302);
+
+        // --- Final claim at t=10s: expect +300 (total 1000) ---
+        timestamp::update_global_time_for_test(10_000_000);
+        claim(sender, route_obj);
+        let bal_final = primary_fungible_store::balance(sender_addr, fa);
+        assert!(bal_final == 1000, 303);
     }
 }
 
