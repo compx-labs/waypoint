@@ -1,6 +1,6 @@
 // API utility functions for Waypoint backend
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://waypoint-backend-zhlb7.ondigitalocean.app/";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://waypoint-backend-zhlb7.ondigitalocean.app";
 
 // Types
 export interface Token {
