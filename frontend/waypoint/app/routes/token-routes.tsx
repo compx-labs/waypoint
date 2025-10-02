@@ -6,6 +6,7 @@ import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
 import { useRoutes, useToken } from "../hooks/useQueries";
 import type { RouteData } from "../lib/api";
+import { useToast } from "../contexts/ToastContext";
 
 // Types for individual route data
 interface TokenRoute {
@@ -18,6 +19,7 @@ interface TokenRoute {
   payoutAmount: string;
   status: string;
   startDate: string;
+  isIncoming: boolean;
 }
 
 interface TokenData {
@@ -79,10 +81,14 @@ export default function TokenRoutes() {
   const [searchParams] = useSearchParams();
   const tokenId = searchParams.get('id');
   const { account } = useWallet();
+  const toast = useToast();
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   
   // Parse tokenId to number
   const tokenIdNum = tokenId ? parseInt(tokenId) : null;
+  
+  // Get wallet address for checking if user is recipient
+  const walletAddress = account?.address?.toStringLong();
   
   // Fetch data using React Query
   const { data: allRoutes, isLoading: routesLoading, error: routesError } = useRoutes();
@@ -145,6 +151,7 @@ export default function TokenRoutes() {
         payoutAmount: formatCurrency(payoutAmount),
         status: route.status,
         startDate: route.start_date,
+        isIncoming: walletAddress ? route.recipient === walletAddress : false,
       };
     });
     
@@ -155,7 +162,7 @@ export default function TokenRoutes() {
       logoSrc: token.logo_url || '/logo.svg',
       routes: formattedRoutes,
     };
-  }, [tokenIdNum, allRoutes, tokenInfo]);
+  }, [tokenIdNum, allRoutes, tokenInfo, walletAddress]);
 
   const loading = routesLoading || tokenLoading;
   const error = routesError || tokenError;
@@ -169,6 +176,15 @@ export default function TokenRoutes() {
       newExpanded.add(routeId);
     }
     setExpandedRows(newExpanded);
+  };
+
+  const handleClaim = (routeId: number) => {
+    // TODO: Add blockchain claim logic here
+    toast.info({ 
+      title: 'Claim Functionality Coming Soon',
+      description: 'Blockchain integration will be added shortly'
+    });
+    console.log(`Claiming payout for route ${routeId}`);
   };
 
   // Show loading state
@@ -308,6 +324,9 @@ export default function TokenRoutes() {
                       <th className="px-6 py-4 text-left text-sm font-display font-semibold text-forest-800 uppercase tracking-wide">
                         Payout Amount
                       </th>
+                      <th className="px-6 py-4 text-center text-sm font-display font-semibold text-forest-800 uppercase tracking-wide">
+                        Action
+                      </th>
                     </tr>
                   </thead>
 
@@ -344,6 +363,20 @@ export default function TokenRoutes() {
                           <div className="text-sm font-semibold text-forest-800">
                             {route.payoutAmount}
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          {route.isIncoming ? (
+                            <button
+                              onClick={() => handleClaim(route.id)}
+                              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 text-xs font-display font-bold uppercase tracking-wider rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
+                            >
+                              Claim Payout
+                            </button>
+                          ) : (
+                            <span className="text-xs text-forest-400 font-display uppercase">
+                              —
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -436,6 +469,24 @@ export default function TokenRoutes() {
                                 {route.payoutAmount}
                               </div>
                             </div>
+                            
+                            {/* Claim Button for Mobile */}
+                            {route.isIncoming && (
+                              <div>
+                                <div className="text-xs font-display font-semibold text-forest-600 uppercase tracking-wide mb-2">
+                                  Claim Payout
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleClaim(route.id);
+                                  }}
+                                  className="w-full px-4 py-3 bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 text-sm font-display font-bold uppercase tracking-wider rounded-lg transition-all duration-200 active:scale-95 shadow-md"
+                                >
+                                  Claim Payout
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

@@ -16,7 +16,7 @@ export default function Toast({
   type,
   title,
   description,
-  duration = 5000,
+  duration = 3000,
   onClose,
 }: ToastProps) {
   useEffect(() => {
