@@ -72,51 +72,8 @@ export function AptosProvider({
     error,
   };
 
-  // If network is not available yet, render children without Aptos client
-  // This allows the app to render during initial load
-  if (!network) {
-    return (
-      <AptosContext.Provider value={value}>
-        {children}
-      </AptosContext.Provider>
-    );
-  }
-
-  // Don't render children until Aptos client is ready (only after network is available)
-  if (isLoading || !aptos) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-forest-600 mb-4"></div>
-          <p className="text-forest-700 font-display">Initializing Aptos client...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state if initialization failed
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center bg-red-50 border-2 border-red-200 rounded-lg p-6 max-w-md">
-          <div className="text-red-600 mb-2">
-            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-display font-bold text-red-800 mb-2">Aptos Client Error</h3>
-          <p className="text-red-700 text-sm mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // Always render children immediately - let individual components handle loading states
+  // This prevents blocking the entire app during initialization
   return (
     <AptosContext.Provider value={value}>
       {children}

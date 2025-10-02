@@ -127,44 +127,6 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
     return balance !== null && balance > 0;
   });
 
-  if (loading || loadingAccount) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-display font-bold text-primary-100 uppercase tracking-wider mb-2">
-            Select Token
-          </h2>
-          <p className="text-primary-300 font-display text-sm">
-            Choose which stablecoin you want to route
-          </p>
-        </div>
-        <div className="flex items-center justify-center py-12">
-          <div className="text-primary-300 font-display">
-            {loading ? 'Loading tokens...' : 'Loading account data...'}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-display font-bold text-primary-100 uppercase tracking-wider mb-2">
-            Select Token
-          </h2>
-          <p className="text-primary-300 font-display text-sm">
-            Choose which stablecoin you want to route
-          </p>
-        </div>
-        <div className="flex items-center justify-center py-12">
-          <div className="text-red-400 font-display">Error loading tokens: {error}</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -176,7 +138,25 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
         </p>
       </div>
 
-      {!hasAnyBalance && !loading && !loadingAccount && (
+      {error && (
+        <div className="bg-sunset-900 bg-opacity-30 border-2 border-sunset-500 border-opacity-40 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <svg className="w-6 h-6 text-sunset-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide mb-1">
+                Error Loading Tokens
+              </h3>
+              <p className="text-xs text-primary-300 font-display">
+                {error}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!hasAnyBalance && !loading && !loadingAccount && availableTokens.length > 0 && (
         <div className="bg-sunset-900 bg-opacity-30 border-2 border-sunset-500 border-opacity-40 rounded-lg p-4">
           <div className="flex items-start space-x-3">
             <svg className="w-6 h-6 text-sunset-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -190,6 +170,15 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
                 You don't have any of the supported stablecoins in your wallet. Please acquire some tokens before creating a route.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {(loading || loadingAccount) && availableTokens.length === 0 && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-primary-300 font-display text-sm flex items-center space-x-3">
+            <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-primary-300"></div>
+            <span>Loading tokens...</span>
           </div>
         </div>
       )}

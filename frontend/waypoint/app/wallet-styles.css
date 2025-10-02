@@ -27,57 +27,68 @@
 }
 
 /* Modal backdrop and container */
-.wallet-selector-modal {
-  background: rgba(3, 95, 90, 0.9) !important;
-  backdrop-filter: blur(12px) !important;
+.wallet-selector-modal,
+.ant-modal-wrap {
+  background: rgba(1, 34, 32, 0.9) !important;
+  backdrop-filter: blur(8px) !important;
 }
 
-/* Modal content */
-.wallet-selector-modal .ant-modal-content {
-  background: #035F5A !important;
-  border-radius: 16px !important;
+/* Modal content - Match RouteCreationModal style */
+.wallet-selector-modal .ant-modal-content,
+.ant-modal-content {
+  background: linear-gradient(to bottom right, #035F5A, #012220) !important;
+  border-radius: 12px !important;
   border: 2px solid rgba(241, 97, 69, 0.2) !important;
   box-shadow: 0 12px 35px rgba(3, 95, 90, 0.3), 0 4px 8px rgba(3, 95, 90, 0.2) !important;
+  overflow: hidden !important;
 }
 
 /* Modal title */
-.wallet-modal-title {
-  color: #FDF9F0 !important;
+.wallet-modal-title,
+.ant-modal-header,
+.ant-modal-title {
+  background: transparent !important;
+  border-bottom: none !important;
+  color: rgba(253, 249, 240, 0.95) !important;
   font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
   font-weight: 700 !important;
-  font-size: 1.25rem !important;
+  font-size: 0.9375rem !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.1em !important;
+  letter-spacing: 0.05em !important;
   text-align: center !important;
-  margin-bottom: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+  padding-bottom: 0 !important;
+  line-height: 1.3 !important;
 }
 
-/* Individual wallet option buttons */
+/* Individual wallet option buttons - Match RouteCreationModal cards */
 .wallet-connect-button {
-  background: rgba(253, 249, 240, 0.1) !important;
+  background: linear-gradient(to right, #035F5A, #024A46) !important;
   border: 2px solid rgba(241, 97, 69, 0.3) !important;
   border-radius: 12px !important;
-  padding: 16px !important;
+  padding: 12px !important;
   margin: 8px 0 !important;
   transition: all 200ms ease-out !important;
   backdrop-filter: blur(8px) !important;
 }
 
 .wallet-connect-button:hover {
-  background: rgba(241, 97, 69, 0.2) !important;
+  background: linear-gradient(to right, #024A46, #035F5A) !important;
   border-color: rgba(241, 97, 69, 0.6) !important;
-  transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 6px 20px rgba(241, 97, 69, 0.3) !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 8px 25px rgba(241, 97, 69, 0.3) !important;
 }
 
 /* Wallet name text */
-.wallet-name-wrapper {
-  color: #FDF9F0 !important;
+.wallet-name-wrapper,
+.wallet-selector-modal button span {
+  color: rgba(253, 249, 240, 0.95) !important;
   font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
   font-weight: 600 !important;
-  font-size: 0.875rem !important;
+  font-size: 0.8125rem !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
+  line-height: 1.4 !important;
 }
 
 /* Wallet icons */
@@ -107,10 +118,10 @@
   transform: scale(1.05) !important;
 }
 
-/* Aptos Connect specific styling */
+/* Aptos Connect specific styling - Match primary button style */
 .aptos-connect-button {
-  background: #3BAC98 !important;
-  border: 2px solid rgba(59, 172, 152, 0.5) !important;
+  background: linear-gradient(to right, #F16145, #E94A2D) !important;
+  border: 2px solid rgba(241, 97, 69, 0.5) !important;
   border-radius: 12px !important;
   color: #FDF9F0 !important;
   font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
@@ -120,26 +131,32 @@
 }
 
 .aptos-connect-button:hover {
-  background: #57BDAF !important;
-  transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 6px 20px rgba(59, 172, 152, 0.4) !important;
+  background: linear-gradient(to right, #E94A2D, #F16145) !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 8px 25px rgba(241, 97, 69, 0.4) !important;
 }
 
 /* Privacy policy and powered by text */
 .aptos-connect-privacy-policy-text,
 .aptos-connect-powered-by {
-  color: rgba(253, 249, 240, 0.8) !important;
+  color: rgba(253, 249, 240, 0.5) !important;
   font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
-  font-size: 0.75rem !important;
+  font-size: 0.625rem !important;
+  line-height: 1.4 !important;
+  text-align: center !important;
+  margin: 0.75rem 0 0.5rem 0 !important;
 }
 
 .aptos-connect-privacy-policy-link {
   color: #F16145 !important;
-  text-decoration: underline !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid transparent !important;
+  transition: all 200ms ease-out !important;
 }
 
 .aptos-connect-privacy-policy-link:hover {
   color: #F1AB99 !important;
+  border-bottom-color: #F1AB99 !important;
 }
 
 /* About Aptos Connect modal styling */
@@ -222,23 +239,23 @@
   outline: none !important;
 }
 
-/* Social login buttons (Google, Apple, etc.) */
+/* Social login buttons (Google, Apple, etc.) - Match RouteCreationModal style */
 .wallet-selector-modal .ant-btn,
 .aptos-connect-button,
 button[data-testid*="google"],
 button[data-testid*="apple"] {
-  background: rgba(253, 249, 240, 0.1) !important;
+  background: linear-gradient(to right, #035F5A, #024A46) !important;
   border: 2px solid rgba(241, 97, 69, 0.3) !important;
   border-radius: 12px !important;
-  color: #FDF9F0 !important;
+  color: rgba(253, 249, 240, 0.95) !important;
   font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
   font-weight: 600 !important;
-  font-size: 0.875rem !important;
+  font-size: 0.8125rem !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
-  padding: 12px 24px !important;
+  padding: 12px 20px !important;
   height: auto !important;
-  min-height: 48px !important;
+  min-height: 46px !important;
   backdrop-filter: blur(8px) !important;
   transition: all 200ms ease-out !important;
   width: 100% !important;
@@ -249,77 +266,115 @@ button[data-testid*="apple"] {
 .aptos-connect-button:hover,
 button[data-testid*="google"]:hover,
 button[data-testid*="apple"]:hover {
-  background: rgba(241, 97, 69, 0.2) !important;
+  background: linear-gradient(to right, #024A46, #035F5A) !important;
   border-color: rgba(241, 97, 69, 0.6) !important;
   color: #FDF9F0 !important;
-  transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 6px 20px rgba(241, 97, 69, 0.3) !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 8px 25px rgba(241, 97, 69, 0.3) !important;
 }
 
-/* More Wallets section */
+/* More Wallets section - Keep dashed style for differentiation */
 .wallet-selector-modal button:contains("More Wallets"),
 button[class*="more-wallets"],
 .wallet-menu-wrapper button:last-child {
   background: transparent !important;
-  border: 2px dashed rgba(241, 97, 69, 0.5) !important;
+  border: 2px dashed rgba(241, 97, 69, 0.3) !important;
   border-radius: 12px !important;
-  color: #F16145 !important;
+  color: rgba(253, 249, 240, 0.65) !important;
   font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
   font-weight: 600 !important;
-  font-size: 0.875rem !important;
+  font-size: 0.6875rem !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-  padding: 12px 24px !important;
+  letter-spacing: 0.1em !important;
+  padding: 10px 20px !important;
   transition: all 200ms ease-out !important;
-  margin-top: 16px !important;
+  margin-top: 12px !important;
 }
 
 .wallet-selector-modal button:contains("More Wallets"):hover,
 button[class*="more-wallets"]:hover {
-  background: rgba(241, 97, 69, 0.1) !important;
+  background: rgba(3, 95, 90, 0.2) !important;
   border-style: solid !important;
-  border-color: #F16145 !important;
-  transform: translateY(-1px) scale(1.01) !important;
+  border-color: rgba(241, 97, 69, 0.5) !important;
+  color: #FDF9F0 !important;
+  transform: scale(1.02) !important;
 }
 
-/* Divider text ("Or") */
+/* Divider text ("Or") - Match RouteCreationModal style */
 .wallet-selector-modal .ant-divider,
 .wallet-selector-modal div:contains("Or") {
-  color: rgba(253, 249, 240, 0.8) !important;
+  color: rgba(253, 249, 240, 0.45) !important;
   font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
   font-weight: 500 !important;
-  font-size: 0.875rem !important;
+  font-size: 0.625rem !important;
   text-transform: uppercase !important;
   letter-spacing: 0.1em !important;
-  margin: 24px 0 !important;
+  margin: 18px 0 !important;
 }
 
 .wallet-selector-modal .ant-divider::before,
 .wallet-selector-modal .ant-divider::after {
-  border-top: 1px solid rgba(241, 97, 69, 0.3) !important;
+  border-top: 1px solid rgba(3, 74, 70, 0.4) !important;
+}
+
+.wallet-selector-modal .ant-divider-inner-text {
+  padding: 0 16px !important;
+}
+
+/* Footer note style (if exists) */
+.wallet-selector-modal .ant-modal-footer,
+.wallet-selector-modal footer {
+  background: transparent !important;
+  border-top: 1px solid rgba(3, 74, 70, 0.5) !important;
+  padding-top: 16px !important;
+  margin-top: 24px !important;
+}
+
+.wallet-selector-modal .ant-modal-footer p,
+.wallet-selector-modal footer p {
+  color: rgba(253, 249, 240, 0.6) !important;
+  font-size: 0.75rem !important;
 }
 
 /* Learn more about Aptos Connect */
 .about-aptos-connect-trigger,
-a[href*="aptos-connect"] {
+a[href*="aptos-connect"],
+.wallet-selector-modal a {
   color: #F16145 !important;
   font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
-  font-weight: 500 !important;
-  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  font-size: 0.625rem !important;
   text-decoration: none !important;
   border-bottom: 1px solid transparent !important;
   transition: all 200ms ease-out !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  display: inline-block !important;
+  margin: 0.5rem 0 1rem 0 !important;
 }
 
 .about-aptos-connect-trigger:hover,
-a[href*="aptos-connect"]:hover {
+a[href*="aptos-connect"]:hover,
+.wallet-selector-modal a:hover {
   color: #F1AB99 !important;
   border-bottom-color: #F1AB99 !important;
+  transform: translateY(-1px) !important;
 }
 
-/* Fix modal body padding and spacing */
+/* Fix modal body padding and spacing - Match RouteCreationModal */
 .wallet-selector-modal .ant-modal-body {
-  padding: 32px !important;
+  padding: 20px 28px 24px 28px !important;
+}
+
+/* Add subtle description text styling */
+.wallet-selector-modal p,
+.wallet-selector-modal .ant-typography {
+  color: rgba(253, 249, 240, 0.65) !important;
+  font-family: 'JetBrains Mono', 'Space Mono', monospace !important;
+  font-size: 0.75rem !important;
+  text-align: center !important;
+  line-height: 1.4 !important;
+  margin: 0 0 0.75rem 0 !important;
 }
 
 /* Close button styling */
