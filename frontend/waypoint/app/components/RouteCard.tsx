@@ -41,16 +41,7 @@ export default function RouteCard({ stream }: RouteCardProps) {
         </svg>
       </div>
 
-      {/* Currently Routing Section */}
-      <div className="mb-4">
-        <div className="text-primary-400 text-xs uppercase tracking-wide font-display mb-1">
-          Currently Routing
-        </div>
-        <div className="text-2xl font-bold text-primary-100 font-display">
-          {stream.tvl}
-        </div>
-        <div className="text-sm text-primary-300">USD Value</div>
-      </div>
+      
 
       {/* Streams Info */}
       <div className="space-y-3">

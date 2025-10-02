@@ -1,6 +1,7 @@
 import { sequelize } from '../config/database.js';
 import { Token } from '../models/Token.js';
 import { Route } from '../models/Route.js';
+import { AddressBook } from '../models/AddressBook.js';
 
 const runMigrations = async () => {
   try {
@@ -15,6 +16,9 @@ const runMigrations = async () => {
     
     await Route.sync({ force: false });
     console.log('✅ Route table created/verified');
+    
+    await AddressBook.sync({ force: false });
+    console.log('✅ AddressBook table created/verified');
     
     console.log('✅ Migrations completed successfully');
     process.exit(0);

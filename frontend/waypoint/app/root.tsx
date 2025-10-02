@@ -12,6 +12,7 @@ import "./app.css";
 import "./wallet-styles.css";
 import "./route-creation-styles.css";
 import { useState, useEffect } from "react";
+import { ToastProvider } from "./contexts/ToastContext";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -47,8 +48,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   const [WalletProvider, setWalletProvider] = useState<any>(null);
   const [Network, setNetwork] = useState<any>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    // Mark as client-side
+    setIsClient(true);
+    
     // Dynamically import wallet adapter CSS (loaded before our custom styles)
     import("@aptos-labs/wallet-adapter-ant-design/dist/index.css");
     
@@ -62,8 +67,12 @@ export default function App() {
     });
   }, []);
 
-  if (!WalletProvider || !Network) {
-    return <Outlet />;
+  if (!isClient || !WalletProvider || !Network) {
+    return (
+      <ToastProvider>
+        <Outlet />
+      </ToastProvider>
+    );
   }
 
   return (
@@ -74,7 +83,9 @@ export default function App() {
         console.log("Wallet adapter error:", error);
       }}
     >
-      <Outlet />
+      <ToastProvider>
+        <Outlet />
+      </ToastProvider>
     </WalletProvider>
   );
 }

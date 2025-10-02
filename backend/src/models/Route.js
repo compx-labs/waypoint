@@ -28,12 +28,16 @@ export const Route = sequelize.define('Route', {
     type: DataTypes.BIGINT,
     allowNull: false,
   },
+  amount_per_period_token_units: {
+    type: DataTypes.BIGINT,
+    allowNull: false,
+  },
   start_date: {
     type: DataTypes.DATE,
     allowNull: false,
   },
   payment_frequency_unit: {
-    type: DataTypes.ENUM('days', 'weeks', 'months'),
+    type: DataTypes.ENUM('minutes', 'hours', 'days', 'weeks', 'months'),
     allowNull: false,
   },
   payment_frequency_number: {

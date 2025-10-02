@@ -7,6 +7,7 @@ import { sequelize } from './config/database.js';
 import tokenRoutes from './routes/tokens.js';
 import routeRoutes from './routes/routes.js';
 import analyticsRoutes from './routes/analytics.js';
+import addressBookRoutes from './routes/addressBook.js';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/tokens', tokenRoutes);
 app.use('/api/routes', routeRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/address-book', addressBookRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

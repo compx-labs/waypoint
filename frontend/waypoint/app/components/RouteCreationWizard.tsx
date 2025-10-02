@@ -1,4 +1,50 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
+
+// Helper function to format duration in a human-readable way
+const formatDuration = (totalAmount: number, unlockAmount: number, unlockUnit: string): string => {
+  const totalPeriods = Math.ceil(totalAmount / unlockAmount);
+  
+  switch (unlockUnit) {
+    case 'minutes':
+      if (totalPeriods < 60) return `~${totalPeriods} minutes`;
+      const minHours = Math.floor(totalPeriods / 60);
+      const minRemainingMinutes = totalPeriods % 60;
+      if (minHours < 24) {
+        return minRemainingMinutes > 0 ? `~${minHours}h ${minRemainingMinutes}m` : `~${minHours} hours`;
+      }
+      const minDays = Math.floor(minHours / 24);
+      const minRemainingHours = minHours % 24;
+      return minRemainingHours > 0 ? `~${minDays}d ${minRemainingHours}h` : `~${minDays} days`;
+      
+    case 'hours':
+      if (totalPeriods < 24) return `~${totalPeriods} hours`;
+      const hourDays = Math.floor(totalPeriods / 24);
+      const hourRemainingHours = totalPeriods % 24;
+      return hourRemainingHours > 0 ? `~${hourDays}d ${hourRemainingHours}h` : `~${hourDays} days`;
+      
+    case 'days':
+      if (totalPeriods < 7) return `~${totalPeriods} days`;
+      const dayWeeks = Math.floor(totalPeriods / 7);
+      const dayRemainingDays = totalPeriods % 7;
+      return dayRemainingDays > 0 ? `~${dayWeeks}w ${dayRemainingDays}d` : `~${dayWeeks} weeks`;
+      
+    case 'weeks':
+      if (totalPeriods < 4) return `~${totalPeriods} weeks`;
+      const weekMonths = Math.floor(totalPeriods / 4);
+      const weekRemainingWeeks = totalPeriods % 4;
+      return weekRemainingWeeks > 0 ? `~${weekMonths}mo ${weekRemainingWeeks}w` : `~${weekMonths} months`;
+      
+    case 'months':
+      if (totalPeriods < 12) return `~${totalPeriods} months`;
+      const monthYears = Math.floor(totalPeriods / 12);
+      const monthRemainingMonths = totalPeriods % 12;
+      return monthRemainingMonths > 0 ? `~${monthYears}y ${monthRemainingMonths}mo` : `~${monthYears} years`;
+      
+    default:
+      return `~${totalPeriods} ${unlockUnit}`;
+  }
+};
 
 interface WizardStep {
   id: number;
@@ -19,10 +65,13 @@ interface WizardStepProps {
 export interface RouteFormData {
   // Step 1: Token Selection
   selectedToken?: {
+    id: number;
     symbol: string;
     name: string;
-    address: string;
+    contract_address: string;
     decimals: number;
+    logo_url: string;
+    network: string;
   };
   
   // Step 2: Amount & Schedule
@@ -45,11 +94,66 @@ interface RouteCreationWizardProps {
 
 // Step Components
 const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, isFirstStep, isLastStep }) => {
-  const availableTokens = [
-    { symbol: 'USDC', name: 'USD Coin', address: '0x...', decimals: 6 },
-    { symbol: 'USDT', name: 'Tether USD', address: '0x...', decimals: 6 },
-    { symbol: 'xUSD', name: 'Waypoint USD', address: '0x...', decimals: 8 },
-  ];
+  const [availableTokens, setAvailableTokens] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTokens = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:3001/api/tokens/network/aptos');
+        if (!response.ok) {
+          throw new Error('Failed to fetch tokens');
+        }
+        const tokens = await response.json();
+        setAvailableTokens(tokens);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load tokens');
+        console.error('Error fetching tokens:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTokens();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-display font-bold text-primary-100 uppercase tracking-wider mb-2">
+            Select Token
+          </h2>
+          <p className="text-primary-300 font-display text-sm">
+            Choose which stablecoin you want to route
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-primary-300 font-display">Loading tokens...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-display font-bold text-primary-100 uppercase tracking-wider mb-2">
+            Select Token
+          </h2>
+          <p className="text-primary-300 font-display text-sm">
+            Choose which stablecoin you want to route
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-red-400 font-display">Error loading tokens: {error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -65,23 +169,31 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
       <div className="grid grid-cols-1 gap-3">
         {availableTokens.map((token) => (
           <button
-            key={token.symbol}
+            key={token.id}
             onClick={() => {
               updateData({ selectedToken: token });
               setTimeout(() => onNext(), 150);
             }}
             className={`
               flex items-center p-4 rounded-xl border-2 transition-all duration-200 text-left
-              ${data.selectedToken?.symbol === token.symbol
+              ${data.selectedToken?.id === token.id
                 ? 'bg-gradient-to-r from-forest-600 to-forest-500 border-sunset-500 border-opacity-60'
                 : 'bg-gradient-to-r from-forest-700 to-forest-600 border-forest-500 border-opacity-30 hover:border-opacity-60 hover:border-sunset-500'
               }
             `}
           >
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-sunset-500 to-sunset-600 flex items-center justify-center mr-4">
-              <span className="text-primary-100 font-display font-bold text-lg">
-                {token.symbol.charAt(0)}
-              </span>
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white flex items-center justify-center mr-4 p-2">
+              {token.logo_url ? (
+                <img
+                  src={token.logo_url}
+                  alt={`${token.name} logo`}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <span className="text-forest-800 font-display font-bold text-lg">
+                  {token.symbol.charAt(0)}
+                </span>
+              )}
             </div>
             <div className="flex-1">
               <h3 className="font-display font-semibold text-primary-100 uppercase tracking-wide text-sm">
@@ -91,7 +203,7 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
                 {token.name}
               </p>
             </div>
-            {data.selectedToken?.symbol === token.symbol && (
+            {data.selectedToken?.id === token.id && (
               <div className="flex-shrink-0 ml-4">
                 <svg className="w-5 h-5 text-sunset-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -139,9 +251,18 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
             placeholder="1000.00"
             value={data.totalAmount || ''}
             onChange={(e) => updateData({ totalAmount: e.target.value })}
-            className="w-full bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 pr-16 focus:border-sunset-500 focus:outline-none transition-colors"
+            className="w-full bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 pr-20 focus:border-sunset-500 focus:outline-none transition-colors"
           />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+          <div className="absolute inset-y-0 right-0 flex items-center pr-4 space-x-2">
+            {data.selectedToken?.logo_url && (
+              <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center p-0.5">
+                <img
+                  src={data.selectedToken.logo_url}
+                  alt={`${data.selectedToken.name} logo`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
             <span className="text-primary-300 font-display text-sm">
               {data.selectedToken?.symbol}
             </span>
@@ -190,17 +311,26 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
             placeholder="10.00"
             value={data.unlockAmount || ''}
             onChange={(e) => updateData({ unlockAmount: e.target.value })}
-            className="w-full bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 pr-16 focus:border-sunset-500 focus:outline-none transition-colors"
+            className="w-full bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 pr-20 focus:border-sunset-500 focus:outline-none transition-colors"
           />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+          <div className="absolute inset-y-0 right-0 flex items-center pr-4 space-x-2">
+            {data.selectedToken?.logo_url && (
+              <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center p-0.5">
+                <img
+                  src={data.selectedToken.logo_url}
+                  alt={`${data.selectedToken.name} logo`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
             <span className="text-primary-300 font-display text-sm">
               {data.selectedToken?.symbol}
             </span>
           </div>
         </div>
-        {data.totalAmount && data.unlockAmount && (
+        {data.totalAmount && data.unlockAmount && data.unlockUnit && (
           <div className="mt-2 text-xs text-primary-400 font-display">
-            Duration: ~{Math.ceil(parseFloat(data.totalAmount) / parseFloat(data.unlockAmount))} {data.unlockUnit}
+            Duration: {formatDuration(parseFloat(data.totalAmount), parseFloat(data.unlockAmount), data.unlockUnit)}
           </div>
         )}
       </div>
@@ -340,7 +470,44 @@ const TimingStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPre
 };
 
 const RecipientStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPrevious, isFirstStep, isLastStep }) => {
+  const { account } = useWallet();
+  const [addressBookEntries, setAddressBookEntries] = useState<any[]>([]);
+  const [showAddressBook, setShowAddressBook] = useState(false);
+  const [loadingAddressBook, setLoadingAddressBook] = useState(false);
+  
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
   const canProceed = data.recipientAddress && data.recipientAddress.length > 0;
+
+  // Load address book entries when the step opens
+  useEffect(() => {
+    if (account?.address) {
+      loadAddressBook();
+    }
+  }, [account?.address]);
+
+  const loadAddressBook = async () => {
+    if (!account?.address) return;
+    
+    setLoadingAddressBook(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/address-book?owner_wallet=${account.address}`
+      );
+      if (response.ok) {
+        const entries = await response.json();
+        setAddressBookEntries(entries);
+      }
+    } catch (error) {
+      console.error('Failed to load address book:', error);
+    } finally {
+      setLoadingAddressBook(false);
+    }
+  };
+
+  const selectFromAddressBook = (address: string) => {
+    updateData({ recipientAddress: address });
+    setShowAddressBook(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -357,16 +524,63 @@ const RecipientStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, on
         <label className="block text-sm font-display font-semibold text-primary-100 uppercase tracking-wide mb-2">
           Wallet Address
         </label>
-        <input
-          type="text"
-          placeholder="0x1234567890abcdef..."
-          value={data.recipientAddress || ''}
-          onChange={(e) => updateData({ recipientAddress: e.target.value })}
-          className="w-full bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 focus:border-sunset-500 focus:outline-none transition-colors"
-        />
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            placeholder="0x1234567890abcdef..."
+            value={data.recipientAddress || ''}
+            onChange={(e) => updateData({ recipientAddress: e.target.value })}
+            className="flex-1 bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 focus:border-sunset-500 focus:outline-none transition-colors"
+          />
+          {addressBookEntries.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAddressBook(!showAddressBook)}
+              className="px-4 py-3 bg-sunset-500 hover:bg-sunset-600 text-primary-100 rounded-lg transition-all duration-200 border-2 border-sunset-400 flex items-center space-x-2"
+              title="Select from Address Book"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </button>
+          )}
+        </div>
         <div className="mt-2 text-xs text-primary-400 font-display">
           Enter the wallet address that will receive the token route
         </div>
+        
+        {/* Address Book Dropdown */}
+        {showAddressBook && addressBookEntries.length > 0 && (
+          <div className="mt-3 bg-forest-700 border-2 border-sunset-500 border-opacity-30 rounded-lg p-3 max-h-64 overflow-y-auto">
+            <h4 className="text-xs font-display font-semibold text-primary-100 uppercase tracking-wide mb-2">
+              Select from Address Book
+            </h4>
+            <div className="space-y-2">
+              {addressBookEntries.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => selectFromAddressBook(entry.wallet_address)}
+                  className="w-full text-left p-3 bg-forest-600 hover:bg-forest-500 rounded-lg transition-all duration-200 border border-forest-500 hover:border-sunset-500"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-display font-semibold text-primary-100">
+                        {entry.name}
+                      </p>
+                      <p className="text-xs text-primary-300 font-mono truncate mt-1">
+                        {entry.wallet_address}
+                      </p>
+                    </div>
+                    <svg className="w-5 h-5 text-sunset-500 flex-shrink-0 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
@@ -426,10 +640,21 @@ const SummaryStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPr
       <div className="bg-forest-800 rounded-xl border-2 border-forest-600 p-6 space-y-4">
         {/* Token & Amount */}
         <div className="flex justify-between items-center pb-4 border-b border-forest-600">
-          <div>
-            <div className="text-sm font-display text-primary-400 uppercase tracking-wide">Token & Amount</div>
-            <div className="text-lg font-display font-bold text-primary-100">
-              {data.totalAmount} {data.selectedToken?.symbol}
+          <div className="flex items-center">
+            {data.selectedToken?.logo_url && (
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-3 p-1">
+                <img
+                  src={data.selectedToken.logo_url}
+                  alt={`${data.selectedToken.name} logo`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+            <div>
+              <div className="text-sm font-display text-primary-400 uppercase tracking-wide">Token & Amount</div>
+              <div className="text-lg font-display font-bold text-primary-100">
+                {data.totalAmount} {data.selectedToken?.symbol}
+              </div>
             </div>
           </div>
           <div className="text-right">
@@ -485,7 +710,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPr
           onClick={onNext}
           className="px-8 py-3 bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 font-display text-sm uppercase tracking-wider rounded-lg transition-all duration-200 border-2 border-sunset-400 transform hover:scale-105 shadow-lg"
         >
-          🚀 Create Route
+          Sign & Create
         </button>
       </div>
     </div>
@@ -549,7 +774,7 @@ export default function RouteCreationWizard({
           </h1>
           
           {/* Progress Indicator */}
-          <div className="flex items-center space-x-2 mt-4">
+          <div className="flex items-center justify-center space-x-2 mt-4">
             {wizardSteps.map((step, index) => (
               <React.Fragment key={step.id}>
                 <div className={`
