@@ -166,76 +166,36 @@ export function useDeleteAddressBookEntry(
   });
 }
 
-// Known tokens configuration for Aptos Mainnet
-interface TokenConfig {
-  symbol: string;
-  name: string;
-  decimals: number;
-  logoUrl: string;
-  // For Coin standard (older)
-  coinType?: string;
-  // For Fungible Asset standard (newer)
-  faMetadataAddress?: string;
-}
-
-const MAINNET_TOKENS: TokenConfig[] = [
-  {
-    symbol: 'APT',
-    name: 'Aptos Coin',
-    decimals: 8,
-    logoUrl: '/aptos-logo.svg',
-    coinType: '0x1::aptos_coin::AptosCoin',
-  },
-  // Add more tokens as they become available
-  // Example USDC on Aptos (when available):
-  // {
-  //   symbol: 'USDC',
-  //   name: 'USD Coin',
-  //   decimals: 6,
-  //   logoUrl: '/usdc-logo.svg',
-  //   faMetadataAddress: '0x...', // FA metadata address
-  // },
-];
-
-// Helper function to fetch balance using Coin standard
-async function fetchCoinBalance(
-  aptos: any,
+// Helper function to fetch balance using Aptos REST API
+async function fetchTokenBalance(
   address: string,
-  coinType: string
-): Promise<number> {
+  tokenAddress: string,
+  network: string
+): Promise<string> {
   try {
-    const [balanceStr] = await aptos.view<[string]>({
-      payload: {
-        function: "0x1::coin::balance",
-        typeArguments: [coinType],
-        functionArguments: [address]
+    // Determine the correct API endpoint based on network
+    const baseUrl = network.toLowerCase() === 'devnet' || network.toLowerCase() === 'testnet'
+      ? 'https://fullnode.devnet.aptoslabs.com'
+      : 'https://fullnode.mainnet.aptoslabs.com';
+    
+    const url = `${baseUrl}/v1/accounts/${address}/balance/${tokenAddress}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      // Token balance not found or account doesn't have this token
+      if (response.status === 404) {
+        return '0';
       }
-    });
-    return parseInt(balanceStr, 10);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    // The balance endpoint returns a plain number string
+    const balance = await response.text();
+    return balance || '0';
   } catch (error) {
-    console.warn(`Failed to fetch coin balance for ${coinType}:`, error);
-    return 0;
-  }
-}
-
-// Helper function to fetch balance using Fungible Asset standard
-async function fetchFABalance(
-  aptos: any,
-  address: string,
-  faMetadataAddress: string
-): Promise<number> {
-  try {
-    const [balanceStr] = await aptos.view<[string]>({
-      payload: {
-        function: "0x1::primary_fungible_store::balance",
-        typeArguments: ["0x1::object::ObjectCore"],
-        functionArguments: [address, faMetadataAddress]
-      }
-    });
-    return parseInt(balanceStr, 10);
-  } catch (error) {
-    console.warn(`Failed to fetch FA balance for ${faMetadataAddress}:`, error);
-    return 0;
+    console.warn(`Failed to fetch balance for token ${tokenAddress}:`, error);
+    return '0';
   }
 }
 
@@ -263,68 +223,67 @@ export function useAptosAccount(
       });
       const aptos = new Aptos(config);
       
+      // Fetch tokens from backend to get contract addresses
+      const tokensResponse = await fetchTokensByNetwork('aptos');
+      
       // Fetch account data in parallel
-      const [modules, tokens, ledgerInfo] = await Promise.all([
+      const [modules, tokensOwned, ledgerInfo] = await Promise.all([
         aptos.getAccountModules({ accountAddress: address }).catch(() => []),
         aptos.getAccountOwnedTokens({ accountAddress: address }).catch(() => []),
         aptos.getLedgerInfo(),
       ]);
       
-      // Fetch balances for all known tokens in parallel
-      const balancePromises = MAINNET_TOKENS.map(async (tokenConfig) => {
-        let rawBalance = 0;
-        
-        // Try Coin standard first if available
-        if (tokenConfig.coinType) {
-          rawBalance = await fetchCoinBalance(aptos, address, tokenConfig.coinType);
+      // Fetch balances for all tokens in parallel using the REST API
+      const balancePromises = tokensResponse.map(async (token): Promise<AptosAccountBalance | null> => {
+        if (!token.contract_address) {
+          console.warn(`Token ${token.symbol} has no contract address`);
+          return null;
         }
         
-        // If no balance from Coin, try FA standard
-        if (rawBalance === 0 && tokenConfig.faMetadataAddress) {
-          rawBalance = await fetchFABalance(aptos, address, tokenConfig.faMetadataAddress);
-        }
+        const balanceStr = await fetchTokenBalance(address, token.contract_address, network);
+        const rawBalance = parseInt(balanceStr, 10);
         
-        // Only include tokens with non-zero balance or APT (always show APT)
-        if (rawBalance > 0 || tokenConfig.symbol === 'APT') {
+        // Only include tokens with non-zero balance
+        if (rawBalance > 0) {
           return {
-            symbol: tokenConfig.symbol,
-            name: tokenConfig.name,
-            amount: rawBalance / Math.pow(10, tokenConfig.decimals),
-            decimals: tokenConfig.decimals,
-            coinType: tokenConfig.coinType || tokenConfig.faMetadataAddress || '',
-            logoUrl: tokenConfig.logoUrl,
+            symbol: token.symbol,
+            name: token.name,
+            amount: rawBalance / Math.pow(10, token.decimals),
+            decimals: token.decimals,
+            coinType: token.contract_address,
+            logoUrl: token.logo_url || '/logo.svg',
           };
         }
         return null;
       });
       
       const balanceResults = await Promise.all(balancePromises);
-      const balances: AptosAccountBalance[] = balanceResults.filter((b): b is AptosAccountBalance => b !== null);
+      const balances = balanceResults.filter((b): b is AptosAccountBalance => b !== null);
       
       return {
         address,
         balances,
         modules: modules.map(module => ({
-          address: module.address,
-          name: module.name,
+          address: module.abi?.address || '',
+          name: module.abi?.name || '',
           bytecode: module.bytecode,
-          friends: module.friends,
-          exposed_functions: module.exposed_functions,
-          structs: module.structs,
+          friends: module.abi?.friends || [],
+          exposed_functions: module.abi?.exposed_functions || [],
+          structs: module.abi?.structs || [],
         })),
-        tokens: tokens.map(token => ({
-          token_id: token.token_id,
-          token_properties: token.token_properties,
-          amount: Number(token.amount),
+        tokens: tokensOwned.map(token => ({
+          token_id: token.token_data_id || '',
+          token_properties: token.token_properties_mutated_v1 || {},
+          amount: Number(token.amount || 0),
           token_standard: token.token_standard,
-          token_uri: token.token_uri,
-          collection_name: token.collection_name,
-          collection_uri: token.collection_uri,
-          creator_address: token.creator_address,
-          last_transaction_timestamp: token.last_transaction_timestamp,
-          last_transaction_version: token.last_transaction_version,
+          token_uri: token.current_token_data?.token_uri || '',
+          collection_name: token.current_token_data?.current_collection?.collection_name || '',
+          collection_uri: token.current_token_data?.current_collection?.uri || '',
+          creator_address: token.current_token_data?.current_collection?.creator_address || '',
+          last_transaction_timestamp: token.last_transaction_timestamp || '',
+          last_transaction_version: token.last_transaction_version?.toString() || '',
         })),
-        network: ledgerInfo.chain_id,
+        network: String(ledgerInfo.chain_id), // Convert to string
       };
     },
     enabled: !!address,

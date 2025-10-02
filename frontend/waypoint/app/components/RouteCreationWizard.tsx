@@ -112,17 +112,14 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
     network === 'mainnet' ? 'mainnet' : 'devnet'
   );
   
-  // Log the account data to console for debugging
-  useEffect(() => {
-    if (aptosAccountData) {
-      console.log('🔍 Aptos Account Data:', aptosAccountData);
-      console.log('💰 Balances:', aptosAccountData.balances);
-      console.log('🏗️ Modules:', aptosAccountData.modules);
-      console.log('🎨 Tokens:', aptosAccountData.tokens);
-    }
-  }, [aptosAccountData]);
-  
   const error = queryError instanceof Error ? queryError.message : queryError ? 'Failed to load tokens' : null;
+  
+  // Helper function to get balance for a token
+  const getTokenBalance = (tokenSymbol: string): number | null => {
+    if (!aptosAccountData?.balances) return null;
+    const balance = aptosAccountData.balances.find(b => b.symbol === tokenSymbol);
+    return balance ? balance.amount : null;
+  };
 
   if (loading || loadingAccount) {
     return (
@@ -173,39 +170,10 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
         </p>
       </div>
 
-      {/* Debug Section - Remove this later */}
-      {aptosAccountData && (
-        <div className="bg-forest-900 border border-forest-600 rounded-lg p-4 mb-6">
-          <h3 className="text-sm font-display font-semibold text-primary-100 uppercase tracking-wide mb-3">
-            🔍 Debug: Account Data
-          </h3>
-          <div className="space-y-2 text-xs font-mono text-primary-300">
-            <div><strong>Address:</strong> {aptosAccountData.address}</div>
-            <div><strong>Network:</strong> {aptosAccountData.network}</div>
-            <div><strong>Balances ({aptosAccountData.balances.length}):</strong></div>
-            {aptosAccountData.balances.map((balance, i) => (
-              <div key={i} className="ml-4">
-                • {balance.symbol}: {balance.amount} ({balance.coinType})
-              </div>
-            ))}
-            <div><strong>Modules ({aptosAccountData.modules.length}):</strong></div>
-            {aptosAccountData.modules.slice(0, 3).map((module, i) => (
-              <div key={i} className="ml-4">
-                • {module.name} ({module.address})
-              </div>
-            ))}
-            <div><strong>Tokens ({aptosAccountData.tokens.length}):</strong></div>
-            {aptosAccountData.tokens.slice(0, 3).map((token, i) => (
-              <div key={i} className="ml-4">
-                • {token.collection_name || 'Unknown'}: {token.amount}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 gap-3">
-        {availableTokens.map((token) => (
+        {availableTokens.map((token) => {
+          const balance = getTokenBalance(token.symbol);
+          return (
           <button
             key={token.id}
             onClick={() => {
@@ -240,6 +208,14 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
               <p className="text-primary-300 text-xs font-display">
                 {token.name}
               </p>
+              {balance !== null && (
+                <p className="text-sunset-400 text-xs font-display font-semibold mt-1">
+                  Balance: {balance.toLocaleString(undefined, { 
+                    minimumFractionDigits: 2, 
+                    maximumFractionDigits: 6 
+                  })}
+                </p>
+              )}
             </div>
             {data.selectedToken?.id === token.id && (
               <div className="flex-shrink-0 ml-4">
@@ -249,7 +225,8 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
               </div>
             )}
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -68,7 +68,7 @@ export interface AptosAccountBalance {
   amount: number;
   decimals: number;
   coinType: string;
-  logoUrl?: string;
+  logoUrl: string;
 }
 
 export interface AptosAccountData {
