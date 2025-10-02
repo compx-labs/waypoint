@@ -566,4 +566,32 @@ sender = @waypoint)]
         // Attempt claim as depositor (not the beneficiary); should abort.
         claim(sender, route_obj);
     }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    #[expected_failure(abort_code = E_BAD_AMOUNT)]
+    fun test_create_route_rejects_excess_schedule_total(
+        aptos_framework: &signer,
+        sender: &signer
+    ) acquires Routes {
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0,
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+        let sender_addr = signer::address_of(sender);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
+
+        // Deposit exceeds schedule_total (2 periods * 400 = 800 < 1_000) so creation must abort.
+        create_route_and_fund(sender, fa, 1_000, 0, 3, 400, 2, sender_addr);
+    }
 }
