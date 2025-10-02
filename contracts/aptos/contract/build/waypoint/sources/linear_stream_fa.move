@@ -22,9 +22,10 @@ module waypoint::linear_stream_fa {
     /// Errors
     const E_NOT_ADMIN: u64 = 1;
     const E_BAD_TIME: u64 = 2;
-    const E_NOT_BENEFICIARY: u64 = 3;
+    const E_BAD_AMOUNT: u64 = 3;
     const E_NOT_DEPOSITOR: u64 = 4;
     const E_NOTHING_CLAIMABLE: u64 = 5;
+    const E_NOT_BENEFICIARY: u64 = 6;
 
     /// Global config (optional)
     struct Config has key {
@@ -41,7 +42,9 @@ module waypoint::linear_stream_fa {
         depositor: address,
         beneficiary: address,
         start_ts: u64,
-        end_ts: u64,
+        period_secs: u64,
+        payout_amount: u64,
+        max_periods: u64,
         deposit_amount: u128, // total intended to stream
         claimed_amount: u128, // amount already claimed
         // ability to mint signer for route_obj to operate the store
@@ -69,17 +72,28 @@ module waypoint::linear_stream_fa {
     /// Create a linear route and fund it in one call.
     /// - fa: the FA metadata object of the asset being streamed
     /// - amount: smallest unit of the FA
-    /// - start_ts < end_ts, linear release
+    /// - start_ts: when the payout schedule begins
+    /// - period_secs: cadence between allowed payouts
+    /// - payout_amount: target amount per period (final payout may be smaller)
+    /// - max_periods: number of scheduled periods
     /// - beneficiary: who will be able to claim
     public entry fun create_route_and_fund(
         creator: &signer,
         fa: Object<Metadata>,
         amount: u64,
         start_ts: u64,
-        end_ts: u64,
+        period_secs: u64,
+        payout_amount: u64,
+        max_periods: u64,
         beneficiary: address
     ) acquires Routes {
-        assert!(end_ts > start_ts, E_BAD_TIME);
+        assert!(period_secs > 0, E_BAD_TIME);
+        assert!(max_periods > 0, E_BAD_TIME);
+        assert!(payout_amount > 0, E_BAD_AMOUNT);
+        assert!(amount > 0, E_BAD_AMOUNT);
+
+        let schedule_total = (payout_amount as u128) * (max_periods as u128);
+        assert!((amount as u128) <= schedule_total, E_BAD_AMOUNT);
 
         // 1) Create a sticky object for the Route (it will own the escrow store)
         let ctor: &ConstructorRef =
@@ -105,7 +119,9 @@ module waypoint::linear_stream_fa {
             depositor: signer::address_of(creator),
             beneficiary,
             start_ts,
-            end_ts,
+            period_secs,
+            payout_amount,
+            max_periods,
             deposit_amount: (amount as u128),
             claimed_amount: 0u128,
             extend_ref
@@ -148,70 +164,37 @@ module waypoint::linear_stream_fa {
 
         primary_fungible_store::deposit_with_signer(caller, payout);
         route.claimed_amount += claimable_u128;
-        // (Optional: emit Claimed event)
-        // (Optional: mark completed if fully claimed and now >= end)
+
     }
 
-    /// Optional: cancel unvested back to depositor (only depositor)
-    public entry fun cancel_unvested(
-        caller: &signer, route_obj: Object<ObjectCore>
-    ) acquires Route {
-        let caller_addr = signer::address_of(caller);
-        let r_addr = Obj::object_address(&route_obj);
-        let route = borrow_global_mut<Route>(r_addr);
-        assert!(caller_addr == route.depositor, E_NOT_DEPOSITOR);
-
-        let now = timestamp::now_seconds();
-        let vested = vested_linear(
-            route.deposit_amount,
-            route.start_ts,
-            route.end_ts,
-            now
-        );
-        let unvested =
-            if (route.deposit_amount > vested) {
-                route.deposit_amount - vested
-            } else { 0 };
-
-        if (unvested > 0) {
-            let route_signer = &Obj::generate_signer_for_extending(&route.extend_ref);
-            let unv: u64 = (unvested as u64); // you can drop the max-guard if you store u64 amounts
-            let fa_chunk: FungibleAsset =
-                dispatchable_fungible_asset::withdraw(route_signer, route.store, unv);
-
-            // send back to depositor’s primary store (address form is fine here)
-            primary_fungible_store::deposit(route.depositor, fa_chunk);
-        }
-        // (Optional: mark as cancelled; block further claims of vested remainder, or allow)
-    }
 
     // ---------- Internal math ----------
 
-    fun clamp_now(start_ts: u64, end_ts: u64, now: u64): u64 {
-        if (now <= start_ts) start_ts
-        else if (now >= end_ts) end_ts
-        else now
-    }
+    fun vested_by_schedule(route: &Route, now: u64): u128 {
+        if (now <= route.start_ts) {
+            return 0;
+        };
 
-    /// Linear vesting with integer math (rounds down)
-    fun vested_linear(total: u128, start_ts: u64, end_ts: u64, now: u64): u128 {
-        // assume end_ts > start_ts already checked by caller
-        let n = clamp_now(start_ts, end_ts, now) - start_ts;
-        let d = end_ts - start_ts;
+        let elapsed = now - route.start_ts;
+        let periods_elapsed = elapsed / route.period_secs;
+        let capped_periods = if (periods_elapsed > route.max_periods) {
+            route.max_periods
+        } else {
+            periods_elapsed
+        };
 
-        let n_u128 = (n as u128);
-        let d_u128 = (d as u128);
-        (total * n_u128) / d_u128
+        let payout_u128 = (route.payout_amount as u128);
+        let vested_candidate = payout_u128 * (capped_periods as u128);
+        if (vested_candidate > route.deposit_amount) {
+            route.deposit_amount
+        } else {
+            vested_candidate
+        }
     }
 
     /// Returns (claimable_u128, claimable_u64) capped to u64::max_value()
     fun compute_claimable(route: &Route, now: u64): (u128, u64) {
-        let vested = vested_linear(
-            route.deposit_amount,
-            route.start_ts,
-            route.end_ts,
-            now
-        );
+        let vested = vested_by_schedule(route, now);
         let already = route.claimed_amount;
         let claimable_u128 = if (vested > already) {
             vested - already
@@ -225,88 +208,23 @@ module waypoint::linear_stream_fa {
     #[view]
     public fun get_route_core(
         route_obj: Object<ObjectCore>
-    ): (address, address, address, u64, u64, u128, u128) acquires Route {
+    ): (address, address, address, u64, u64, u64, u64, u128, u128) acquires Route {
         let r = borrow_global<Route>(Obj::object_address(&route_obj));
         (
             Obj::object_address(&route_obj),
             r.depositor,
             r.beneficiary,
             r.start_ts,
-            r.end_ts,
+            r.period_secs,
+            r.payout_amount,
+            r.max_periods,
             r.deposit_amount,
             r.claimed_amount
         )
     }
 
-    #[test_only]
-    use std::option;
-    #[test_only]
-    use std::string;
-    #[test_only]
-    use aptos_framework::fungible_asset;
-    #[test_only]
-    use aptos_framework::object as obj;
 
-    #[test(aptos_framework = @0x1, sender = @waypoint)]
-    fun test_cancel_before_start_returns_all(
-        aptos_framework: &signer, sender: &signer
-    ) acquires Routes, Route {
-        // Init module storage
-        init_module(sender);
 
-        timestamp::set_time_has_started_for_testing(aptos_framework);
-        timestamp::update_global_time_for_test(1);
-
-        // --- Create a fresh FA we can use in the test ---
-        let ctor = &obj::create_sticky_object(@waypoint);
-        primary_fungible_store::create_primary_store_enabled_fungible_asset(
-            ctor,
-            option::none<u128>(), // max_supply
-            string::utf8(b"Waypoint Test Token"), // name
-            string::utf8(b"WPT"), // symbol
-            6, // decimals
-            string::utf8(b""), // icon_uri
-            string::utf8(b"") // project_uri
-        );
-        let fa = obj::object_from_constructor_ref(ctor);
-
-        // Mint to sender’s PRIMARY store so we can fund the route
-        let mint_ref = fungible_asset::generate_mint_ref(ctor);
-        let sender_addr = signer::address_of(sender);
-        let seed_amount: u64 = 500_000;
-        primary_fungible_store::mint(&mint_ref, sender_addr, seed_amount);
-
-        // --- Create and fund a route with a future start ---
-        let start_ts: u64 = 1_000_000; // in the future
-        let end_ts: u64 = 1_500_000;
-        let fund_amount: u64 = 200_000;
-
-        // balance pre-fund
-        let bal_before = primary_fungible_store::balance(sender_addr, fa);
-
-        create_route_and_fund(
-            sender,
-            fa,
-            fund_amount,
-            start_ts,
-            end_ts,
-            sender_addr
-        );
-
-        // balance after fund decreased by fund_amount
-        let bal_after_fund = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_before == seed_amount, 100);
-        assert!(bal_after_fund == seed_amount - fund_amount, 101);
-
-        // Get the last created route address and cancel before start
-        let rs = list_routes();
-        let route_addr = rs[rs.length() - 1];
-        cancel_unvested(sender, obj::address_to_object<ObjectCore>(route_addr));
-
-        // After cancel, depositor should have full seed_amount again
-        let bal_after_cancel = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_cancel == seed_amount, 102);
-    }
 
     #[test(aptos_framework = @0x1, sender = @waypoint)]
     fun test_linear_claim_half_then_full(
@@ -333,8 +251,8 @@ module waypoint::linear_stream_fa {
         let sender_addr = signer::address_of(sender);
         primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
 
-        // --- Create route: 1000 over 10 seconds ---
-        create_route_and_fund(sender, fa, 1_000, 2, 12, sender_addr);
+        // --- Create route: 1000 over two payout periods of 500 ---
+        create_route_and_fund(sender, fa, 1_000, 2, 5, 500, 2, sender_addr);
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
         let route_obj =
@@ -342,22 +260,22 @@ module waypoint::linear_stream_fa {
                 route_addr
             );
 
-        // Advance time to halfway (5)
+        // Advance time beyond first period (start=2, period=5 -> first claim at >=7)
         timestamp::update_global_time_for_test(7_000_000);
 
         // Claim vested portion
         claim(sender, route_obj);
         let bal_after_half = primary_fungible_store::balance(sender_addr, fa);
-        // Should be ~500 (linear vesting)
+        // Should release the first 500 chunk
         assert!(bal_after_half == 500, 200);
 
-        // Advance time to end
+        // Advance time past the second period to unlock the remainder
         timestamp::update_global_time_for_test(12_000_000);
 
         // Claim remainder
         claim(sender, route_obj);
         let bal_final = primary_fungible_store::balance(sender_addr, fa);
-        // Should now be 1000 total
+        // Should now be 1000 total (second 500 payout)
         assert!(bal_final == 1000, 201);
     }
     #[test(aptos_framework = @0x1,
@@ -386,8 +304,8 @@ sender = @waypoint)]
         let sender_addr = signer::address_of(sender);
         primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
 
-        // --- Create the route: 1000 over 10 seconds (start=0, end=10) ---
-        create_route_and_fund(sender, fa, 1_000, 0, 10, sender_addr);
+        // --- Create the route: 1000 with 3 periods of 350 (last period pays remainder) ---
+        create_route_and_fund(sender, fa, 1_000, 0, 3, 350, 3, sender_addr);
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
         let route_obj =
@@ -399,23 +317,22 @@ sender = @waypoint)]
         let bal_after_fund = primary_fungible_store::balance(sender_addr, fa);
         assert!(bal_after_fund == 0, 300);
 
-        // --- First partial claim at t=3s: expect +300 ---
+        // --- First partial claim at t=3s: expect +350 ---
         timestamp::update_global_time_for_test(3_000_000);
         claim(sender, route_obj);
         let bal_after_t3 = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_t3 == 300, 301);
+        assert!(bal_after_t3 == 350, 301);
 
-        // --- Second partial claim at t=7s: expect +400 (total 700) ---
-        timestamp::update_global_time_for_test(7_000_000);
+        // --- Second partial claim at t=6s: expect +350 (total 700) ---
+        timestamp::update_global_time_for_test(6_000_000);
         claim(sender, route_obj);
-        let bal_after_t7 = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_t7 == 700, 302);
+        let bal_after_t6 = primary_fungible_store::balance(sender_addr, fa);
+        assert!(bal_after_t6 == 700, 302);
 
-        // --- Final claim at t=10s: expect +300 (total 1000) ---
-        timestamp::update_global_time_for_test(10_000_000);
+        // --- Final claim at t=9s: expect +300 remainder (total 1000) ---
+        timestamp::update_global_time_for_test(9_000_000);
         claim(sender, route_obj);
         let bal_final = primary_fungible_store::balance(sender_addr, fa);
         assert!(bal_final == 1000, 303);
     }
 }
-
