@@ -59,10 +59,10 @@ module waypoint::linear_stream_fa {
     }
 
     /// Init once
-    entry fun init_module(admin: &signer, treasury: address) {
+    entry fun init_module(admin: &signer) {
         move_to(admin, Config {
             admin: signer::address_of(admin),
-            treasury
+            treasury: signer::address_of(admin)
         });
         move_to(
             admin,
@@ -70,6 +70,12 @@ module waypoint::linear_stream_fa {
                 addrs: vector::empty<address>()
             }
         );
+    }
+
+    public entry fun set_treasury(admin: &signer, new_treasury: address) acquires Config {
+        let cfg = borrow_global_mut<Config>(@waypoint);
+        assert!(signer::address_of(admin) == cfg.admin, E_NOT_ADMIN);
+        cfg.treasury = new_treasury;
     }
 
     /// Create a linear route and fund it in one call.
@@ -105,6 +111,7 @@ module waypoint::linear_stream_fa {
         assert!((fee_amount as u128) == expected_fee, E_BAD_AMOUNT);
 
         let treasury_addr = borrow_global<Config>(@waypoint).treasury;
+        primary_fungible_store::ensure_primary_store_exists(treasury_addr, fa);
 
         // 1) Create a sticky object for the Route (it will own the escrow store)
         let ctor: &ConstructorRef =
@@ -245,10 +252,10 @@ module waypoint::linear_stream_fa {
     #[test(aptos_framework = @0x1, sender = @waypoint)]
     fun test_linear_claim_half_then_full(
         aptos_framework: &signer, sender: &signer
-    ) acquires Routes, Route {
+    ) acquires Routes, Route, Config {
         // Init module + timestamp
         let sender_addr = signer::address_of(sender);
-        init_module(sender, sender_addr);
+        init_module(sender);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -269,6 +276,8 @@ module waypoint::linear_stream_fa {
 
         // --- Create route: 1000 over two payout periods of 500 ---
         create_route_and_fund(sender, fa, 1_000, 2, 5, 500, 2, 5, sender_addr);
+        let base_balance = primary_fungible_store::balance(sender_addr, fa);
+        assert!(base_balance == 5, 199);
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
         let route_obj =
@@ -283,7 +292,7 @@ module waypoint::linear_stream_fa {
         claim(sender, route_obj);
         let bal_after_half = primary_fungible_store::balance(sender_addr, fa);
         // Should release the first 500 chunk
-        assert!(bal_after_half == 500, 200);
+        assert!(bal_after_half - base_balance == 500, 200);
 
         // Advance time past the second period to unlock the remainder
         timestamp::update_global_time_for_test(12_000_000);
@@ -292,16 +301,16 @@ module waypoint::linear_stream_fa {
         claim(sender, route_obj);
         let bal_final = primary_fungible_store::balance(sender_addr, fa);
         // Should now be 1000 total (second 500 payout)
-        assert!(bal_final == 1000, 201);
+        assert!(bal_final - base_balance == 1_000, 201);
     }
     #[test(aptos_framework = @0x1,
 sender = @waypoint)]
     fun test_multiple_partial_claims(
         aptos_framework: &signer, sender: &signer
-    ) acquires Routes, Route {
+    ) acquires Routes, Route, Config {
         // Init storage + start the test clock
         let sender_addr = signer::address_of(sender);
-        init_module(sender, sender_addr);
+        init_module(sender);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000); // 1s
 
@@ -329,35 +338,35 @@ sender = @waypoint)]
                 route_addr
             );
 
-        // Balance right after funding: seed (1005) - deposit (1000) - fee (5) = 0
-        let bal_after_fund = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_fund == 0, 300);
+        // Balance right after funding equals the fee returned to the depositor (treasury == depositor in tests)
+        let base_balance = primary_fungible_store::balance(sender_addr, fa);
+        assert!(base_balance == 5, 300);
 
         // --- First partial claim at t=3s: expect +350 ---
         timestamp::update_global_time_for_test(3_000_000);
         claim(sender, route_obj);
         let bal_after_t3 = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_t3 == 350, 301);
+        assert!(bal_after_t3 - base_balance == 350, 301);
 
         // --- Second partial claim at t=6s: expect +350 (total 700) ---
         timestamp::update_global_time_for_test(6_000_000);
         claim(sender, route_obj);
         let bal_after_t6 = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_t6 == 700, 302);
+        assert!(bal_after_t6 - base_balance == 700, 302);
 
         // --- Final claim at t=9s: expect +300 remainder (total 1000) ---
         timestamp::update_global_time_for_test(9_000_000);
         claim(sender, route_obj);
         let bal_final = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_final == 1000, 303);
+        assert!(bal_final - base_balance == 1_000, 303);
     }
 
     #[test(aptos_framework = @0x1, sender = @waypoint)]
     fun test_final_claim_remainder(
         aptos_framework: &signer, sender: &signer
-    ) acquires Routes, Route {
+    ) acquires Routes, Route, Config {
         let sender_addr = signer::address_of(sender);
-        init_module(sender, sender_addr);
+        init_module(sender);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -391,6 +400,8 @@ sender = @waypoint)]
             5,
             sender_addr
         );
+        let base_balance = primary_fungible_store::balance(sender_addr, fa);
+        assert!(base_balance == 5, 398);
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
         let route_obj =
@@ -399,12 +410,12 @@ sender = @waypoint)]
         timestamp::update_global_time_for_test(3_000_000);
         claim(sender, route_obj);
         let bal_after_first = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_first == 400, 400);
+        assert!(bal_after_first - base_balance == 400, 400);
 
         timestamp::update_global_time_for_test(6_000_000);
         claim(sender, route_obj);
         let bal_after_second = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_second == 800, 401);
+        assert!(bal_after_second - base_balance == 800, 401);
 
         timestamp::update_global_time_for_test(9_000_000);
         let now = timestamp::now_seconds();
@@ -417,7 +428,7 @@ sender = @waypoint)]
 
         claim(sender, route_obj);
         let bal_final = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_final == 1_000, 403);
+        assert!(bal_final - base_balance == 1_000, 403);
 
         {
             let addr = aptos_framework::object::object_address(&route_obj);
@@ -433,9 +444,9 @@ sender = @waypoint)]
     #[expected_failure(abort_code = E_NOTHING_CLAIMABLE)]
     fun test_claim_after_schedule_complete_fails(
         aptos_framework: &signer, sender: &signer
-    ) acquires Routes, Route {
+    ) acquires Routes, Route, Config {
         let sender_addr = signer::address_of(sender);
-        init_module(sender, sender_addr);
+        init_module(sender);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -454,6 +465,8 @@ sender = @waypoint)]
         primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
 
         create_route_and_fund(sender, fa, 1_000, 0, 3, 400, 3, 5, sender_addr);
+        let base_balance = primary_fungible_store::balance(sender_addr, fa);
+        assert!(base_balance == 5, 500);
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
         let route_obj =
@@ -465,19 +478,19 @@ sender = @waypoint)]
         timestamp::update_global_time_for_test(3_000_000);
         claim(sender, route_obj);
         let bal_after_first = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_first == 400, 500);
+        assert!(bal_after_first - base_balance == 400, 501);
 
         // Second period payout
         timestamp::update_global_time_for_test(6_000_000);
         claim(sender, route_obj);
         let bal_after_second = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_second == 800, 501);
+        assert!(bal_after_second - base_balance == 800, 502);
 
         // Final remainder payout
         timestamp::update_global_time_for_test(9_000_000);
         claim(sender, route_obj);
         let bal_after_final = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_final == 1_000, 502);
+        assert!(bal_after_final - base_balance == 1_000, 503);
 
         // Advance time beyond the scheduled periods; additional claims should abort.
         timestamp::update_global_time_for_test(12_000_000);
@@ -488,9 +501,9 @@ sender = @waypoint)]
     #[expected_failure(abort_code = E_NOTHING_CLAIMABLE)]
     fun test_claim_before_start_fails(
         aptos_framework: &signer, sender: &signer
-    ) acquires Routes, Route {
+    ) acquires Routes, Route, Config {
         let sender_addr = signer::address_of(sender);
-        init_module(sender, sender_addr);
+        init_module(sender);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -538,9 +551,9 @@ sender = @waypoint)]
     fun test_non_beneficiary_claim_fails(
         aptos_framework: &signer,
         sender: &signer
-    ) acquires Routes, Route {
+    ) acquires Routes, Route, Config {
         let depositor_addr = signer::address_of(sender);
-        init_module(sender, depositor_addr);
+        init_module(sender);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -590,9 +603,9 @@ sender = @waypoint)]
     fun test_create_route_rejects_excess_schedule_total(
         aptos_framework: &signer,
         sender: &signer
-    ) acquires Routes {
+    ) acquires Routes, Config {
         let sender_addr = signer::address_of(sender);
-        init_module(sender, sender_addr);
+        init_module(sender);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
         let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
@@ -607,7 +620,7 @@ sender = @waypoint)]
         );
         let fa = aptos_framework::object::object_from_constructor_ref(ctor);
         let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
-        primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
 
         // Deposit exceeds schedule_total (2 periods * 400 = 800 < 1_000) so creation must abort.
         create_route_and_fund(sender, fa, 1_000, 0, 3, 400, 2, 5, sender_addr);
