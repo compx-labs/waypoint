@@ -29,8 +29,8 @@ module waypoint::linear_stream_fa {
 
     /// Global config (optional)
     struct Config has key {
-        admin: address
-        // future: fee_bps, fee_sink, etc.
+        admin: address,
+        treasury: address
     }
 
     /// One stream/route = one object with an escrow store
@@ -59,8 +59,11 @@ module waypoint::linear_stream_fa {
     }
 
     /// Init once
-    entry fun init_module(admin: &signer) {
-        move_to(admin, Config { admin: signer::address_of(admin) });
+    entry fun init_module(admin: &signer, treasury: address) {
+        move_to(admin, Config {
+            admin: signer::address_of(admin),
+            treasury
+        });
         move_to(
             admin,
             Routes {
@@ -76,6 +79,7 @@ module waypoint::linear_stream_fa {
     /// - period_secs: cadence between allowed payouts
     /// - payout_amount: target amount per period (final payout may be smaller)
     /// - max_periods: number of scheduled periods
+    /// - fee_amount: upfront fee routed to the treasury (must equal 0.5% of `amount`)
     /// - beneficiary: who will be able to claim
     public entry fun create_route_and_fund(
         creator: &signer,
@@ -85,15 +89,22 @@ module waypoint::linear_stream_fa {
         period_secs: u64,
         payout_amount: u64,
         max_periods: u64,
+        fee_amount: u64,
         beneficiary: address
-    ) acquires Routes {
+    ) acquires Routes, Config {
         assert!(period_secs > 0, E_BAD_TIME);
         assert!(max_periods > 0, E_BAD_TIME);
         assert!(payout_amount > 0, E_BAD_AMOUNT);
         assert!(amount > 0, E_BAD_AMOUNT);
+        assert!(fee_amount > 0, E_BAD_AMOUNT);
 
         let schedule_total = (payout_amount as u128) * (max_periods as u128);
         assert!((amount as u128) <= schedule_total, E_BAD_AMOUNT);
+
+        let expected_fee = ((amount as u128) * 5) / 1_000;
+        assert!((fee_amount as u128) == expected_fee, E_BAD_AMOUNT);
+
+        let treasury_addr = borrow_global<Config>(@waypoint).treasury;
 
         // 1) Create a sticky object for the Route (it will own the escrow store)
         let ctor: &ConstructorRef =
@@ -111,6 +122,11 @@ module waypoint::linear_stream_fa {
         );
         // deposit into route-owned secondary store
         FA::deposit(store, fa_chunk);
+
+        let fee_chunk: FungibleAsset = primary_fungible_store::withdraw(
+            creator, fa, fee_amount
+        );
+        primary_fungible_store::deposit(treasury_addr, fee_chunk);
 
         // 4) Materialize the Route resource under the route object’s address
         let route = Route {
@@ -231,7 +247,8 @@ module waypoint::linear_stream_fa {
         aptos_framework: &signer, sender: &signer
     ) acquires Routes, Route {
         // Init module + timestamp
-        init_module(sender);
+        let sender_addr = signer::address_of(sender);
+        init_module(sender, sender_addr);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -248,11 +265,10 @@ module waypoint::linear_stream_fa {
         );
         let fa = aptos_framework::object::object_from_constructor_ref(ctor);
         let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
-        let sender_addr = signer::address_of(sender);
-        primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
 
         // --- Create route: 1000 over two payout periods of 500 ---
-        create_route_and_fund(sender, fa, 1_000, 2, 5, 500, 2, sender_addr);
+        create_route_and_fund(sender, fa, 1_000, 2, 5, 500, 2, 5, sender_addr);
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
         let route_obj =
@@ -284,7 +300,8 @@ sender = @waypoint)]
         aptos_framework: &signer, sender: &signer
     ) acquires Routes, Route {
         // Init storage + start the test clock
-        init_module(sender);
+        let sender_addr = signer::address_of(sender);
+        init_module(sender, sender_addr);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000); // 1s
 
@@ -301,11 +318,10 @@ sender = @waypoint)]
         );
         let fa = aptos_framework::object::object_from_constructor_ref(ctor);
         let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
-        let sender_addr = signer::address_of(sender);
-        primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
 
         // --- Create the route: 1000 with 3 periods of 350 (last period pays remainder) ---
-        create_route_and_fund(sender, fa, 1_000, 0, 3, 350, 3, sender_addr);
+        create_route_and_fund(sender, fa, 1_000, 0, 3, 350, 3, 5, sender_addr);
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
         let route_obj =
@@ -313,7 +329,7 @@ sender = @waypoint)]
                 route_addr
             );
 
-        // Balance right after funding: seed (1000) - deposit (1000) = 0
+        // Balance right after funding: seed (1005) - deposit (1000) - fee (5) = 0
         let bal_after_fund = primary_fungible_store::balance(sender_addr, fa);
         assert!(bal_after_fund == 0, 300);
 
@@ -340,7 +356,8 @@ sender = @waypoint)]
     fun test_final_claim_remainder(
         aptos_framework: &signer, sender: &signer
     ) acquires Routes, Route {
-        init_module(sender);
+        let sender_addr = signer::address_of(sender);
+        init_module(sender, sender_addr);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -356,8 +373,7 @@ sender = @waypoint)]
         );
         let fa = aptos_framework::object::object_from_constructor_ref(ctor);
         let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
-        let sender_addr = signer::address_of(sender);
-        primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
 
         let route_amount: u64 = 1_000;
         let period_secs: u64 = 3;
@@ -372,6 +388,7 @@ sender = @waypoint)]
             period_secs,
             payout_amount,
             max_periods,
+            5,
             sender_addr
         );
         let rs = list_routes();
@@ -417,7 +434,8 @@ sender = @waypoint)]
     fun test_claim_after_schedule_complete_fails(
         aptos_framework: &signer, sender: &signer
     ) acquires Routes, Route {
-        init_module(sender);
+        let sender_addr = signer::address_of(sender);
+        init_module(sender, sender_addr);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -433,10 +451,9 @@ sender = @waypoint)]
         );
         let fa = aptos_framework::object::object_from_constructor_ref(ctor);
         let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
-        let sender_addr = signer::address_of(sender);
-        primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
 
-        create_route_and_fund(sender, fa, 1_000, 0, 3, 400, 3, sender_addr);
+        create_route_and_fund(sender, fa, 1_000, 0, 3, 400, 3, 5, sender_addr);
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
         let route_obj =
@@ -472,7 +489,8 @@ sender = @waypoint)]
     fun test_claim_before_start_fails(
         aptos_framework: &signer, sender: &signer
     ) acquires Routes, Route {
-        init_module(sender);
+        let sender_addr = signer::address_of(sender);
+        init_module(sender, sender_addr);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -488,8 +506,7 @@ sender = @waypoint)]
         );
         let fa = aptos_framework::object::object_from_constructor_ref(ctor);
         let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
-        let sender_addr = signer::address_of(sender);
-        primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
 
         let start_ts: u64 = 10;
         let period_secs: u64 = 5;
@@ -504,6 +521,7 @@ sender = @waypoint)]
             period_secs,
             payout_amount,
             max_periods,
+            5,
             sender_addr
         );
 
@@ -521,7 +539,8 @@ sender = @waypoint)]
         aptos_framework: &signer,
         sender: &signer
     ) acquires Routes, Route {
-        init_module(sender);
+        let depositor_addr = signer::address_of(sender);
+        init_module(sender, depositor_addr);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         timestamp::update_global_time_for_test(1_000_000);
 
@@ -538,11 +557,9 @@ sender = @waypoint)]
         let fa = aptos_framework::object::object_from_constructor_ref(ctor);
         let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
 
-        let depositor_addr = signer::address_of(sender);
-        let beneficiary_signer = aptos_framework::account::create_account_for_test(@0xbeef);
-        let beneficiary_addr = signer::address_of(&beneficiary_signer);
+        let beneficiary_addr = @0xbeef;
 
-        primary_fungible_store::mint(&mint_ref, depositor_addr, 1_000);
+        primary_fungible_store::mint(&mint_ref, depositor_addr, 1_005);
 
         create_route_and_fund(
             sender,
@@ -552,6 +569,7 @@ sender = @waypoint)]
             3,
             400,
             3,
+            5,
             beneficiary_addr
         );
 
@@ -573,7 +591,8 @@ sender = @waypoint)]
         aptos_framework: &signer,
         sender: &signer
     ) acquires Routes {
-        init_module(sender);
+        let sender_addr = signer::address_of(sender);
+        init_module(sender, sender_addr);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
         let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
@@ -588,10 +607,9 @@ sender = @waypoint)]
         );
         let fa = aptos_framework::object::object_from_constructor_ref(ctor);
         let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
-        let sender_addr = signer::address_of(sender);
         primary_fungible_store::mint(&mint_ref, sender_addr, 1_000);
 
         // Deposit exceeds schedule_total (2 periods * 400 = 800 < 1_000) so creation must abort.
-        create_route_and_fund(sender, fa, 1_000, 0, 3, 400, 2, sender_addr);
+        create_route_and_fund(sender, fa, 1_000, 0, 3, 400, 2, 5, sender_addr);
     }
 }
