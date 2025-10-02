@@ -120,6 +120,12 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
     const balance = aptosAccountData.balances.find(b => b.symbol === tokenSymbol);
     return balance ? balance.amount : null;
   };
+  
+  // Check if user has any token balances
+  const hasAnyBalance = availableTokens.some(token => {
+    const balance = getTokenBalance(token.symbol);
+    return balance !== null && balance > 0;
+  });
 
   if (loading || loadingAccount) {
     return (
@@ -170,21 +176,45 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
         </p>
       </div>
 
+      {!hasAnyBalance && !loading && !loadingAccount && (
+        <div className="bg-sunset-900 bg-opacity-30 border-2 border-sunset-500 border-opacity-40 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <svg className="w-6 h-6 text-sunset-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide mb-1">
+                No Token Balance
+              </h3>
+              <p className="text-xs text-primary-300 font-display">
+                You don't have any of the supported stablecoins in your wallet. Please acquire some tokens before creating a route.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-3">
         {availableTokens.map((token) => {
           const balance = getTokenBalance(token.symbol);
+          const hasBalance = balance !== null && balance > 0;
           return (
           <button
             key={token.id}
             onClick={() => {
-              updateData({ selectedToken: token });
-              setTimeout(() => onNext(), 150);
+              if (hasBalance) {
+                updateData({ selectedToken: token });
+                setTimeout(() => onNext(), 150);
+              }
             }}
+            disabled={!hasBalance}
             className={`
               flex items-center p-4 rounded-xl border-2 transition-all duration-200 text-left
-              ${data.selectedToken?.id === token.id
-                ? 'bg-gradient-to-r from-forest-600 to-forest-500 border-sunset-500 border-opacity-60'
-                : 'bg-gradient-to-r from-forest-700 to-forest-600 border-forest-500 border-opacity-30 hover:border-opacity-60 hover:border-sunset-500'
+              ${!hasBalance
+                ? 'bg-forest-800 border-forest-600 opacity-50 cursor-not-allowed'
+                : data.selectedToken?.id === token.id
+                  ? 'bg-gradient-to-r from-forest-600 to-forest-500 border-sunset-500 border-opacity-60'
+                  : 'bg-gradient-to-r from-forest-700 to-forest-600 border-forest-500 border-opacity-30 hover:border-opacity-60 hover:border-sunset-500'
               }
             `}
           >
@@ -233,6 +263,15 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
 };
 
 const AmountScheduleStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPrevious, isFirstStep, isLastStep }) => {
+  const { account } = useWallet();
+  const { network } = useAptos();
+  
+  // Fetch Aptos account data to get balances
+  const { data: aptosAccountData } = useAptosAccount(
+    account?.address?.toStringLong() || null,
+    network === 'mainnet' ? 'mainnet' : 'devnet'
+  );
+  
   const unlockUnits = [
     { value: 'minutes' as const, label: 'Minutes', description: 'Every minute' },
     { value: 'hours' as const, label: 'Hours', description: 'Every hour' },
@@ -240,8 +279,18 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
     { value: 'weeks' as const, label: 'Weeks', description: 'Every week' },
     { value: 'months' as const, label: 'Months', description: 'Every month' },
   ];
+  
+  // Get user's balance for the selected token
+  const tokenBalance = aptosAccountData?.balances.find(
+    b => b.symbol === data.selectedToken?.symbol
+  )?.amount || 0;
+  
+  const totalAmount = parseFloat(data.totalAmount || '0');
+  const unlockAmount = parseFloat(data.unlockAmount || '0');
+  const exceedsBalance = totalAmount > tokenBalance;
+  const unlockExceedsTotal = unlockAmount > totalAmount;
 
-  const canProceed = data.totalAmount && data.unlockUnit && data.unlockAmount;
+  const canProceed = data.totalAmount && data.unlockUnit && data.unlockAmount && !exceedsBalance && !unlockExceedsTotal;
 
   return (
     <div className="space-y-6">
@@ -266,7 +315,11 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
             placeholder="1000.00"
             value={data.totalAmount || ''}
             onChange={(e) => updateData({ totalAmount: e.target.value })}
-            className="w-full bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 pr-20 focus:border-sunset-500 focus:outline-none transition-colors"
+            className={`w-full bg-forest-700 border-2 rounded-lg text-primary-100 font-display px-4 py-3 pr-20 focus:outline-none transition-colors ${
+              exceedsBalance 
+                ? 'border-sunset-500 focus:border-sunset-600' 
+                : 'border-forest-500 focus:border-sunset-500'
+            }`}
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-4 space-x-2">
             {data.selectedToken?.logo_url && (
@@ -283,6 +336,29 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
             </span>
           </div>
         </div>
+        <div className="mt-2 flex items-center justify-between text-xs font-display">
+          <span className="text-primary-400">
+            Available: {tokenBalance.toLocaleString(undefined, { 
+              minimumFractionDigits: 2, 
+              maximumFractionDigits: 6 
+            })} {data.selectedToken?.symbol}
+          </span>
+          <button
+            type="button"
+            onClick={() => updateData({ totalAmount: tokenBalance.toString() })}
+            className="text-sunset-400 hover:text-sunset-300 uppercase tracking-wide font-semibold transition-colors"
+          >
+            Max
+          </button>
+        </div>
+        {exceedsBalance && (
+          <div className="mt-2 flex items-start space-x-2 text-xs text-sunset-400">
+            <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>Amount exceeds your available balance</span>
+          </div>
+        )}
       </div>
 
       {/* Unlock Unit */}
@@ -326,7 +402,11 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
             placeholder="10.00"
             value={data.unlockAmount || ''}
             onChange={(e) => updateData({ unlockAmount: e.target.value })}
-            className="w-full bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 pr-20 focus:border-sunset-500 focus:outline-none transition-colors"
+            className={`w-full bg-forest-700 border-2 rounded-lg text-primary-100 font-display px-4 py-3 pr-20 focus:outline-none transition-colors ${
+              unlockExceedsTotal 
+                ? 'border-sunset-500 focus:border-sunset-600' 
+                : 'border-forest-500 focus:border-sunset-500'
+            }`}
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-4 space-x-2">
             {data.selectedToken?.logo_url && (
@@ -343,7 +423,15 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
             </span>
           </div>
         </div>
-        {data.totalAmount && data.unlockAmount && data.unlockUnit && (
+        {unlockExceedsTotal && (
+          <div className="mt-2 flex items-start space-x-2 text-xs text-sunset-400">
+            <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>Amount per period cannot exceed total amount</span>
+          </div>
+        )}
+        {data.totalAmount && data.unlockAmount && data.unlockUnit && !unlockExceedsTotal && (
           <div className="mt-2 text-xs text-primary-400 font-display">
             Duration: {formatDuration(parseFloat(data.totalAmount), parseFloat(data.unlockAmount), data.unlockUnit)}
           </div>
@@ -602,6 +690,53 @@ const RecipientStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, on
 };
 
 const SummaryStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPrevious, isFirstStep, isLastStep }) => {
+  const { account } = useWallet();
+  const { network } = useAptos();
+  
+  // Fetch Aptos account data to check APT balance
+  const { data: aptosAccountData } = useAptosAccount(
+    account?.address?.toStringLong() || null,
+    network === 'mainnet' ? 'mainnet' : 'devnet'
+  );
+  
+  const FEE_AMOUNT = 0.001; // APT
+  const [aptBalance, setAptBalance] = useState<number>(0);
+  
+  // Fetch APT balance
+  useEffect(() => {
+    const fetchAptBalance = async () => {
+      if (!account?.address) return;
+      
+      try {
+        const { Aptos, AptosConfig, Network } = await import('@aptos-labs/ts-sdk');
+        const aptosNetwork = network === 'mainnet' ? Network.MAINNET : Network.DEVNET;
+        const config = new AptosConfig({ network: aptosNetwork });
+        const aptos = new Aptos(config);
+        
+        const accountAddress = account.address.toStringLong();
+        const baseUrl = aptosNetwork === Network.MAINNET
+          ? 'https://fullnode.mainnet.aptoslabs.com'
+          : 'https://fullnode.devnet.aptoslabs.com';
+        
+        const response = await fetch(
+          `${baseUrl}/v1/accounts/${accountAddress}/balance/0x1::aptos_coin::AptosCoin`
+        );
+        
+        if (response.ok) {
+          const balanceStr = await response.text();
+          const balance = parseInt(balanceStr, 10) / Math.pow(10, 8); // APT has 8 decimals
+          setAptBalance(balance);
+        }
+      } catch (error) {
+        console.error('Failed to fetch APT balance:', error);
+      }
+    };
+    
+    fetchAptBalance();
+  }, [account?.address, network]);
+  
+  const hasInsufficientGas = aptBalance < FEE_AMOUNT;
+  
   const totalDuration = data.totalAmount && data.unlockAmount 
     ? Math.ceil(parseFloat(data.totalAmount) / parseFloat(data.unlockAmount)) 
     : 0;
@@ -690,6 +825,45 @@ const SummaryStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPr
             {data.recipientAddress}
           </div>
         </div>
+        
+        {/* Transaction Fee */}
+        <div className="pt-4 border-t border-forest-600">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="text-sm font-display text-primary-400 uppercase tracking-wide mb-1">
+                Estimated Gas Fee
+              </div>
+              <div className="text-xs text-primary-400 font-display">
+                Your APT Balance: {aptBalance.toFixed(6)} APT
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-display font-bold text-primary-100 flex items-center space-x-2">
+                <span>{FEE_AMOUNT} APT</span>
+              </div>
+              <div className="text-xs text-primary-400 font-display">
+                ~$0.10 USD
+              </div>
+            </div>
+          </div>
+          {hasInsufficientGas && (
+            <div className="mt-3 bg-sunset-900 bg-opacity-30 border border-sunset-500 border-opacity-40 rounded-lg p-3">
+              <div className="flex items-start space-x-2">
+                <svg className="w-5 h-5 text-sunset-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide">
+                    Insufficient APT for Gas
+                  </p>
+                  <p className="text-xs text-primary-300 font-display mt-1">
+                    You need at least {FEE_AMOUNT} APT to cover transaction fees. Please add APT to your wallet.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
@@ -702,7 +876,12 @@ const SummaryStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPr
         </button>
         <button
           onClick={onNext}
-          className="px-8 py-3 bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 font-display text-sm uppercase tracking-wider rounded-lg transition-all duration-200 border-2 border-sunset-400 transform hover:scale-105 shadow-lg"
+          disabled={hasInsufficientGas}
+          className={`px-8 py-3 font-display text-sm uppercase tracking-wider rounded-lg transition-all duration-200 border-2 ${
+            hasInsufficientGas
+              ? 'bg-forest-600 text-primary-400 border-forest-500 cursor-not-allowed opacity-50'
+              : 'bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 border-sunset-400 transform hover:scale-105 shadow-lg'
+          }`}
         >
           Sign & Create
         </button>
