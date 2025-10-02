@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import { useTokensByNetwork, useAddressBook, useAptosAccount } from "../hooks/useQueries";
+import { useAptos } from "../contexts/AptosContext";
 
 // Helper function to format duration in a human-readable way
 const formatDuration = (totalAmount: number, unlockAmount: number, unlockUnit: string): string => {
@@ -94,32 +96,35 @@ interface RouteCreationWizardProps {
 
 // Step Components
 const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, isFirstStep, isLastStep }) => {
-  const [availableTokens, setAvailableTokens] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  const { account } = useWallet();
+  const { network } = useAptos();
+  
+  // Use React Query to fetch tokens
+  const { data: availableTokens = [], isLoading: loading, error: queryError } = useTokensByNetwork('aptos');
+  
+  // Fetch Aptos account data
+  const { 
+    data: aptosAccountData, 
+    isLoading: loadingAccount, 
+    error: accountError 
+  } = useAptosAccount(
+    account?.address?.toStringLong() || null,
+    network === 'mainnet' ? 'mainnet' : 'devnet'
+  );
+  
+  // Log the account data to console for debugging
   useEffect(() => {
-    const fetchTokens = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('http://localhost:3001/api/tokens/network/aptos');
-        if (!response.ok) {
-          throw new Error('Failed to fetch tokens');
-        }
-        const tokens = await response.json();
-        setAvailableTokens(tokens);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load tokens');
-        console.error('Error fetching tokens:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (aptosAccountData) {
+      console.log('🔍 Aptos Account Data:', aptosAccountData);
+      console.log('💰 Balances:', aptosAccountData.balances);
+      console.log('🏗️ Modules:', aptosAccountData.modules);
+      console.log('🎨 Tokens:', aptosAccountData.tokens);
+    }
+  }, [aptosAccountData]);
+  
+  const error = queryError instanceof Error ? queryError.message : queryError ? 'Failed to load tokens' : null;
 
-    fetchTokens();
-  }, []);
-
-  if (loading) {
+  if (loading || loadingAccount) {
     return (
       <div className="space-y-6">
         <div>
@@ -131,7 +136,9 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
           </p>
         </div>
         <div className="flex items-center justify-center py-12">
-          <div className="text-primary-300 font-display">Loading tokens...</div>
+          <div className="text-primary-300 font-display">
+            {loading ? 'Loading tokens...' : 'Loading account data...'}
+          </div>
         </div>
       </div>
     );
@@ -165,6 +172,37 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({ data, updateData, onNex
           Choose which stablecoin you want to route
         </p>
       </div>
+
+      {/* Debug Section - Remove this later */}
+      {aptosAccountData && (
+        <div className="bg-forest-900 border border-forest-600 rounded-lg p-4 mb-6">
+          <h3 className="text-sm font-display font-semibold text-primary-100 uppercase tracking-wide mb-3">
+            🔍 Debug: Account Data
+          </h3>
+          <div className="space-y-2 text-xs font-mono text-primary-300">
+            <div><strong>Address:</strong> {aptosAccountData.address}</div>
+            <div><strong>Network:</strong> {aptosAccountData.network}</div>
+            <div><strong>Balances ({aptosAccountData.balances.length}):</strong></div>
+            {aptosAccountData.balances.map((balance, i) => (
+              <div key={i} className="ml-4">
+                • {balance.symbol}: {balance.amount} ({balance.coinType})
+              </div>
+            ))}
+            <div><strong>Modules ({aptosAccountData.modules.length}):</strong></div>
+            {aptosAccountData.modules.slice(0, 3).map((module, i) => (
+              <div key={i} className="ml-4">
+                • {module.name} ({module.address})
+              </div>
+            ))}
+            <div><strong>Tokens ({aptosAccountData.tokens.length}):</strong></div>
+            {aptosAccountData.tokens.slice(0, 3).map((token, i) => (
+              <div key={i} className="ml-4">
+                • {token.collection_name || 'Unknown'}: {token.amount}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-3">
         {availableTokens.map((token) => (
@@ -471,38 +509,17 @@ const TimingStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPre
 
 const RecipientStep: React.FC<WizardStepProps> = ({ data, updateData, onNext, onPrevious, isFirstStep, isLastStep }) => {
   const { account } = useWallet();
-  const [addressBookEntries, setAddressBookEntries] = useState<any[]>([]);
   const [showAddressBook, setShowAddressBook] = useState(false);
-  const [loadingAddressBook, setLoadingAddressBook] = useState(false);
   
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
   const canProceed = data.recipientAddress && data.recipientAddress.length > 0;
 
-  // Load address book entries when the step opens
-  useEffect(() => {
-    if (account?.address) {
-      loadAddressBook();
-    }
-  }, [account?.address]);
-
-  const loadAddressBook = async () => {
-    if (!account?.address) return;
-    
-    setLoadingAddressBook(true);
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/address-book?owner_wallet=${account.address}`
-      );
-      if (response.ok) {
-        const entries = await response.json();
-        setAddressBookEntries(entries);
-      }
-    } catch (error) {
-      console.error('Failed to load address book:', error);
-    } finally {
-      setLoadingAddressBook(false);
-    }
-  };
+  // Get owner wallet address
+  const ownerWallet = account?.address?.toString() || null;
+  
+  // Use React Query to fetch address book entries
+  const { data: addressBookEntries = [], isLoading: loadingAddressBook } = useAddressBook(ownerWallet, {
+    enabled: !!ownerWallet,
+  });
 
   const selectFromAddressBook = (address: string) => {
     updateData({ recipientAddress: address });

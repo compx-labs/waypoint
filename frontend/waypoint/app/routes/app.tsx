@@ -1,5 +1,5 @@
 import type { Route } from "./+types/app";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import AppNavigation from "../components/AppNavigation";
@@ -7,8 +7,8 @@ import Footer from "../components/Footer";
 import RouteCreationModal from "../components/RouteCreationModal";
 import RoutesList, { type TokenStream } from "../components/RoutesList";
 import { useToast } from "../contexts/ToastContext";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+import { useRoutes } from "../hooks/useQueries";
+import type { RouteData } from "../lib/api";
 
 // Helper function to format currency
 function formatCurrency(amount: number): string {
@@ -32,27 +32,6 @@ function getTokenColor(symbol: string): string {
   return colorMap[symbol] || 'bg-gradient-to-br from-forest-500 to-forest-600';
 }
 
-interface RouteData {
-  id: number;
-  sender: string;
-  recipient: string;
-  token_id: number;
-  amount_token_units: string;
-  start_date: string;
-  payment_frequency_unit: string;
-  payment_frequency_number: number;
-  status: 'active' | 'completed' | 'cancelled';
-  token: {
-    id: number;
-    symbol: string;
-    name: string;
-    logo_url: string;
-    network: string;
-    contract_address: string;
-    decimals: number;
-  };
-}
-
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Waypoint App - Your Routes" },
@@ -69,120 +48,93 @@ export default function AppDashboard() {
   const { account } = useWallet();
   const toast = useToast();
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
-  const [tokenStreams, setTokenStreams] = useState<TokenStream[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch routes using React Query
+  const { data: allRoutes, isLoading: loading, error: fetchError, refetch } = useRoutes();
 
-
-  // Fetch routes when wallet is connected
-  useEffect(() => {
-    if (account?.address) {
-      fetchRoutes();
-    } else {
-      setTokenStreams([]);
-      setLoading(false);
-    }
-  }, [account?.address]);
-
-  const fetchRoutes = async () => {
-    if (!account?.address) return;
+  // Calculate token streams based on wallet address and routes
+  const tokenStreams = useMemo(() => {
+    if (!account?.address || !allRoutes) return [];
     
-    setLoading(true);
-    setError(null);
+    const walletAddress = account.address.toStringLong();
     
-    try {
-      const walletAddress = account.address.toStringLong();
-      
-      // Fetch all routes for this wallet (both incoming and outgoing)
-      const response = await fetch(`${API_BASE_URL}/api/routes`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch routes');
+    // Filter routes for this wallet
+    const userRoutes = allRoutes.filter(
+      route => route.sender === walletAddress || route.recipient === walletAddress
+    );
+    
+    // Group by token and calculate stats
+    const tokenMap = new Map<number, {
+      token: RouteData['token'];
+      incoming: RouteData[];
+      outgoing: RouteData[];
+      completed: RouteData[];
+    }>();
+    
+    userRoutes.forEach(route => {
+      if (!tokenMap.has(route.token_id)) {
+        tokenMap.set(route.token_id, {
+          token: route.token,
+          incoming: [],
+          outgoing: [],
+          completed: [],
+        });
       }
       
-      const allRoutes: RouteData[] = await response.json();
+      const tokenData = tokenMap.get(route.token_id)!;
       
-      // Filter routes for this wallet
-      const userRoutes = allRoutes.filter(
-        route => route.sender === walletAddress || route.recipient === walletAddress
-      );
+      if (route.status === 'completed') {
+        tokenData.completed.push(route);
+      } else if (route.recipient === walletAddress) {
+        tokenData.incoming.push(route);
+      } else if (route.sender === walletAddress) {
+        tokenData.outgoing.push(route);
+      }
+    });
+    
+    // Convert to TokenStream format
+    const streams: TokenStream[] = Array.from(tokenMap.entries()).map(([tokenId, data]) => {
+      const calculateTotal = (routes: RouteData[]) => {
+        const total = routes.reduce((sum, route) => {
+          return sum + parseFloat(route.amount_token_units);
+        }, 0);
+        return total / Math.pow(10, data.token.decimals);
+      };
       
-      // Group by token and calculate stats
-      const tokenMap = new Map<number, {
-        token: RouteData['token'];
-        incoming: RouteData[];
-        outgoing: RouteData[];
-        completed: RouteData[];
-      }>();
+      const incomingTotal = calculateTotal(data.incoming);
+      const outgoingTotal = calculateTotal(data.outgoing);
+      const completedTotal = calculateTotal(data.completed);
       
-      userRoutes.forEach(route => {
-        if (!tokenMap.has(route.token_id)) {
-          tokenMap.set(route.token_id, {
-            token: route.token,
-            incoming: [],
-            outgoing: [],
-            completed: [],
-          });
-        }
-        
-        const tokenData = tokenMap.get(route.token_id)!;
-        
-        if (route.status === 'completed') {
-          tokenData.completed.push(route);
-        } else if (route.recipient === walletAddress) {
-          tokenData.incoming.push(route);
-        } else if (route.sender === walletAddress) {
-          tokenData.outgoing.push(route);
-        }
-      });
+      // Calculate TVL (incoming - outgoing)
+      const tvl = incomingTotal - outgoingTotal;
       
-      // Convert to TokenStream format
-      const streams: TokenStream[] = Array.from(tokenMap.entries()).map(([tokenId, data]) => {
-        const calculateTotal = (routes: RouteData[]) => {
-          const total = routes.reduce((sum, route) => {
-            return sum + parseFloat(route.amount_token_units);
-          }, 0);
-          return total / Math.pow(10, data.token.decimals);
-        };
-        
-        const incomingTotal = calculateTotal(data.incoming);
-        const outgoingTotal = calculateTotal(data.outgoing);
-        const completedTotal = calculateTotal(data.completed);
-        
-        // Calculate TVL (incoming - outgoing)
-        const tvl = incomingTotal - outgoingTotal;
-        
-        return {
-          id: tokenId,
-          name: data.token.name,
-          symbol: data.token.symbol,
-          color: getTokenColor(data.token.symbol),
-          logoSrc: data.token.logo_url || '/logo.svg',
-          tvl: formatCurrency(tvl),
-          totalStreams: data.incoming.length + data.outgoing.length + data.completed.length,
-          incoming: {
-            count: data.incoming.length,
-            value: formatCurrency(incomingTotal),
-          },
-          outgoing: {
-            count: data.outgoing.length,
-            value: formatCurrency(outgoingTotal),
-          },
-          completed: {
-            count: data.completed.length,
-            value: formatCurrency(completedTotal),
-          },
-        };
-      });
-      
-      setTokenStreams(streams);
-    } catch (err) {
-      console.error('Error fetching routes:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch routes');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return {
+        id: tokenId,
+        name: data.token.name,
+        symbol: data.token.symbol,
+        color: getTokenColor(data.token.symbol),
+        logoSrc: data.token.logo_url || '/logo.svg',
+        tvl: formatCurrency(tvl),
+        totalStreams: data.incoming.length + data.outgoing.length + data.completed.length,
+        incoming: {
+          count: data.incoming.length,
+          value: formatCurrency(incomingTotal),
+        },
+        outgoing: {
+          count: data.outgoing.length,
+          value: formatCurrency(outgoingTotal),
+        },
+        completed: {
+          count: data.completed.length,
+          value: formatCurrency(completedTotal),
+        },
+      };
+    });
+    
+    return streams;
+  }, [account?.address, allRoutes]);
+
+  const error = fetchError ? (fetchError instanceof Error ? fetchError.message : 'Failed to fetch routes') : null;
 
   const handleCreateRoute = () => {
     setIsRouteModalOpen(true);
@@ -190,10 +142,8 @@ export default function AppDashboard() {
 
   const handleCloseModal = () => {
     setIsRouteModalOpen(false);
-    // Refresh routes in case user created a new one
-    if (account?.address) {
-      fetchRoutes();
-    }
+    // Refetch routes in case user created a new one
+    refetch();
   };
 
   const handleRouteTypeSelect = (routeTypeId: string) => {

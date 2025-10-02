@@ -1,31 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-
-interface AddressBookEntry {
-  id: number;
-  owner_wallet: string;
-  name: string;
-  wallet_address: string;
-  created_at: string;
-  updated_at: string;
-}
+import { 
+  useAddressBook, 
+  useCreateAddressBookEntry,
+  useUpdateAddressBookEntry,
+  useDeleteAddressBookEntry 
+} from "../hooks/useQueries";
+import type { AddressBookEntry } from "../lib/api";
 
 interface AddressBookModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
-
 export default function AddressBookModal({
   isOpen,
   onClose,
 }: AddressBookModalProps) {
   const { account } = useWallet();
-  const [entries, setEntries] = useState<AddressBookEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -33,6 +25,33 @@ export default function AddressBookModal({
   const [formName, setFormName] = useState("");
   const [formAddress, setFormAddress] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+
+  // Get owner wallet address
+  const ownerWallet = account?.address?.toString() || null;
+
+  // Fetch address book entries
+  const { data: entries = [], isLoading, error: queryError } = useAddressBook(ownerWallet, {
+    enabled: isOpen && !!ownerWallet,
+  });
+
+  // Mutations
+  const createMutation = useCreateAddressBookEntry();
+  const updateMutation = useUpdateAddressBookEntry();
+  const deleteMutation = useDeleteAddressBookEntry(ownerWallet || "");
+
+  // Combine loading states
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+  
+  // Get error message
+  const error = queryError 
+    ? (queryError instanceof Error ? queryError.message : "An error occurred")
+    : createMutation.error
+    ? (createMutation.error instanceof Error ? createMutation.error.message : "Failed to add entry")
+    : updateMutation.error
+    ? (updateMutation.error instanceof Error ? updateMutation.error.message : "Failed to update entry")
+    : deleteMutation.error
+    ? (deleteMutation.error instanceof Error ? deleteMutation.error.message : "Failed to delete entry")
+    : null;
 
   useEffect(() => {
     const checkMobile = () => {
@@ -45,122 +64,54 @@ export default function AddressBookModal({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Fetch entries when modal opens and wallet is connected
-  useEffect(() => {
-    if (isOpen && account?.address) {
-      fetchEntries();
-    }
-  }, [isOpen, account?.address]);
-
-  const fetchEntries = async () => {
-    if (!account?.address) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/address-book?owner_wallet=${account.address}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch address book entries");
-      }
-
-      const data = await response.json();
-      setEntries(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleAdd = async () => {
     if (!account?.address || !formName.trim() || !formAddress.trim()) return;
 
-    setIsLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch(`${API_BASE_URL}/api/address-book`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          owner_wallet: account.address.toStringLong(),
-          name: formName.trim(),
-          wallet_address: formAddress.trim(),
-        }),
+      await createMutation.mutateAsync({
+        owner_wallet: account.address.toStringLong(),
+        name: formName.trim(),
+        wallet_address: formAddress.trim(),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to add entry");
-      }
-
-      const newEntry = await response.json();
-      setEntries([newEntry, ...entries]);
+      
       setFormName("");
       setFormAddress("");
       setIsAdding(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+      // Error is handled by the mutation hook and displayed via error state
+      console.error("Failed to add entry:", err);
     }
   };
 
   const handleUpdate = async (id: number) => {
     if (!formName.trim() || !formAddress.trim()) return;
 
-    setIsLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch(`${API_BASE_URL}/api/address-book/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      await updateMutation.mutateAsync({
+        id,
+        payload: {
           name: formName.trim(),
           wallet_address: formAddress.trim(),
-        }),
+        },
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to update entry");
-      }
-
-      const updatedEntry = await response.json();
-      setEntries(entries.map((e) => (e.id === id ? updatedEntry : e)));
+      
       setEditingId(null);
       setFormName("");
       setFormAddress("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+      // Error is handled by the mutation hook and displayed via error state
+      console.error("Failed to update entry:", err);
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
-    setIsLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch(`${API_BASE_URL}/api/address-book/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete entry");
-      }
-
-      setEntries(entries.filter((e) => e.id !== id));
+      await deleteMutation.mutateAsync(id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+      // Error is handled by the mutation hook and displayed via error state
+      console.error("Failed to delete entry:", err);
     }
   };
 
@@ -333,11 +284,11 @@ export default function AddressBookModal({
                         isAdding ? handleAdd() : handleUpdate(editingId!)
                       }
                       disabled={
-                        isLoading || !formName.trim() || !formAddress.trim()
+                        isMutating || !formName.trim() || !formAddress.trim()
                       }
                       className="flex-1 bg-sunset-500 hover:bg-sunset-600 disabled:bg-forest-600 text-primary-100 font-display text-xs uppercase tracking-wider font-bold py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50"
                     >
-                      {isLoading ? "Saving..." : "Save"}
+                      {isMutating ? "Saving..." : "Save"}
                     </button>
                     <button
                       onClick={cancelEdit}
@@ -359,7 +310,7 @@ export default function AddressBookModal({
 
             {/* Entries List */}
             <div className="space-y-2">
-              {isLoading && entries.length === 0 ? (
+              {isLoading ? (
                 <p className="text-sm text-primary-400 text-center py-4">
                   Loading...
                 </p>
@@ -520,11 +471,11 @@ export default function AddressBookModal({
                       isAdding ? handleAdd() : handleUpdate(editingId!)
                     }
                     disabled={
-                      isLoading || !formName.trim() || !formAddress.trim()
+                      isMutating || !formName.trim() || !formAddress.trim()
                     }
                     className="flex-1 bg-sunset-500 hover:bg-sunset-600 disabled:bg-forest-600 text-primary-100 font-display text-sm uppercase tracking-wider font-bold py-2 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                   >
-                    {isLoading ? "Saving..." : "Save"}
+                    {isMutating ? "Saving..." : "Save"}
                   </button>
                   <button
                     onClick={cancelEdit}
@@ -546,7 +497,7 @@ export default function AddressBookModal({
 
           {/* Entries List */}
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {isLoading && entries.length === 0 ? (
+            {isLoading ? (
               <p className="text-sm text-primary-400 text-center py-8">
                 Loading...
               </p>

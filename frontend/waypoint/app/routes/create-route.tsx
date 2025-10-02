@@ -4,8 +4,7 @@ import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import type { Route } from "./+types/create-route";
 import RouteCreationWizard, { type RouteFormData } from "../components/RouteCreationWizard";
 import { useToast } from "../contexts/ToastContext";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+import { useCreateRoute } from "../hooks/useQueries";
 
 export function meta({}: Route["MetaArgs"]) {
   return [
@@ -23,8 +22,10 @@ export default function CreateRoute() {
   const toast = useToast();
   const [searchParams] = useSearchParams();
   const routeType = searchParams.get('type') || 'simple-transfer';
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use the mutation hook
+  const createRouteMutation = useCreateRoute();
 
   const handleComplete = async (data: RouteFormData) => {
     console.log('Route creation completed:', data);
@@ -45,7 +46,6 @@ export default function CreateRoute() {
       return;
     }
 
-    setIsSubmitting(true);
     setError(null);
     
     const toastId = toast.loading({
@@ -92,20 +92,8 @@ export default function CreateRoute() {
 
       console.log('Submitting route:', routePayload);
 
-      const response = await fetch(`${API_BASE_URL}/api/routes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(routePayload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to create route' }));
-        throw new Error(errorData.error || 'Failed to create route');
-      }
-
-      const createdRoute = await response.json();
+      // Use mutation to create route
+      const createdRoute = await createRouteMutation.mutateAsync(routePayload);
       console.log('Route created successfully:', createdRoute);
 
       // Update the loading toast to success
@@ -130,13 +118,11 @@ export default function CreateRoute() {
         title: "Creation Failed",
         description: errorMessage,
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    if (isSubmitting) {
+    if (createRouteMutation.isPending) {
       if (!confirm('Route creation is in progress. Are you sure you want to cancel?')) {
         return;
       }

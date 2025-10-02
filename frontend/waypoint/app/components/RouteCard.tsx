@@ -6,7 +6,7 @@ interface RouteCardProps {
 
 export default function RouteCard({ stream }: RouteCardProps) {
   const handleCardClick = () => {
-    window.location.href = `/app/token/${stream.id}`;
+    window.location.href = `/app/token?id=${stream.id}`;
   };
 
   return (

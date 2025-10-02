@@ -13,6 +13,8 @@ import "./wallet-styles.css";
 import "./route-creation-styles.css";
 import { useState, useEffect } from "react";
 import { ToastProvider } from "./contexts/ToastContext";
+import { AptosProvider } from "./contexts/AptosContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -45,6 +47,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Create a client outside of the component to persist across re-renders
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh longer
+      gcTime: 1000 * 60 * 10, // 10 minutes - keep cache longer (formerly cacheTime)
+      refetchOnWindowFocus: false,
+      refetchOnMount: false, // Don't refetch if data is still fresh
+      refetchOnReconnect: false,
+      retry: 1,
+    },
+  },
+});
+
 export default function App() {
   const [WalletProvider, setWalletProvider] = useState<any>(null);
   const [Network, setNetwork] = useState<any>(null);
@@ -69,24 +85,32 @@ export default function App() {
 
   if (!isClient || !WalletProvider || !Network) {
     return (
-      <ToastProvider>
-        <Outlet />
-      </ToastProvider>
+      <QueryClientProvider client={queryClient}>
+        <AptosProvider>
+          <ToastProvider>
+            <Outlet />
+          </ToastProvider>
+        </AptosProvider>
+      </QueryClientProvider>
     );
   }
 
   return (
-    <WalletProvider
-      autoConnect={true}
-      dappConfig={{ network: Network.TESTNET }}
-      onError={(error: any) => {
-        console.log("Wallet adapter error:", error);
-      }}
-    >
-      <ToastProvider>
-        <Outlet />
-      </ToastProvider>
-    </WalletProvider>
+    <QueryClientProvider client={queryClient}>
+      <AptosProvider initialNetwork={Network.MAINNET}>
+        <WalletProvider
+          autoConnect={true}
+          dappConfig={{ network: Network.MAINNET }}
+          onError={(error: any) => {
+            console.log("Wallet adapter error:", error);
+          }}
+        >
+          <ToastProvider>
+            <Outlet />
+          </ToastProvider>
+        </WalletProvider>
+      </AptosProvider>
+    </QueryClientProvider>
   );
 }
 

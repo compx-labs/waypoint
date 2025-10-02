@@ -58,6 +58,7 @@ router.post('/', async (req, res, next) => {
       recipient,
       token_id,
       amount_token_units,
+      amount_per_period_token_units,
       start_date,
       payment_frequency_unit,
       payment_frequency_number,
@@ -65,7 +66,7 @@ router.post('/', async (req, res, next) => {
     } = req.body;
     
     // Validation
-    if (!sender || !recipient || !token_id || !amount_token_units || !start_date || !payment_frequency_unit || !payment_frequency_number) {
+    if (!sender || !recipient || !token_id || !amount_token_units || !amount_per_period_token_units || !start_date || !payment_frequency_unit || !payment_frequency_number) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
@@ -80,6 +81,7 @@ router.post('/', async (req, res, next) => {
       recipient,
       token_id,
       amount_token_units,
+      amount_per_period_token_units,
       start_date,
       payment_frequency_unit,
       payment_frequency_number,
