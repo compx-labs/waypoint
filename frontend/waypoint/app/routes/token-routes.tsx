@@ -222,15 +222,16 @@ export default function TokenRoutes() {
 
     setClaimingRouteId(routeId);
 
+    const MODULE_ADDRESS = "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
+    const MODULE_NAME = "linear_stream_fa";
+    
+    // Show loading toast
+    const loadingToastId = toast.loading({
+      title: "Claiming Tokens",
+      description: "Please confirm the transaction in your wallet...",
+    });
+
     try {
-      const MODULE_ADDRESS = "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
-      const MODULE_NAME = "linear_stream_fa";
-      
-      // Show loading toast
-      const loadingToastId = toast.loading({
-        title: "Claiming Tokens",
-        description: "Please confirm the transaction in your wallet...",
-      });
 
       // Configure Aptos SDK
       const aptosNetwork = Network.MAINNET;
@@ -304,6 +305,8 @@ export default function TokenRoutes() {
         }
       }
       
+      // Dismiss the loading toast and show error
+      toast.dismiss(loadingToastId);
       toast.error({
         title: "Claim Failed",
         description: errorMessage,
