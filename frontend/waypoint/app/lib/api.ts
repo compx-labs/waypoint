@@ -252,3 +252,33 @@ export async function deleteAddressBookEntry(id: number): Promise<void> {
   }
 }
 
+// Analytics types
+export interface NetworkAnalytics {
+  routes: number;
+  tvl: string;
+  routed: string;
+}
+
+export interface AnalyticsData {
+  overall: {
+    routes: number;
+    tvl: string;
+    routed: string;
+  };
+  networks: {
+    aptos: NetworkAnalytics;
+    algorand: NetworkAnalytics;
+  };
+}
+
+// Analytics API
+export async function getAnalytics(): Promise<AnalyticsData> {
+  const response = await fetch(`${API_BASE_URL}/api/analytics`);
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch analytics');
+  }
+  
+  return response.json();
+}
+

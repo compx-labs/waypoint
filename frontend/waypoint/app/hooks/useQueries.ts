@@ -11,6 +11,7 @@ import {
   createAddressBookEntry,
   updateAddressBookEntry,
   deleteAddressBookEntry,
+  getAnalytics,
   type RouteData,
   type Token,
   type AddressBookEntry,
@@ -21,6 +22,7 @@ import {
   type AptosAccountBalance,
   type AptosModule,
   type AptosToken,
+  type AnalyticsData,
 } from '../lib/api';
 
 // Query Keys
@@ -31,6 +33,7 @@ export const queryKeys = {
   token: (id: number) => ['tokens', id] as const,
   addressBook: (ownerWallet: string) => ['addressBook', ownerWallet] as const,
   aptosAccount: (address: string, network: string) => ['aptosAccount', address, network] as const,
+  analytics: ['analytics'] as const,
 };
 
 // Routes Queries
@@ -290,6 +293,19 @@ export function useAptosAccount(
     staleTime: 1000 * 60 * 2, // Consider data fresh for 2 minutes
     gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
     // Removed refetchInterval - only refetch when needed, not on a timer
+    ...options,
+  });
+}
+
+// Analytics Queries
+export function useAnalytics(
+  options?: Omit<UseQueryOptions<AnalyticsData, Error>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: queryKeys.analytics,
+    queryFn: getAnalytics,
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
     ...options,
   });
 }
