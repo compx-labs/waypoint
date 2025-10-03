@@ -63,6 +63,7 @@ router.post('/', async (req, res, next) => {
       payment_frequency_unit,
       payment_frequency_number,
       blockchain_tx_hash,
+      route_obj_address,
     } = req.body;
     
     // Validation
@@ -86,6 +87,7 @@ router.post('/', async (req, res, next) => {
       payment_frequency_unit,
       payment_frequency_number,
       blockchain_tx_hash,
+      route_obj_address,
     });
     
     // Fetch with token info

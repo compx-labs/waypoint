@@ -25,6 +25,7 @@ export interface RouteData {
   payment_frequency_number: number;
   status: 'active' | 'completed' | 'cancelled';
   blockchain_tx_hash: string | null;
+  route_obj_address: string | null;
   created_at: string;
   token: Token;
 }
@@ -48,6 +49,7 @@ export interface CreateRoutePayload {
   payment_frequency_unit: string;
   payment_frequency_number: number;
   blockchain_tx_hash: string | null;
+  route_obj_address?: string | null;
 }
 
 export interface CreateAddressBookPayload {

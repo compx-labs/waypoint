@@ -49,8 +49,11 @@ export default function AppDashboard() {
   const toast = useToast();
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   
-  // Fetch routes using React Query
-  const { data: allRoutes, isLoading: loading, error: fetchError, refetch } = useRoutes();
+  // Fetch routes using React Query with automatic refetching
+  const { data: allRoutes, isLoading: loading, error: fetchError, refetch } = useRoutes({
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+  });
 
   // Calculate token streams based on wallet address and routes
   const tokenStreams = useMemo(() => {

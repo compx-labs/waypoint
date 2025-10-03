@@ -4,6 +4,7 @@ import {
   useTokensByNetwork,
   useAddressBook,
   useAptosAccount,
+  useCreateRoute,
 } from "../hooks/useQueries";
 import { useAptos } from "../contexts/AptosContext";
 import { useToast } from "../contexts/ToastContext";
@@ -924,6 +925,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   const { account, signAndSubmitTransaction } = useWallet();
   const { network } = useAptos();
   const toast = useToast();
+  const createRouteMutation = useCreateRoute();
 
   // Fetch Aptos account data to check APT balance
   const { data: aptosAccountData } = useAptosAccount(
@@ -1145,8 +1147,72 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       });
 
       // Wait for transaction confirmation
-      await aptos.waitForTransaction({ transactionHash: response.hash });
+      const txn = await aptos.waitForTransaction({ transactionHash: response.hash });
+      
+      // Extract the route object address from transaction changes
+      let routeObjAddress: string | null = null;
+      
+      // Transaction confirmed! Now save to database
+      toast.update(loadingToastId, {
+        title: "Transaction Confirmed",
+        description: "Extracting route address...",
+        type: "loading",
+      });
 
+      // Look for the created route object in the transaction changes
+      if ('changes' in txn && Array.isArray(txn.changes)) {
+        for (const change of txn.changes) {
+          // Look for write_resource changes that create the Route resource
+          if (
+            change.type === 'write_resource' &&
+            'address' in change &&
+            'data' in change
+          ) {
+            const data = change.data as any;
+            // Check if this is the Route resource (not Routes collection)
+            if (
+              data?.type &&
+              typeof data.type === 'string' &&
+              data.type.includes('Route') &&
+              !data.type.includes('Routes')
+            ) {
+              routeObjAddress = change.address;
+              console.log('Found route object address:', routeObjAddress);
+              break;
+            }
+          }
+        }
+      }
+
+      // If we couldn't find it in changes, log for debugging
+      if (!routeObjAddress) {
+        console.warn('Could not extract route object address from transaction changes');
+        console.log('Transaction result:', txn);
+      }
+
+      // Prepare route payload for database
+      const routePayload = {
+        sender: account.address.toStringLong(),
+        recipient: data.recipientAddress,
+        token_id: data.selectedToken.id,
+        amount_token_units: amountInUnits.toString(),
+        amount_per_period_token_units: payoutAmountInUnits.toString(),
+        start_date: data.startTime.toISOString(),
+        payment_frequency_unit: data.unlockUnit,
+        payment_frequency_number: 1, // Always 1 - we unlock every 1 unit (hour, day, etc.)
+        blockchain_tx_hash: response.hash,
+        route_obj_address: routeObjAddress,
+      };
+
+      // Save route to database
+      toast.update(loadingToastId, {
+        title: "Saving to Database",
+        description: "Recording your route...",
+        type: "loading",
+      });
+
+      await createRouteMutation.mutateAsync(routePayload);
+      
       // Success! Show success toast
       toast.update(loadingToastId, {
         title: "Route Created Successfully!",

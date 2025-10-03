@@ -4,9 +4,12 @@ import { useState, useMemo } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
+import RouteBlockchainData from "../components/RouteBlockchainData";
 import { useRoutes, useToken } from "../hooks/useQueries";
 import type { RouteData } from "../lib/api";
 import { useToast } from "../contexts/ToastContext";
+import { useAptos } from "../contexts/AptosContext";
+import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 
 // Types for individual route data
 interface TokenRoute {
@@ -20,6 +23,9 @@ interface TokenRoute {
   status: string;
   startDate: string;
   isIncoming: boolean;
+  routeObjAddress: string | null;
+  decimals: number;
+  tokenSymbol: string;
 }
 
 interface TokenData {
@@ -80,9 +86,11 @@ export function meta({}: Route["MetaArgs"]) {
 export default function TokenRoutes() {
   const [searchParams] = useSearchParams();
   const tokenId = searchParams.get('id');
-  const { account } = useWallet();
+  const { account, signAndSubmitTransaction } = useWallet();
+  const { network } = useAptos();
   const toast = useToast();
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [claimingRouteId, setClaimingRouteId] = useState<number | null>(null);
   
   // Parse tokenId to number
   const tokenIdNum = tokenId ? parseInt(tokenId) : null;
@@ -90,8 +98,11 @@ export default function TokenRoutes() {
   // Get wallet address for checking if user is recipient
   const walletAddress = account?.address?.toStringLong();
   
-  // Fetch data using React Query
-  const { data: allRoutes, isLoading: routesLoading, error: routesError } = useRoutes();
+  // Fetch data using React Query with automatic refetching
+  const { data: allRoutes, isLoading: routesLoading, error: routesError } = useRoutes({
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+  });
   const { data: tokenInfo, isLoading: tokenLoading, error: tokenError } = useToken(tokenIdNum);
 
   // Calculate token data based on routes
@@ -152,6 +163,9 @@ export default function TokenRoutes() {
         status: route.status,
         startDate: route.start_date,
         isIncoming: walletAddress ? route.recipient === walletAddress : false,
+        routeObjAddress: route.route_obj_address,
+        decimals: token.decimals,
+        tokenSymbol: token.symbol,
       };
     });
     
@@ -178,13 +192,126 @@ export default function TokenRoutes() {
     setExpandedRows(newExpanded);
   };
 
-  const handleClaim = (routeId: number) => {
-    // TODO: Add blockchain claim logic here
-    toast.info({ 
-      title: 'Claim Functionality Coming Soon',
-      description: 'Blockchain integration will be added shortly'
-    });
-    console.log(`Claiming payout for route ${routeId}`);
+  const handleClaim = async (routeId: number) => {
+    if (!account || !signAndSubmitTransaction) {
+      toast.error({
+        title: 'Wallet Not Connected',
+        description: 'Please connect your wallet to claim tokens'
+      });
+      return;
+    }
+
+    // Find the route to get the route_obj_address
+    const route = allRoutes?.find(r => r.id === routeId);
+    if (!route || !route.route_obj_address) {
+      toast.error({
+        title: 'Route Not Found',
+        description: 'Could not find route information or blockchain address'
+      });
+      return;
+    }
+
+    // Check if user is the beneficiary
+    if (route.recipient !== account.address.toStringLong()) {
+      toast.error({
+        title: 'Not Authorized',
+        description: 'Only the beneficiary can claim tokens from this route'
+      });
+      return;
+    }
+
+    setClaimingRouteId(routeId);
+
+    try {
+      const MODULE_ADDRESS = "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
+      const MODULE_NAME = "linear_stream_fa";
+      
+      // Show loading toast
+      const loadingToastId = toast.loading({
+        title: "Claiming Tokens",
+        description: "Please confirm the transaction in your wallet...",
+      });
+
+      // Configure Aptos SDK
+      const aptosNetwork = Network.MAINNET;
+      const config = new AptosConfig({ network: aptosNetwork });
+      const aptos = new Aptos(config);
+
+      // Verify the route exists on-chain using view function before claiming
+      try {
+        const viewPayload = {
+          function: `${MODULE_ADDRESS}::${MODULE_NAME}::get_route_core` as `${string}::${string}::${string}`,
+          typeArguments: [],
+          functionArguments: [route.route_obj_address],
+        };
+        await aptos.view({ payload: viewPayload });
+      } catch (viewError) {
+        console.error("Route not found on chain:", viewError);
+        toast.update(loadingToastId, {
+          title: "Route Not Found",
+          description: "This route does not exist on the blockchain.",
+          type: "error",
+        });
+        setClaimingRouteId(null);
+        return;
+      }
+
+      // Submit the claim transaction
+      // For Object<ObjectCore> parameters, pass the address as a string
+      const response = await signAndSubmitTransaction({
+        data: {
+          function: `${MODULE_ADDRESS}::${MODULE_NAME}::claim` as `${string}::${string}::${string}`,
+          functionArguments: [route.route_obj_address],
+        },
+      });
+
+      // Update toast to waiting for confirmation
+      toast.update(loadingToastId, {
+        title: "Transaction Submitted",
+        description: "Waiting for blockchain confirmation...",
+        type: "loading",
+      });
+
+      // Wait for transaction confirmation
+      await aptos.waitForTransaction({ transactionHash: response.hash });
+
+      // Success!
+      toast.update(loadingToastId, {
+        title: "Tokens Claimed Successfully!",
+        description: `Your tokens have been claimed and deposited to your wallet.`,
+        type: "success",
+      });
+
+      // Refresh the routes data
+      setTimeout(() => {
+        toast.dismiss(loadingToastId);
+        window.location.reload(); // Simple refresh to update all data
+      }, 2000);
+
+    } catch (error) {
+      console.error("Failed to claim tokens:", error);
+      
+      let errorMessage = "Failed to claim tokens. Please try again.";
+      if (error instanceof Error) {
+        if (error.message.includes("User rejected")) {
+          errorMessage = "Transaction was rejected.";
+        } else if (error.message.includes("NOTHING_CLAIMABLE")) {
+          errorMessage = "No tokens are available to claim yet.";
+        } else if (error.message.includes("NOT_BENEFICIARY")) {
+          errorMessage = "Only the beneficiary can claim from this route.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast.error({
+        title: "Claim Failed",
+        description: errorMessage,
+        duration: 5000,
+      });
+    } finally {
+      setClaimingRouteId(null);
+    }
   };
 
   // Show loading state
@@ -351,7 +478,15 @@ export default function TokenRoutes() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-semibold text-green-600">
-                            {route.remaining}
+                            {route.routeObjAddress ? (
+                              <RouteBlockchainData
+                                routeObjAddress={route.routeObjAddress}
+                                decimals={route.decimals}
+                                symbol={route.tokenSymbol}
+                              />
+                            ) : (
+                              route.remaining
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -368,9 +503,21 @@ export default function TokenRoutes() {
                           {route.isIncoming ? (
                             <button
                               onClick={() => handleClaim(route.id)}
-                              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 text-xs font-display font-bold uppercase tracking-wider rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
+                              disabled={claimingRouteId === route.id || !route.routeObjAddress}
+                              className={`inline-flex items-center px-4 py-2 text-xs font-display font-bold uppercase tracking-wider rounded-lg transition-all duration-200 shadow-md ${
+                                claimingRouteId === route.id || !route.routeObjAddress
+                                  ? 'bg-forest-300 text-forest-600 cursor-not-allowed'
+                                  : 'bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 transform hover:scale-105 hover:shadow-lg'
+                              }`}
                             >
-                              Claim Payout
+                              {claimingRouteId === route.id ? (
+                                <>
+                                  <div className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-primary-100 mr-2"></div>
+                                  Claiming...
+                                </>
+                              ) : (
+                                'Claim Payout'
+                              )}
                             </button>
                           ) : (
                             <span className="text-xs text-forest-400 font-display uppercase">
@@ -427,7 +574,15 @@ export default function TokenRoutes() {
                                   Remaining
                                 </div>
                                 <div className="text-sm font-semibold text-green-600">
-                                  {route.remaining}
+                                  {route.routeObjAddress ? (
+                                    <RouteBlockchainData
+                                      routeObjAddress={route.routeObjAddress}
+                                      decimals={route.decimals}
+                                      symbol={route.tokenSymbol}
+                                    />
+                                  ) : (
+                                    route.remaining
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -481,9 +636,21 @@ export default function TokenRoutes() {
                                     e.stopPropagation();
                                     handleClaim(route.id);
                                   }}
-                                  className="w-full px-4 py-3 bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 text-sm font-display font-bold uppercase tracking-wider rounded-lg transition-all duration-200 active:scale-95 shadow-md"
+                                  disabled={claimingRouteId === route.id || !route.routeObjAddress}
+                                  className={`w-full px-4 py-3 text-sm font-display font-bold uppercase tracking-wider rounded-lg transition-all duration-200 shadow-md flex items-center justify-center ${
+                                    claimingRouteId === route.id || !route.routeObjAddress
+                                      ? 'bg-forest-300 text-forest-600 cursor-not-allowed'
+                                      : 'bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 active:scale-95'
+                                  }`}
                                 >
-                                  Claim Payout
+                                  {claimingRouteId === route.id ? (
+                                    <>
+                                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-100 mr-2"></div>
+                                      Claiming...
+                                    </>
+                                  ) : (
+                                    'Claim Payout'
+                                  )}
                                 </button>
                               </div>
                             )}
