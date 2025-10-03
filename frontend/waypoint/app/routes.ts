@@ -5,6 +5,7 @@ export default [
   route("/app", "routes/app.tsx"),
   route("/app/analytics", "routes/analytics.tsx"),
   route("/app/docs", "routes/docs.tsx"),
+  route("/app/vision-roadmap", "routes/vision-roadmap.tsx"),
   route("/app/token", "routes/token-routes.tsx"),
   route("/create-route", "routes/create-route.tsx")
 ] satisfies RouteConfig;

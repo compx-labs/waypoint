@@ -89,8 +89,8 @@ export default function Footer() {
             </div>
             
             <p className="text-primary-200 leading-relaxed max-w-md">
-              Your route through stablecoin payments. Stream funds continuously across multiple blockchains 
-              with transparent schedules and adventure-inspired simplicity.
+              Your route through stablecoin payments. Route funds continuously across multiple blockchains 
+              with transparent schedules and simple, intuitive controls.
             </p>
 
             {/* Technology Badges */}
@@ -111,20 +111,17 @@ export default function Footer() {
               Navigation
             </h4>
             <div className="grid grid-cols-1 gap-3">
-              <a href="#" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
-                Streams
+              <a href="/token-routes" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
+                Routes
               </a>
-              <a href="#" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
-                Dashboard
+              <a href="/analytics" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
+                Analytics
               </a>
-              <a href="#" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
-                Adventure Guide
-              </a>
-              <a href="https://app.compx.io" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
-                CompX Website ↗
-              </a>
-              <a href="#" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
+              <a href="/docs" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
                 Documentation
+              </a>
+              <a href="https://app.compx.io" target="_blank" rel="noopener noreferrer" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
+                CompX Website ↗
               </a>
             </div>
           </div>

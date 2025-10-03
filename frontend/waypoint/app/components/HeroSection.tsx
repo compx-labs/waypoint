@@ -39,8 +39,8 @@ export default function HeroSection() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.9 }}
               >
-                Mark the route. Stream the journey. Discover the future of payments with Waypoint's 
-                adventure-inspired platform for continuous stablecoin streaming.
+                Set up scheduled routes. Track every payment. Route stablecoins continuously 
+                with a platform built for transparency and ease of use.
               </motion.p>
             </motion.div>
             
@@ -51,20 +51,22 @@ export default function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1.1 }}
             >
-              <motion.button 
-                className="bg-forest-500 hover:bg-forest-600 text-primary-100 font-display text-lg uppercase tracking-wider font-bold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl border-2 border-forest-600"
+              <motion.a
+                href="/app"
+                className="bg-forest-500 hover:bg-forest-600 text-primary-100 font-display text-lg uppercase tracking-wider font-bold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl border-2 border-forest-600 text-center"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
-                Start Your Journey
-              </motion.button>
-              <motion.button 
-                className="bg-transparent border-2 border-forest-500 text-forest-500 hover:bg-forest-500 hover:text-primary-100 font-display text-lg uppercase tracking-wider font-semibold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-md hover:shadow-lg"
+                Get Started
+              </motion.a>
+              <motion.a
+                href="/docs"
+                className="bg-transparent border-2 border-forest-500 text-forest-500 hover:bg-forest-500 hover:text-primary-100 font-display text-lg uppercase tracking-wider font-semibold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-md hover:shadow-lg text-center"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
                 Learn More
-              </motion.button>
+              </motion.a>
             </motion.div>
             
             {/* Key Features */}
@@ -74,7 +76,7 @@ export default function HeroSection() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 1.3, staggerChildren: 0.1 }}
             >
-              {["Continuous Streaming", "Multi-Chain Support", "Transparent schedules", "Easy to use"].map((feature, index) => (
+              {["Continuous Routing", "Multi-Chain Support", "Transparent schedules", "Easy to use"].map((feature, index) => (
                 <motion.div 
                   key={feature}
                   className="flex items-center space-x-3"

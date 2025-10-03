@@ -12,7 +12,7 @@ export default function WhyWaypoint() {
             </span>
           </h2>
           <p className="text-xl text-primary-100 max-w-3xl mx-auto">
-            Chart your course through the payment frontier with expedition-grade reliability
+            Simple, reliable, and transparent payment routing built for everyone
           </p>
         </div>
 
@@ -23,10 +23,10 @@ export default function WhyWaypoint() {
               <div className="w-12 h-12 bg-sunset-500 rounded-full flex items-center justify-center shadow-lg">
                 <Navigation className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-display text-xl text-primary-50 uppercase">Easy Navigation</h3>
+              <h3 className="font-display text-xl text-primary-50 uppercase">Easy to Use</h3>
             </div>
             <p className="text-primary-100 leading-relaxed text-sm">
-              No complex terrain to traverse. Chart your payment route with simple waypoints and watch your funds flow downstream effortlessly.
+              Set up payment routes in minutes. Simple scheduling with clear visibility into every route.
             </p>
           </div>
 
@@ -36,10 +36,10 @@ export default function WhyWaypoint() {
               <div className="w-12 h-12 bg-coral-500 rounded-full flex items-center justify-center shadow-lg">
                 <Anchor className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-display text-xl text-primary-50 uppercase">Stable Basecamp</h3>
+              <h3 className="font-display text-xl text-primary-50 uppercase">Stablecoin Native</h3>
             </div>
             <p className="text-primary-100 leading-relaxed text-sm">
-              Anchor your expedition with reliable stablecoins. No market storms or volatility detours on your payment trail.
+              Built for reliable stablecoins. Predictable value with no volatility risk on your payments.
             </p>
           </div>
 
@@ -49,10 +49,10 @@ export default function WhyWaypoint() {
               <div className="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center shadow-lg">
                 <Route className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-display text-xl text-primary-50 uppercase">Custom Pathways</h3>
+              <h3 className="font-display text-xl text-primary-50 uppercase">Flexible Scheduling</h3>
             </div>
             <p className="text-primary-100 leading-relaxed text-sm">
-              Blaze your own trail with custom waypoints, scheduling stops, and conditional checkpoints along your payment journey.
+              Customize payment schedules to fit your needs. Daily, weekly, monthly, or custom frequencies.
             </p>
           </div>
 
@@ -62,10 +62,10 @@ export default function WhyWaypoint() {
               <div className="w-12 h-12 bg-primary-400 rounded-full flex items-center justify-center shadow-lg">
                 <Award className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-display text-xl text-primary-50 uppercase">Trail Deeds</h3>
+              <h3 className="font-display text-xl text-primary-50 uppercase">NFT Ownership</h3>
             </div>
             <p className="text-primary-100 leading-relaxed text-sm">
-              Own your routes with NFT-backed trail deeds that can be traded, transferred, or pledged. True ownership of your payment pathways.
+              Own your payment routes as NFTs that can be traded, transferred, or used as collateral. True ownership of your routes.
             </p>
           </div>
 
@@ -75,10 +75,10 @@ export default function WhyWaypoint() {
               <div className="w-12 h-12 bg-forest-400 rounded-full flex items-center justify-center shadow-lg">
                 <Eye className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-display text-xl text-primary-50 uppercase">Clear Trail Markers</h3>
+              <h3 className="font-display text-xl text-primary-50 uppercase">Full Transparency</h3>
             </div>
             <p className="text-primary-100 leading-relaxed text-sm">
-              Follow every step of your expedition with on-chain breadcrumbs. Navigate with complete visibility and unwavering trust.
+              Every transaction is recorded on-chain. Complete visibility and verifiable trust.
             </p>
           </div>
         </div>

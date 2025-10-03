@@ -3,21 +3,21 @@ export default function CallToAction() {
     <section className="py-20 bg-gradient-to-br from-primary-100 to-sunset-100">
       <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
         <h2 className="font-display text-4xl lg:text-6xl text-forest-700 leading-tight uppercase mb-8">
-          Start your first stream in
+          Start your first route in
           <span className="text-sunset-500 block">just a few clicks</span>
         </h2>
         <p className="text-xl text-forest-600 leading-relaxed mb-12 max-w-3xl mx-auto">
-          Join the adventure and discover how smooth payments can be. No complex
-          setup, no hidden fees, just pure streaming simplicity.
+          Experience how smooth continuous payments can be. No complex
+          setup, no hidden fees, just simple routing.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-6 justify-center">
-          <button className="bg-forest-500 hover:bg-forest-600 text-primary-100 font-display text-lg uppercase tracking-wider font-bold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl border-2 border-forest-600">
+          <a href="/app" className="bg-forest-500 hover:bg-forest-600 text-primary-100 font-display text-lg uppercase tracking-wider font-bold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl border-2 border-forest-600">
             Launch App
-          </button>
-          <button className="bg-transparent border-2 border-forest-500 text-forest-500 hover:bg-forest-500 hover:text-primary-100 font-display text-lg uppercase tracking-wider font-semibold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-md hover:shadow-lg">
+          </a>
+          <a href="/docs" className="bg-transparent border-2 border-forest-500 text-forest-500 hover:bg-forest-500 hover:text-primary-100 font-display text-lg uppercase tracking-wider font-semibold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-md hover:shadow-lg">
           Read the Docs
-          </button>
+          </a>
         </div>
 
         {/* <div className="mt-16 flex justify-center gap-8 text-forest-500">

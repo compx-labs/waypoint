@@ -9,13 +9,13 @@ export default function Vision() {
       
       <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-8 text-center">
         <h2 className="font-display text-5xl lg:text-7xl text-primary-50 leading-tight uppercase mb-8">
-          Every Financial Trail Should Lead to 
+          Payments Should Be 
           <span className="text-sunset-400 block">
-            Adventure
+            Simple
           </span>
         </h2>
         <p className="text-2xl lg:text-3xl text-primary-100 leading-relaxed mb-12 max-w-4xl mx-auto">
-          No more treacherous terrain or confusing detours. Just clear trail markers, reliable basecamp, and expedition-ready streams that flow where you need them to go.
+          No complex interfaces or confusing steps. Just clear schedules, reliable routes, and complete control over your payments.
         </p>
       </div>
     </section>

@@ -17,7 +17,7 @@ export default function WhoIsItFor() {
             </span>
           </h2>
           <p className="text-xl text-forest-600 max-w-3xl mx-auto">
-            Waypoint serves adventurers across the payment landscape
+            Waypoint is built for anyone who needs reliable, continuous payments
           </p>
         </div>
 
@@ -29,7 +29,7 @@ export default function WhoIsItFor() {
             </div>
             <h3 className="font-display text-2xl text-forest-700 uppercase mb-4">Employers / Teams</h3>
             <p className="text-forest-600 leading-relaxed">
-              Streamline payroll with continuous salary streams. Set waypoints for bonuses and milestone payments.
+              Streamline payroll with continuous salary routes. Automate bonuses and milestone-based payments.
             </p>
           </div>
 
@@ -40,7 +40,7 @@ export default function WhoIsItFor() {
             </div>
             <h3 className="font-display text-2xl text-forest-700 uppercase mb-4">Projects / DAOs</h3>
             <p className="text-forest-600 leading-relaxed">
-              Distribute treasury funds continuously. Create transparent funding streams for contributors and grants.
+              Distribute treasury funds continuously. Create transparent funding routes for contributors and grants.
             </p>
           </div>
 
@@ -62,7 +62,7 @@ export default function WhoIsItFor() {
             </div>
             <h3 className="font-display text-2xl text-forest-700 uppercase mb-4">Everyday Users</h3>
             <p className="text-forest-600 leading-relaxed">
-              Split bills, send allowances, or make regular payments. Simple streaming for everyday financial needs.
+              Split bills, send allowances, or make regular payments. Simple routing for everyday financial needs.
             </p>
           </div>
         </div>

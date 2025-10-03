@@ -13,16 +13,16 @@ import Footer from "../components/Footer";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Waypoint - Your Payments, Your Expedition" },
+    { title: "Waypoint - Simple Continuous Payments" },
     {
       name: "description",
       content:
-        "Mark the route. Stream the journey. Discover the future of payments with Waypoint's adventure-inspired platform.",
+        "Schedule payment routes. Track every route. Waypoint makes continuous stablecoin payments simple and transparent.",
     },
     {
       name: "keywords",
       content:
-        "stablecoin, streaming, payments, DeFi, blockchain, continuous payments, expedition",
+        "stablecoin, routing, payments, DeFi, blockchain, continuous payments, payment routes",
     },
   ];
 }

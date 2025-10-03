@@ -14,23 +14,20 @@ export default function WhatIsWaypoint() {
               <div className="space-y-6 text-lg text-forest-600 leading-relaxed">
                 <p>
                   <strong className="text-forest-700">
-                    Waypoint revolutionizes payments
+                    Waypoint simplifies continuous payments
                   </strong>{" "}
-                  by turning continuous token streaming into an intuitive
-                  journey. Instead of complex DeFi protocols, think of payment
-                  routes with clear milestones.
+                  by routing tokens automatically on your schedule. Set up payment
+                  routes with clear schedules and track progress in real-time.
                 </p>
 
                 <p>
-                  Set up streams that flow automatically from sender to
-                  receiver, with waypoints marking important milestones along
-                  the way. 
+                  Create routes that flow automatically from sender to
+                  receiver, with complete visibility at every step. 
                 </p>
 
                 <p className="text-sunset-600 font-medium italic">
-                  "Think of it like markers along your route marking milestones along the way –
-                  you always know where your payments are and where they're
-                  headed."
+                  "You always know exactly where your payments are and 
+                  when they'll arrive."
                 </p>
 
                 <div className="grid grid-cols-2 gap-4 pt-4">
@@ -74,10 +71,10 @@ export default function WhatIsWaypoint() {
                 {/* Route Header */}
                 <div className="text-center border-b-2 border-dashed border-sunset-400/50 pb-4">
                   <h3 className="font-display text-2xl text-sunset-700 uppercase tracking-wide">
-                    Live Route Tracking
+                    Live Payment Tracking
                   </h3>
                   <p className="text-sm text-forest-600 mt-1 font-semibold">
-                    Monthly Salary Stream
+                    Monthly Salary Route
                   </p>
                 </div>
 
@@ -142,7 +139,7 @@ export default function WhatIsWaypoint() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-primary-50/80 rounded-lg p-4 border border-forest-300">
                     <div className="text-xs text-forest-600 uppercase tracking-wide">
-                      Distance Covered
+                      Amount Routed
                     </div>
                     <div className="text-xl font-bold text-forest-700">$2,300</div>
                     <div className="text-xs text-coral-600">of $5,000 total</div>
@@ -150,10 +147,10 @@ export default function WhatIsWaypoint() {
 
                   <div className="bg-primary-50/80 rounded-lg p-4 border border-forest-300">
                     <div className="text-xs text-forest-600 uppercase tracking-wide">
-                      Stream Rate
+                      Routing Rate
                     </div>
                     <div className="text-xl font-bold text-forest-700">$167/day</div>
-                    <div className="text-xs text-coral-600">Next checkpoint: 3 days</div>
+                    <div className="text-xs text-coral-600">Next payment: 3 days</div>
                   </div>
                 </div>
 
@@ -164,7 +161,7 @@ export default function WhatIsWaypoint() {
                       Route Status
                     </span>
                     <span className="text-xs bg-coral-500 text-primary-50 px-3 py-1 rounded-full font-bold">
-                      TRACKING
+                      ACTIVE
                     </span>
                   </div>
 

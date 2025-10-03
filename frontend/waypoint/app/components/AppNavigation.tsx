@@ -102,6 +102,12 @@ export default function AppNavigation() {
                 Analytics
               </a>
               <a
+                href="/app/vision-roadmap"
+                className={getLinkClasses("/app/vision-roadmap")}
+              >
+                Vision & Roadmap
+              </a>
+              <a
                 href="/app/docs"
                 className={getLinkClasses("/app/docs")}
               >
@@ -164,6 +170,13 @@ export default function AppNavigation() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Analytics
+              </a>
+              <a
+                href="/app/vision-roadmap"
+                className={getMobileLinkClasses("/app/vision-roadmap")}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Vision & Roadmap
               </a>
               <a
                 href="/app/docs"
