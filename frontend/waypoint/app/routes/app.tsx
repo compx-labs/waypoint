@@ -185,9 +185,48 @@ export default function AppDashboard() {
 
         {/* Loading State */}
         {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-forest-600"></div>
-            <p className="mt-4 text-forest-700 font-display">Loading your routes...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12 md:mb-12 pb-24 md:pb-0">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="bg-gradient-to-br from-forest-800 to-forest-900 border border-forest-600 rounded-xl p-6 shadow-lg"
+              >
+                {/* Token Header Skeleton */}
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-forest-700 animate-pulse" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-forest-700 rounded animate-pulse w-20" />
+                  </div>
+                  <div className="w-5 h-5 bg-forest-700 rounded animate-pulse" />
+                </div>
+
+                {/* Streams Info Skeleton */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="h-3 bg-forest-700 rounded animate-pulse w-28" />
+                    <div className="h-3 bg-forest-700 rounded animate-pulse w-8" />
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div className="h-3 bg-forest-700 rounded animate-pulse w-20" />
+                    <div className="h-3 bg-forest-700 rounded animate-pulse w-16" />
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div className="h-3 bg-forest-700 rounded animate-pulse w-20" />
+                    <div className="h-3 bg-forest-700 rounded animate-pulse w-16" />
+                  </div>
+
+                  {/* Completed Routes Section Skeleton */}
+                  <div className="mt-4 pt-4 border-t border-forest-700">
+                    <div className="flex justify-between items-center">
+                      <div className="h-3 bg-forest-700 rounded animate-pulse w-24" />
+                      <div className="h-3 bg-forest-700 rounded animate-pulse w-16" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
