@@ -5,7 +5,7 @@ import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
 import RouteCreationModal from "../components/RouteCreationModal";
-import RoutesList, { type TokenStream } from "../components/RoutesList";
+import RoutesList, { type TokenRoute } from "../components/RoutesList";
 import { useToast } from "../contexts/ToastContext";
 import { useRoutes } from "../hooks/useQueries";
 import type { RouteData } from "../lib/api";
@@ -55,8 +55,47 @@ export default function AppDashboard() {
     refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 
-  // Calculate token streams based on wallet address and routes
-  const tokenStreams = useMemo(() => {
+  // Helper function to check if a route is completed based on timing
+  const isRouteCompleted = (route: RouteData): boolean => {
+    // If explicitly marked as completed or cancelled, it's done
+    if (route.status === 'completed' || route.status === 'cancelled') {
+      return true;
+    }
+    
+    // Calculate if the route has finished based on timing
+    const startDate = new Date(route.start_date);
+    const totalAmount = parseFloat(route.amount_token_units);
+    const amountPerPeriod = parseFloat(route.amount_per_period_token_units);
+    const totalPeriods = Math.ceil(totalAmount / amountPerPeriod);
+    
+    // Calculate end date based on payment frequency
+    const endDate = new Date(startDate);
+    const frequencyNumber = route.payment_frequency_number;
+    
+    switch (route.payment_frequency_unit) {
+      case 'minutes':
+        endDate.setMinutes(endDate.getMinutes() + (totalPeriods * frequencyNumber));
+        break;
+      case 'hours':
+        endDate.setHours(endDate.getHours() + (totalPeriods * frequencyNumber));
+        break;
+      case 'days':
+        endDate.setDate(endDate.getDate() + (totalPeriods * frequencyNumber));
+        break;
+      case 'weeks':
+        endDate.setDate(endDate.getDate() + (totalPeriods * frequencyNumber * 7));
+        break;
+      case 'months':
+        endDate.setMonth(endDate.getMonth() + (totalPeriods * frequencyNumber));
+        break;
+    }
+    
+    // Route is completed if current time is past the end date
+    return new Date() > endDate;
+  };
+
+  // Calculate token routes based on wallet address and routes
+  const tokenRoutes = useMemo(() => {
     if (!account?.address || !allRoutes) return [];
     
     const walletAddress = account.address.toStringLong();
@@ -86,7 +125,8 @@ export default function AppDashboard() {
       
       const tokenData = tokenMap.get(route.token_id)!;
       
-      if (route.status === 'completed') {
+      // Check if route is completed based on timing or status
+      if (isRouteCompleted(route)) {
         tokenData.completed.push(route);
       } else if (route.recipient === walletAddress) {
         tokenData.incoming.push(route);
@@ -95,8 +135,8 @@ export default function AppDashboard() {
       }
     });
     
-    // Convert to TokenStream format
-    const streams: TokenStream[] = Array.from(tokenMap.entries()).map(([tokenId, data]) => {
+    // Convert to TokenRoute format
+    const routes: TokenRoute[] = Array.from(tokenMap.entries()).map(([tokenId, data]) => {
       const calculateTotal = (routes: RouteData[]) => {
         const total = routes.reduce((sum, route) => {
           return sum + parseFloat(route.amount_token_units);
@@ -118,7 +158,7 @@ export default function AppDashboard() {
         color: getTokenColor(data.token.symbol),
         logoSrc: data.token.logo_url || '/logo.svg',
         tvl: formatCurrency(tvl),
-        totalStreams: data.incoming.length + data.outgoing.length + data.completed.length,
+        totalRoutes: data.incoming.length + data.outgoing.length + data.completed.length,
         incoming: {
           count: data.incoming.length,
           value: formatCurrency(incomingTotal),
@@ -134,7 +174,7 @@ export default function AppDashboard() {
       };
     });
     
-    return streams;
+    return routes;
   }, [account?.address, allRoutes]);
 
   const error = fetchError ? (fetchError instanceof Error ? fetchError.message : 'Failed to fetch routes') : null;
@@ -257,7 +297,7 @@ export default function AppDashboard() {
         )}
 
         {/* Empty State - No Routes */}
-        {account && !loading && !error && tokenStreams.length === 0 && (
+        {account && !loading && !error && tokenRoutes.length === 0 && (
           <div className="bg-gradient-to-br from-forest-100 to-primary-100 border-2 border-forest-400 rounded-lg p-8 text-center">
             <svg className="w-16 h-16 mx-auto mb-4 text-forest-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -266,7 +306,7 @@ export default function AppDashboard() {
               No Routes Yet
             </h3>
             <p className="text-forest-700 font-display mb-4">
-              Create your first route to start streaming tokens
+              Create your first route to start routing tokens
             </p>
             <button 
               onClick={handleCreateRoute}
@@ -277,9 +317,9 @@ export default function AppDashboard() {
           </div>
         )}
 
-        {/* Token Stream Cards */}
-        {!loading && !error && tokenStreams.length > 0 && (
-          <RoutesList tokenStreams={tokenStreams} />
+        {/* Token Route Cards */}
+        {!loading && !error && tokenRoutes.length > 0 && (
+          <RoutesList tokenRoutes={tokenRoutes} />
         )}
       </div>
       

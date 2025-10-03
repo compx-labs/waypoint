@@ -128,7 +128,7 @@ module waypoint::linear_stream_fa {
             creator, fa, amount
         );
         // deposit into route-owned secondary store
-        FA::deposit(store, fa_chunk);
+        dispatchable_fungible_asset::deposit(store, fa_chunk);
 
         let fee_chunk: FungibleAsset = primary_fungible_store::withdraw(
             creator, fa, fee_amount

@@ -50,6 +50,14 @@ function shortenAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+// Helper function to display recipient (shows "You" if it's the current user)
+function displayRecipient(address: string, currentUserAddress?: string): string {
+  if (currentUserAddress && address === currentUserAddress) {
+    return 'You';
+  }
+  return shortenAddress(address);
+}
+
 // Helper function to format payout period
 function formatPayoutPeriod(unit: string, number: number): string {
   const unitMap: Record<string, string> = {
@@ -361,9 +369,113 @@ export default function TokenRoutes() {
       <div className="min-h-screen bg-primary-100">
         <AppNavigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-forest-600"></div>
-            <p className="mt-4 text-forest-700 font-display">Loading routes...</p>
+          {/* Header Skeleton */}
+          <div className="mb-8">
+            {/* Mobile Header Skeleton */}
+            <div className="sm:hidden text-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-forest-200 animate-pulse mx-auto mb-4" />
+              <div className="h-8 bg-forest-200 rounded animate-pulse w-48 mx-auto mb-4" />
+              <div className="h-4 bg-forest-200 rounded animate-pulse w-64 mx-auto mb-2" />
+              <div className="h-4 bg-forest-200 rounded animate-pulse w-56 mx-auto" />
+            </div>
+
+            {/* Desktop Header Skeleton */}
+            <div className="hidden sm:flex sm:items-center sm:space-x-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-forest-200 animate-pulse flex-shrink-0" />
+              <div className="flex-1">
+                <div className="h-10 bg-forest-200 rounded animate-pulse w-64 mb-2" />
+                <div className="h-5 bg-forest-200 rounded animate-pulse w-96" />
+              </div>
+            </div>
+          </div>
+
+          {/* Table Skeleton */}
+          <div className="bg-white rounded-xl shadow-lg border border-forest-200 overflow-hidden">
+            {/* Desktop Table Skeleton */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-forest-50 border-b border-forest-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left">
+                      <div className="h-4 bg-forest-200 rounded animate-pulse w-20" />
+                    </th>
+                    <th className="px-6 py-4 text-left">
+                      <div className="h-4 bg-forest-200 rounded animate-pulse w-16" />
+                    </th>
+                    <th className="px-6 py-4 text-left">
+                      <div className="h-4 bg-forest-200 rounded animate-pulse w-20" />
+                    </th>
+                    <th className="px-6 py-4 text-left">
+                      <div className="h-4 bg-forest-200 rounded animate-pulse w-24" />
+                    </th>
+                    <th className="px-6 py-4 text-left">
+                      <div className="h-4 bg-forest-200 rounded animate-pulse w-24" />
+                    </th>
+                    <th className="px-6 py-4 text-center">
+                      <div className="h-4 bg-forest-200 rounded animate-pulse w-16 mx-auto" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-forest-100">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-forest-10'}>
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-forest-200 rounded animate-pulse w-28" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-forest-200 rounded animate-pulse w-24" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-forest-200 rounded animate-pulse w-20" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-6 bg-forest-200 rounded-full animate-pulse w-20" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-forest-200 rounded animate-pulse w-16" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-8 bg-forest-200 rounded-lg animate-pulse w-24 mx-auto" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards Skeleton */}
+            <div className="md:hidden">
+              {[1, 2, 3].map((i) => (
+                <div 
+                  key={i} 
+                  className={`border-b border-forest-100 last:border-b-0 p-4 ${
+                    i % 2 === 0 ? 'bg-white' : 'bg-forest-10'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <div className="h-3 bg-forest-200 rounded animate-pulse w-16 mb-2" />
+                      <div className="h-4 bg-forest-200 rounded animate-pulse w-32" />
+                    </div>
+                    <div className="flex space-x-4">
+                      <div className="flex-1">
+                        <div className="h-3 bg-forest-200 rounded animate-pulse w-12 mb-2" />
+                        <div className="h-4 bg-forest-200 rounded animate-pulse w-20" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="h-3 bg-forest-200 rounded animate-pulse w-16 mb-2" />
+                        <div className="h-4 bg-forest-200 rounded animate-pulse w-16" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Back Navigation Skeleton */}
+          <div className="mt-8">
+            <div className="h-5 bg-forest-200 rounded animate-pulse w-32" />
           </div>
         </div>
         <Footer />
@@ -509,7 +621,7 @@ export default function TokenRoutes() {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-mono text-forest-800" title={route.recipient}>
-                            {shortenAddress(route.recipient)}
+                            {displayRecipient(route.recipient, walletAddress)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -601,7 +713,7 @@ export default function TokenRoutes() {
                                 Recipient
                               </div>
                               <div className="text-sm font-mono text-forest-800 truncate" title={route.recipient}>
-                                {shortenAddress(route.recipient)}
+                                {displayRecipient(route.recipient, walletAddress)}
                               </div>
                             </div>
                             

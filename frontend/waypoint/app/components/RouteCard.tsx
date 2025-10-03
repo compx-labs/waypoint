@@ -1,12 +1,12 @@
-import { type TokenStream } from "./RoutesList";
+import { type TokenRoute } from "./RoutesList";
 
 interface RouteCardProps {
-  stream: TokenStream;
+  route: TokenRoute;
 }
 
-export default function RouteCard({ stream }: RouteCardProps) {
+export default function RouteCard({ route }: RouteCardProps) {
   const handleCardClick = () => {
-    window.location.href = `/app/token?id=${stream.id}`;
+    window.location.href = `/app/token?id=${route.id}`;
   };
 
   return (
@@ -18,14 +18,14 @@ export default function RouteCard({ stream }: RouteCardProps) {
       <div className="flex items-center space-x-3 mb-4">
         <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white p-1">
           <img
-            src={stream.logoSrc}
-            alt={`${stream.name} logo`}
+            src={route.logoSrc}
+            alt={`${route.name} logo`}
             className="w-full h-full object-contain"
           />
         </div>
         <div className="flex-1">
           <h3 className="text-primary-100 font-display font-semibold text-sm uppercase tracking-wide truncate">
-            {stream.name}
+            {route.name}
           </h3>
         </div>
         <svg
@@ -43,14 +43,14 @@ export default function RouteCard({ stream }: RouteCardProps) {
 
       
 
-      {/* Streams Info */}
+      {/* Routes Info */}
       <div className="space-y-3">
         <div className="flex justify-between items-center">
           <span className="text-sm text-primary-400 font-display uppercase tracking-wide">
-            Total Streams:
+            Total Routes:
           </span>
           <span className="text-primary-100 font-semibold">
-            {stream.totalStreams}
+            {route.totalRoutes}
           </span>
         </div>
 
@@ -59,7 +59,7 @@ export default function RouteCard({ stream }: RouteCardProps) {
             Incoming:
           </span>
           <span className="text-green-400 font-semibold">
-            {stream.incoming.count} / {stream.incoming.value}
+            {route.incoming.count} / {route.incoming.value}
           </span>
         </div>
 
@@ -68,7 +68,7 @@ export default function RouteCard({ stream }: RouteCardProps) {
             Outgoing:
           </span>
           <span className="text-sunset-400 font-semibold">
-            {stream.outgoing.count} / {stream.outgoing.value}
+            {route.outgoing.count} / {route.outgoing.value}
           </span>
         </div>
 
@@ -79,7 +79,7 @@ export default function RouteCard({ stream }: RouteCardProps) {
               Completed:
             </span>
             <span className="text-primary-100 font-semibold">
-              {stream.completed.count} / {stream.completed.value}
+              {route.completed.count} / {route.completed.value}
             </span>
           </div>
         </div>
