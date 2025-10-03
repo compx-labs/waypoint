@@ -7,6 +7,7 @@ import Footer from "../components/Footer";
 import RouteBlockchainData from "../components/RouteBlockchainData";
 import { useRoutes, useToken } from "../hooks/useQueries";
 import type { RouteData } from "../lib/api";
+import { updateRouteStatus } from "../lib/api";
 import { useToast } from "../contexts/ToastContext";
 import { useAptos } from "../contexts/AptosContext";
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
@@ -91,6 +92,7 @@ export default function TokenRoutes() {
   const toast = useToast();
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [claimingRouteId, setClaimingRouteId] = useState<number | null>(null);
+  const [routeCompletionStatus, setRouteCompletionStatus] = useState<Map<number, boolean>>(new Map());
   
   // Parse tokenId to number
   const tokenIdNum = tokenId ? parseInt(tokenId) : null;
@@ -156,7 +158,7 @@ export default function TokenRoutes() {
         id: route.id,
         recipient: route.recipient,
         sender: route.sender,
-        total: formatCurrency(totalAmount),
+        total: `${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} ${token.symbol}`,
         remaining: route.status === 'completed' ? '$0.00' : formatCurrency(remaining),
         payoutPeriod: formatPayoutPeriod(route.payment_frequency_unit, route.payment_frequency_number),
         payoutAmount: formatCurrency(payoutAmount),
@@ -190,6 +192,14 @@ export default function TokenRoutes() {
       newExpanded.add(routeId);
     }
     setExpandedRows(newExpanded);
+  };
+
+  const handleCompletionStatusChange = (routeId: number, isComplete: boolean) => {
+    setRouteCompletionStatus(prev => {
+      const newMap = new Map(prev);
+      newMap.set(routeId, isComplete);
+      return newMap;
+    });
   };
 
   const handleClaim = async (routeId: number) => {
@@ -275,6 +285,34 @@ export default function TokenRoutes() {
 
       // Wait for transaction confirmation
       await aptos.waitForTransaction({ transactionHash: response.hash });
+
+      // Check if route is now complete on blockchain
+      try {
+        const viewPayload = {
+          function: `${MODULE_ADDRESS}::${MODULE_NAME}::get_route_core` as `${string}::${string}::${string}`,
+          typeArguments: [],
+          functionArguments: [route.route_obj_address],
+        };
+        const routeCoreData = await aptos.view({ payload: viewPayload });
+        
+        // Check if all tokens have been claimed
+        const depositAmount = BigInt(String(routeCoreData[7])); // deposit_amount
+        const claimedAmount = BigInt(String(routeCoreData[8])); // claimed_amount
+        
+        if (claimedAmount >= depositAmount) {
+          // Route is complete, update database
+          try {
+            await updateRouteStatus(routeId, 'completed');
+            console.log(`Route ${routeId} marked as completed in database`);
+          } catch (dbError) {
+            console.error('Failed to update route status in database:', dbError);
+            // Don't fail the claim if DB update fails
+          }
+        }
+      } catch (checkError) {
+        console.error('Failed to check route completion status:', checkError);
+        // Don't fail the claim if check fails
+      }
 
       // Success!
       toast.update(loadingToastId, {
@@ -486,6 +524,7 @@ export default function TokenRoutes() {
                                 routeObjAddress={route.routeObjAddress}
                                 decimals={route.decimals}
                                 symbol={route.tokenSymbol}
+                                onCompletionStatusChange={(isComplete) => handleCompletionStatusChange(route.id, isComplete)}
                               />
                             ) : (
                               route.remaining
@@ -503,7 +542,7 @@ export default function TokenRoutes() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                          {route.isIncoming ? (
+                          {route.isIncoming && !routeCompletionStatus.get(route.id) ? (
                             <button
                               onClick={() => handleClaim(route.id)}
                               disabled={claimingRouteId === route.id || !route.routeObjAddress}
@@ -522,6 +561,10 @@ export default function TokenRoutes() {
                                 'Claim Payout'
                               )}
                             </button>
+                          ) : routeCompletionStatus.get(route.id) ? (
+                            <span className="text-xs text-green-600 font-display uppercase font-semibold">
+                              ✓ Completed
+                            </span>
                           ) : (
                             <span className="text-xs text-forest-400 font-display uppercase">
                               —
@@ -582,6 +625,7 @@ export default function TokenRoutes() {
                                       routeObjAddress={route.routeObjAddress}
                                       decimals={route.decimals}
                                       symbol={route.tokenSymbol}
+                                      onCompletionStatusChange={(isComplete) => handleCompletionStatusChange(route.id, isComplete)}
                                     />
                                   ) : (
                                     route.remaining
@@ -629,7 +673,7 @@ export default function TokenRoutes() {
                             </div>
                             
                             {/* Claim Button for Mobile */}
-                            {route.isIncoming && (
+                            {route.isIncoming && !routeCompletionStatus.get(route.id) && (
                               <div>
                                 <div className="text-xs font-display font-semibold text-forest-600 uppercase tracking-wide mb-2">
                                   Claim Payout
@@ -655,6 +699,18 @@ export default function TokenRoutes() {
                                     'Claim Payout'
                                   )}
                                 </button>
+                              </div>
+                            )}
+                            
+                            {/* Completed Status for Mobile */}
+                            {routeCompletionStatus.get(route.id) && (
+                              <div>
+                                <div className="text-xs font-display font-semibold text-forest-600 uppercase tracking-wide mb-2">
+                                  Status
+                                </div>
+                                <div className="text-center py-2 text-sm text-green-600 font-display uppercase font-semibold">
+                                  ✓ Completed
+                                </div>
                               </div>
                             )}
                           </div>

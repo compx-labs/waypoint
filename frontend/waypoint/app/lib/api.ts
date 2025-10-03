@@ -154,6 +154,23 @@ export async function createRoute(payload: CreateRoutePayload): Promise<RouteDat
   return response.json();
 }
 
+export async function updateRouteStatus(routeId: number, status: 'active' | 'completed' | 'cancelled'): Promise<RouteData> {
+  const response = await fetch(`${API_BASE_URL}/api/routes/${routeId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ status }),
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Failed to update route status' }));
+    throw new Error(errorData.error || 'Failed to update route status');
+  }
+  
+  return response.json();
+}
+
 // Tokens
 export async function fetchTokens(): Promise<Token[]> {
   const response = await fetch(`${API_BASE_URL}/api/tokens`);

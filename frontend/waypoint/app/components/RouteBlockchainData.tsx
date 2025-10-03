@@ -6,6 +6,7 @@ interface RouteBlockchainDataProps {
   decimals: number;
   symbol: string;
   onDataLoaded?: (data: RouteCore | null) => void;
+  onCompletionStatusChange?: (isComplete: boolean) => void;
 }
 
 /**
@@ -16,6 +17,7 @@ export default function RouteBlockchainData({
   decimals,
   symbol,
   onDataLoaded,
+  onCompletionStatusChange,
 }: RouteBlockchainDataProps) {
   const { getRouteCore } = useAptos();
   const [routeData, setRouteData] = useState<RouteCore | null>(null);
@@ -36,6 +38,14 @@ export default function RouteBlockchainData({
         setRouteData(data);
         if (onDataLoaded) {
           onDataLoaded(data);
+        }
+        
+        // Check if route is complete (all tokens claimed)
+        if (data && onCompletionStatusChange) {
+          const depositAmount = BigInt(data.deposit_amount);
+          const claimedAmount = BigInt(data.claimed_amount);
+          const isComplete = claimedAmount >= depositAmount;
+          onCompletionStatusChange(isComplete);
         }
       } catch (err) {
         console.error("Error fetching route blockchain data:", err);
