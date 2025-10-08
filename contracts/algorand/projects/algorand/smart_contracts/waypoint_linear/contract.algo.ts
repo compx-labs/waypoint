@@ -1,47 +1,82 @@
-import { Account, contract, Contract, GlobalState, op } from "@algorandfoundation/algorand-typescript";
+import { Account, assert, assertMatch, Asset, BoxMap, contract, Contract, GlobalState, gtxn, op } from "@algorandfoundation/algorand-typescript";
 import { abimethod, Address, UintN64 } from "@algorandfoundation/algorand-typescript/arc4";
+import { Route } from "./config.algo";
 
 export const CONTRACT_VERSION = 1000;
 
 @contract({ name: "waypoint-linear", avmVersion: 11 })
 export class WaypointLinear extends Contract {
-  tokenId = GlobalState<UintN64>();
-  depositor = GlobalState<Account>();
-  beneficiary = GlobalState<Account>();
-  start_ts = GlobalState<UintN64>();
-  period_secs = GlobalState<UintN64>();
-  payout_amount = GlobalState<UintN64>();
-  max_periods = GlobalState<UintN64>();
-  deposit_amount = GlobalState<UintN64>();
-  claimed_amount = GlobalState<UintN64>();
-  treasury = GlobalState<Account>();
-  fee_bps = GlobalState<UintN64>();
-  flux_oracle_app_id = GlobalState<UintN64>();
-  contract_version = GlobalState<UintN64>();
+  admin = GlobalState<Account>();
+  fluxOracleAppId = GlobalState<UintN64>();
+  contractVersion = GlobalState<UintN64>();
+  token_routes = BoxMap<Address, Route>({ keyPrefix: "tr" });
+  feeBps = GlobalState<UintN64>();
+  treasury = GlobalState<Address>();
 
   @abimethod({ allowActions: "NoOp", onCreate: "require" })
-  public createApplication(
-    beneficiary: Account,
-    start_ts: UintN64,
-    period_secs: UintN64,
-    payout_amount: UintN64,
-    max_periods: UintN64,
-    deposit_amount: UintN64,
-    treasury: Account,
-    fee_bps: UintN64,
-    flux_oracle_app_id: UintN64,
-  ): void {
-    this.depositor.value = op.Txn.sender;
-    this.beneficiary.value = beneficiary;
-    this.start_ts.value = start_ts;
-    this.period_secs.value = period_secs;
-    this.payout_amount.value = payout_amount;
-    this.max_periods.value = max_periods;
-    this.deposit_amount.value = deposit_amount;
-    this.claimed_amount.value = new UintN64(0);
+  public createApplication(admin: Account, fluxOracleAppId: UintN64, treasury: Address, feeBps: UintN64): void {
+    this.admin.value = admin.authAddress;
+    this.fluxOracleAppId.value = fluxOracleAppId;
+    this.feeBps.value = feeBps;
     this.treasury.value = treasury;
-    this.fee_bps.value = fee_bps;
-    this.flux_oracle_app_id.value = flux_oracle_app_id;
-    this.contract_version.value = new UintN64(CONTRACT_VERSION);
+    this.contractVersion.value = new UintN64(CONTRACT_VERSION);
+  }
+
+  @abimethod({ allowActions: "NoOp" })
+  public setFluxOracleAppId(fluxOracleAppId: UintN64): void {
+    this.fluxOracleAppId.value = fluxOracleAppId;
+  }
+  @abimethod({ allowActions: "NoOp" })
+  public setContractVersion(contractVersion: UintN64): void {
+    this.contractVersion.value = contractVersion;
+  }
+  @abimethod({ allowActions: "NoOp" })
+  public setAdmin(admin: Account): void {
+    this.admin.value = admin;
+  }
+
+  @abimethod({ allowActions: "NoOp" })
+  public createRoute(
+    beneficiary: Account,
+    startTs: UintN64,
+    periodSecs: UintN64,
+    payoutAmount: UintN64,
+    maxPeriods: UintN64,
+    depositAmount: UintN64,
+    escrow: Account,
+    tokenId: UintN64,
+    tokenTransfer: gtxn.AssetTransferTxn,
+    mbrTxn: gtxn.PaymentTxn
+  ): void {
+
+    assert(periodSecs > new UintN64(0), "Period seconds must be greater than 0");
+    assert(maxPeriods > new UintN64(0), "Max periods must be greater than 0");
+    assert(payoutAmount > new UintN64(0), "Payout amount must be greater than 0");
+    assert(depositAmount > new UintN64(0), "Deposit amount must be greater than 0");
+    assert(tokenId > new UintN64(0), "Token ID must be greater than 0");
+
+    assertMatch(tokenTransfer, {
+      xferAsset: Asset(tokenId.native),
+      assetAmount: depositAmount.native,
+      assetReceiver: escrow
+    })
+    assertMatch(mbrTxn, {
+      amount: depositAmount.native,
+      receiver: escrow
+    })
+
+    const route = new Route({
+      beneficiary: new Address(beneficiary),
+      start_ts: startTs,
+      period_secs: periodSecs,
+      payout_amount: payoutAmount,
+      max_periods: maxPeriods,
+      deposit_amount: depositAmount,
+      claimed_amount: new UintN64(0),
+      depositor: new Address(op.Txn.sender),
+      escrow: new Address(escrow),
+      tokenId: tokenId,
+    });
+    this.token_routes(new Address(escrow)).value = route.copy();
   }
 }
