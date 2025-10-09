@@ -41,7 +41,14 @@ export class WaypointLinear extends Contract {
   claimed_amount = GlobalState<UintN64>();
 
   @abimethod({ allowActions: "NoOp", onCreate: "require" })
-  public createApplication(admin: Account, fluxOracleAppId: uint64, treasury: Account, feeBps: uint64, registryAppId: uint64, tokenId: uint64): void {
+  public createApplication(
+    admin: Account,
+    fluxOracleAppId: uint64,
+    treasury: Account,
+    feeBps: uint64,
+    registryAppId: uint64,
+    tokenId: uint64
+  ): void {
     this.admin.value = admin.authAddress;
     this.flux_oracle_app_id.value = new UintN64(fluxOracleAppId);
     this.fee_bps.value = new UintN64(feeBps);
@@ -75,6 +82,24 @@ export class WaypointLinear extends Contract {
   }
 
   @abimethod({ allowActions: "NoOp" })
+  public initApp(mbrTxn: gtxn.PaymentTxn): void {
+    assertMatch(mbrTxn, {
+      receiver: Global.currentApplicationAddress,
+      amount: 202_000,
+    });
+
+    itxn
+      .assetTransfer({
+        sender: Global.currentApplicationAddress,
+        assetReceiver: Global.currentApplicationAddress,
+        xferAsset: Asset(this.token_id.value.native),
+        assetAmount: 0,
+        fee: STANDARD_TXN_FEE,
+      })
+      .submit();
+  }
+
+  @abimethod({ allowActions: "NoOp" })
   public createRoute(
     beneficiary: Account,
     startTs: uint64,
@@ -83,8 +108,7 @@ export class WaypointLinear extends Contract {
     maxPeriods: uint64,
     depositAmount: uint64,
     tokenId: uint64,
-    tokenTransfer: gtxn.AssetTransferTxn,
-    mbrTxn: gtxn.PaymentTxn
+    tokenTransfer: gtxn.AssetTransferTxn
   ): void {
     assert(periodSecs > 0, "Period seconds must be greater than 0");
     assert(maxPeriods > 0, "Max periods must be greater than 0");
@@ -97,13 +121,9 @@ export class WaypointLinear extends Contract {
       assetAmount: depositAmount,
       assetReceiver: Global.currentApplicationAddress,
     });
-    assertMatch(mbrTxn, {
-      amount: depositAmount,
-      receiver: Global.currentApplicationAddress,
-    });
 
     this.token_id.value = new UintN64(tokenId);
-    this.start_ts.value = new UintN64(startTs);
+    this.start_ts.value = new UintN64(startTs); // DEBUG: subtract time to allow immediate claim
     this.period_secs.value = new UintN64(periodSecs);
     this.payout_amount.value = new UintN64(payoutAmount);
     this.max_periods.value = new UintN64(maxPeriods);
@@ -129,7 +149,7 @@ export class WaypointLinear extends Contract {
   }
 
   @abimethod({ allowActions: "NoOp" })
-  public claim(_tokenTransfer: gtxn.AssetTransferTxn, _mbrTxn: gtxn.PaymentTxn, _fluxAppCall: gtxn.ApplicationCallTxn): void {
+  public claim(): void {
     assert(op.Txn.sender === this.beneficiary.value.native, "Only beneficiary can claim");
     const tokenId = this.token_id.value.native;
     assert(tokenId > 0, "Route not initialized");
