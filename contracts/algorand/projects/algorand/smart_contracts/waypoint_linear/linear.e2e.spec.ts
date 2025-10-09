@@ -6,8 +6,12 @@ import { beforeAll, describe, expect, test } from "vitest";
 import { WaypointLinearClient } from "../artifacts/waypoint_linear/waypoint-linearClient";
 import { createToken } from "./token-create";
 import { deploy } from "./linear-deploy";
+import { deploy as deployRegistry } from "../waypoint_registry/registry-deploy";
+import { WaypointRegistryClient } from "../artifacts/waypoint_registry/waypoint-registryClient";
+import { exp } from "@algorandfoundation/algorand-typescript/op";
 
 let waypointLinearAppClient: WaypointLinearClient;
+let registryAppClient: WaypointRegistryClient;
 let managerAccount: Account;
 let beneficiaryAccount: Account;
 let stableAsset: bigint;
@@ -36,14 +40,32 @@ describe("orbital-lending Testing - deposit / borrow", async () => {
     managerAccount = await generateAccount({ initialFunds: microAlgo(90_000_000_000) });
     beneficiaryAccount = await generateAccount({ initialFunds: microAlgo(5_000_000) });
     stableAsset = await createToken(managerAccount, "XUSD", 6);
+
+    console.log('deploying registry App')
+    registryAppClient = await deployRegistry({
+      deployer: managerAccount,
+      tokenId: stableAsset,
+      fluxOracleAppId: 0n,
+      treasury: managerAccount,
+      feeBps: FEE_BPS,
+    });
+    console.log("registryAppClient.appAddress", registryAppClient.appAddress);
+    await localnet.algorand.send.payment({
+      sender: managerAccount.addr,
+      receiver: registryAppClient.appAddress,
+      amount: microAlgo(200_000),
+      suppressLog: true,
+    });
+    console.log('deploying linear App')
     waypointLinearAppClient = await deploy({
       deployer: managerAccount,
       tokenId: stableAsset,
       fluxOracleAppId: 1n,
       treasury: managerAccount,
       feeBps: FEE_BPS,
-      registryAppId: 2n,
+      registryAppId: registryAppClient.appId,
     });
+    console.log("waypointLinearAppClient.appAddress", waypointLinearAppClient.appAddress);
     await localnet.context.algorand.setSignerFromAccount(managerAccount);
     await localnet.context.algorand.setSignerFromAccount(beneficiaryAccount);
     console.log("waypointLinearAppClient", waypointLinearAppClient.appId);
@@ -62,9 +84,6 @@ describe("orbital-lending Testing - deposit / borrow", async () => {
     const globalState = await waypointLinearAppClient.state.global.getAll();
     console.log("globalState", globalState);
     expect(globalState.tokenId).toBe(stableAsset);
-    expect(globalState.feeBps).toBe(FEE_BPS);
-    expect(globalState.fluxOracleAppId).toBe(1n);
-    expect(globalState.registryAppId).toBe(2n);
     expect(globalState.contractVersion).toBe(1000n);
     expect(globalState.startTs).toBe(0n);
     expect(globalState.periodSecs).toBe(0n);
@@ -78,7 +97,7 @@ describe("orbital-lending Testing - deposit / borrow", async () => {
     const mbrTxn = waypointLinearAppClient.algorand.createTransaction.payment({
       sender: managerAccount.addr,
       receiver: waypointLinearAppClient.appAddress,
-      amount: microAlgo(202_000n),
+      amount: microAlgo(400_000n),
     });
     await waypointLinearAppClient.send.initApp({ args: { mbrTxn }, sender: managerAccount.addr });
     const balanceAfter = await getAssetBalance(waypointLinearAppClient.appAddress.toString());

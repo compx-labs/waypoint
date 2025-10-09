@@ -1,11 +1,14 @@
 import {
   Account,
+  Application,
+  arc4,
   assert,
   assertMatch,
   Asset,
   BoxMap,
   contract,
   Contract,
+  err,
   Global,
   GlobalState,
   gtxn,
@@ -13,22 +16,23 @@ import {
   op,
   uint64,
 } from "@algorandfoundation/algorand-typescript";
-import { abimethod, Address, UintN64 } from "@algorandfoundation/algorand-typescript/arc4";
+import { abiCall, abimethod, Address, UintN64 } from "@algorandfoundation/algorand-typescript/arc4";
 import { divw, mulw } from "@algorandfoundation/algorand-typescript/op";
-import { STANDARD_TXN_FEE } from "./config.algo";
+import { REGISTRY_FEE, STANDARD_TXN_FEE } from "./config.algo";
+import { WaypointRegistryParams } from "../waypoint_registry/config.algo";
 
 export const CONTRACT_VERSION: uint64 = 1000;
 
 @contract({ name: "waypoint-linear", avmVersion: 11 })
 export class WaypointLinear extends Contract {
   // Global params
-  admin = GlobalState<Account>();
-  flux_oracle_app_id = GlobalState<UintN64>();
+  flux_oracle_app = GlobalState<Application>();
   contract_version = GlobalState<UintN64>();
   fee_bps = GlobalState<UintN64>();
   treasury = GlobalState<Account>();
   registry_app_id = GlobalState<UintN64>();
   token_id = GlobalState<UintN64>();
+  nominated_asset_id = GlobalState<UintN64>();
 
   // route params
   depositor = GlobalState<Address>();
@@ -41,18 +45,7 @@ export class WaypointLinear extends Contract {
   claimed_amount = GlobalState<UintN64>();
 
   @abimethod({ allowActions: "NoOp", onCreate: "require" })
-  public createApplication(
-    admin: Account,
-    fluxOracleAppId: uint64,
-    treasury: Account,
-    feeBps: uint64,
-    registryAppId: uint64,
-    tokenId: uint64
-  ): void {
-    this.admin.value = admin.authAddress;
-    this.flux_oracle_app_id.value = new UintN64(fluxOracleAppId);
-    this.fee_bps.value = new UintN64(feeBps);
-    this.treasury.value = treasury;
+  public createApplication(registryAppId: uint64, tokenId: uint64): void {
     this.contract_version.value = new UintN64(CONTRACT_VERSION);
     this.registry_app_id.value = new UintN64(registryAppId);
     this.token_id.value = new UintN64(tokenId);
@@ -66,26 +59,10 @@ export class WaypointLinear extends Contract {
   }
 
   @abimethod({ allowActions: "NoOp" })
-  public setFluxOracleAppId(fluxOracleAppId: uint64): void {
-    assert(op.Txn.sender === this.admin.value, "Only admin can set flux oracle app id");
-    this.flux_oracle_app_id.value = new UintN64(fluxOracleAppId);
-  }
-  @abimethod({ allowActions: "NoOp" })
-  public setContractVersion(contractVersion: uint64): void {
-    assert(op.Txn.sender === this.admin.value, "Only admin can set contract version");
-    this.contract_version.value = new UintN64(contractVersion);
-  }
-  @abimethod({ allowActions: "NoOp" })
-  public setAdmin(admin: Account): void {
-    assert(op.Txn.sender === this.admin.value, "Only admin can set new admin");
-    this.admin.value = admin;
-  }
-
-  @abimethod({ allowActions: "NoOp" })
   public initApp(mbrTxn: gtxn.PaymentTxn): void {
     assertMatch(mbrTxn, {
       receiver: Global.currentApplicationAddress,
-      amount: 202_000,
+      amount: 400_000,
     });
 
     itxn
@@ -97,6 +74,7 @@ export class WaypointLinear extends Contract {
         fee: STANDARD_TXN_FEE,
       })
       .submit();
+    //
   }
 
   @abimethod({ allowActions: "NoOp" })
@@ -131,21 +109,94 @@ export class WaypointLinear extends Contract {
     this.beneficiary.value = new Address(beneficiary);
     this.depositor.value = new Address(op.Txn.sender);
 
-    //Register with registery app
+    // Register with registry
+    const registryApp: Application = Application(this.registry_app_id.value.native);
+    abiCall(WaypointRegistryStub.prototype.registerRoute, {
+      appId: registryApp.id,
+      args: [
+        Global.currentApplicationId.id,
+        this.token_id.value.native,
+        this.depositor.value.native,
+        this.beneficiary.value.native,
+        this.start_ts.value.native,
+        this.period_secs.value.native,
+        this.payout_amount.value.native,
+        this.max_periods.value.native,
+        this.deposit_amount.value.native,
+      ],
+      sender: Global.currentApplicationAddress,
+      fee: REGISTRY_FEE,
+      apps: [registryApp],
+      accounts: [op.Txn.sender, beneficiary],
+    });
+    const params = abiCall(WaypointRegistryStub.prototype.getParams, {
+      appId: registryApp.id,
+      sender: Global.currentApplicationAddress,
+      fee: STANDARD_TXN_FEE,
+      apps: [registryApp],
+      accounts: [op.Txn.sender, beneficiary],
+    }).returnValue;
 
-    // Handle fees
-    const [feeHi, feeLo] = mulw(depositAmount, this.fee_bps.value.native);
-    const fee: uint64 = divw(feeHi, feeLo, 10_000);
-    if (fee > 0) {
+    this.fee_bps.value = params.fee_bps;
+    this.treasury.value = params.treasury.native;
+    this.flux_oracle_app.value = Application(params.flux_oracle_app_id.native);
+    this.nominated_asset_id.value = params.nominated_asset_id;
+
+    //check flux tier for fee reductions
+    let userTier: UintN64 = new UintN64(0);
+    if (this.flux_oracle_app.value.id !== 0) {
+      userTier = abiCall(FluxGateStub.prototype.getUserTier, {
+        appId: this.flux_oracle_app.value.id,
+        args: [new arc4.Address(op.Txn.sender)],
+        sender: Global.currentApplicationAddress,
+        fee: STANDARD_TXN_FEE,
+        apps: [this.flux_oracle_app.value],
+        accounts: [op.Txn.sender],
+      }).returnValue;
+    }
+    // Fee tiers
+    const calculatedFee = this.computeFees(depositAmount, userTier.native, tokenId);
+    if (calculatedFee > 0) {
       itxn
         .assetTransfer({
           assetReceiver: this.treasury.value,
-          assetAmount: fee,
+          assetAmount: calculatedFee,
           xferAsset: Asset(tokenId),
           fee: STANDARD_TXN_FEE,
         })
         .submit();
     }
+  }
+
+  private computeFees(depositAmount: uint64, userTier: uint64, tokenId: uint64): uint64 {
+    const initialFee: uint64 = this.fee_bps.value.native;
+    let effectiveFeeBps: uint64 = initialFee;
+
+    if (tokenId === this.nominated_asset_id.value.native) {
+      if (userTier === 1) {
+        effectiveFeeBps = 20;
+      } else if (userTier === 2) {
+        effectiveFeeBps = 15;
+      } else if (userTier === 3) {
+        effectiveFeeBps = 12;
+      } else if (userTier >= 4) {
+        effectiveFeeBps = 10;
+      }
+    } else {
+      if (userTier === 1) {
+        effectiveFeeBps = 45;
+      } else if (userTier === 2) {
+        effectiveFeeBps = 38;
+      } else if (userTier === 3) {
+        effectiveFeeBps = 30;
+      } else if (userTier >= 4) {
+        effectiveFeeBps = 20;
+      }
+    }
+
+    const [feeHi, feeLo] = mulw(depositAmount, effectiveFeeBps);
+    const fee: uint64 = divw(feeHi, feeLo, 10_000);
+    return fee;
   }
 
   @abimethod({ allowActions: "NoOp" })
@@ -208,5 +259,37 @@ export class WaypointLinear extends Contract {
     }
 
     return 0;
+  }
+}
+
+export abstract class FluxGateStub extends Contract {
+  @abimethod({ allowActions: "NoOp" })
+  getUserTier(user: arc4.Address): UintN64 {
+    err("stub only");
+  }
+}
+
+export abstract class WaypointRegistryStub extends Contract {
+  @abimethod({ allowActions: "NoOp" })
+  updateRouteClaimedAmount(routeAppId: uint64, newClaimedAmount: uint64): void {
+    err("stub only");
+  }
+  @abimethod({ allowActions: "NoOp" })
+  public registerRoute(
+    routeAppId: uint64,
+    tokenId: uint64,
+    depositor: Account,
+    beneficiary: Account,
+    startTs: uint64,
+    periodSecs: uint64,
+    payoutAmount: uint64,
+    maxPeriods: uint64,
+    depositAmount: uint64
+  ): void {
+    err("stub only");
+  }
+  @abimethod({ allowActions: "NoOp" })
+  public getParams(): WaypointRegistryParams {
+    err("stub only");
   }
 }
