@@ -1009,9 +1009,6 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       if (!account?.address) return;
 
       try {
-        const { Aptos, AptosConfig, Network } = await import(
-          "@aptos-labs/ts-sdk"
-        );
         const aptosNetwork =
           network === "mainnet" ? Network.MAINNET : Network.DEVNET;
         const config = new AptosConfig({ network: aptosNetwork });

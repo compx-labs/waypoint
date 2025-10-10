@@ -1,22 +1,14 @@
-import { useNavigate, useSearchParams } from "react-router";
-import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import type { Route } from "./+types/create-route";
 import RouteCreationWizard, { type RouteFormData } from "../components/RouteCreationWizard";
 import { useToast } from "../contexts/ToastContext";
 import { useCreateRoute } from "../hooks/useQueries";
 
-export function meta({}: Route["MetaArgs"]) {
-  return [
-    { title: "Create Route - Waypoint" },
-    {
-      name: "description",
-      content: "Create a new token route with customizable schedules and recipients.",
-    },
-  ];
-}
-
 export default function CreateRoute() {
+  useEffect(() => {
+    document.title = "Create Route - Waypoint";
+  }, []);
   const navigate = useNavigate();
   const { account } = useWallet();
   const toast = useToast();

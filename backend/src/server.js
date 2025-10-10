@@ -1,13 +1,13 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
-import { sequelize } from './config/database.js';
-import tokenRoutes from './routes/tokens.js';
-import routeRoutes from './routes/routes.js';
-import analyticsRoutes from './routes/analytics.js';
-import addressBookRoutes from './routes/addressBook.js';
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import dotenv from "dotenv";
+import { sequelize } from "./config/database.js";
+import tokenRoutes from "./routes/tokens.js";
+import routeRoutes from "./routes/routes.js";
+import analyticsRoutes from "./routes/analytics.js";
+import addressBookRoutes from "./routes/addressBook.js";
 
 dotenv.config();
 
@@ -22,39 +22,44 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
 });
-app.use('/api/', limiter);
+app.use("/api/", limiter);
 
 // CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin:
+      process.env.FRONTEND_URL ||
+      "http://localhost:5174" ||
+      "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 // Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/tokens', tokenRoutes);
-app.use('/api/routes', routeRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/address-book', addressBookRoutes);
+app.use("/api/tokens", tokenRoutes);
+app.use("/api/routes", routeRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/address-book", addressBookRoutes);
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ error: "Route not found" });
 });
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error("Error:", err);
   res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
+    error: err.message || "Internal server error",
   });
 });
 
@@ -62,23 +67,22 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ Database connection established successfully');
-    
+    console.log("✅ Database connection established successfully");
+
     // Sync models (in development only)
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       await sequelize.sync({ alter: false });
-      console.log('✅ Database models synchronized');
+      console.log("✅ Database models synchronized");
     }
-    
+
     app.listen(PORT, () => {
       console.log(`🚀 Waypoint API running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV}`);
     });
   } catch (error) {
-    console.error('❌ Unable to start server:', error);
+    console.error("❌ Unable to start server:", error);
     process.exit(1);
   }
 };
 
 startServer();
-

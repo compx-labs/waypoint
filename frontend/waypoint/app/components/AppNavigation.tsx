@@ -1,11 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import AddressBookModal from "./AddressBookModal";
+import NetworkWalletModal from "./NetworkWalletModal";
+import { NetworkContext, BlockchainNetwork } from "../contexts/NetworkContext";
 
 export default function AppNavigation() {
-  const [WalletSelector, setWalletSelector] = useState<any>(null);
   const [currentPath, setCurrentPath] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAddressBookOpen, setIsAddressBookOpen] = useState(false);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  
+  const networkContext = useContext(NetworkContext);
+  const selectedNetwork = networkContext?.selectedNetwork || BlockchainNetwork.APTOS;
+  
+  // For now, keep it simple - wallet connection state will be shown in the modal
+  // The modal handles the actual wallet connection UI
+  const [connected] = useState(false);
+  const [account] = useState<string | null>(null);
 
   useEffect(() => {
     // Set initial path and listen for changes
@@ -37,13 +47,6 @@ export default function AppNavigation() {
       history.pushState = originalPushState;
       history.replaceState = originalReplaceState;
     };
-  }, []);
-
-  useEffect(() => {
-    // Dynamically import WalletSelector only on the client side
-    import("@aptos-labs/wallet-adapter-ant-design").then((module) => {
-      setWalletSelector(() => module.WalletSelector);
-    });
   }, []);
 
   // Helper function to determine if a link is active
@@ -118,9 +121,6 @@ export default function AppNavigation() {
 
           {/* Right Side - Actions */}
           <div className="flex items-center space-x-4">
-            {/* Network Selector */}
-            
-
             {/* Address Book Button */}
             <button
               onClick={() => setIsAddressBookOpen(true)}
@@ -132,8 +132,34 @@ export default function AppNavigation() {
               </svg>
             </button>
 
-            {/* Wallet Selector */}
-            {WalletSelector && <WalletSelector />}
+            {/* Wallet Connection Button */}
+            {!connected ? (
+              <button
+                onClick={() => setIsWalletModalOpen(true)}
+                className="hidden md:flex items-center gap-2 px-4 py-2 bg-sunset-600 hover:bg-sunset-700 text-white font-display font-bold uppercase tracking-wide rounded-lg transition-colors duration-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                Connect
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsWalletModalOpen(true)}
+                className="hidden md:flex items-center gap-2 px-4 py-2 bg-forest-700 hover:bg-forest-600 border border-forest-600 text-primary-100 font-display rounded-lg transition-colors duration-200"
+              >
+                <div className="flex items-center gap-2">
+                  {selectedNetwork === BlockchainNetwork.APTOS ? (
+                    <img src="/aptos-logo.svg" alt="Aptos" className="w-5 h-5" />
+                  ) : (
+                    <img src="/algorand-logo.svg" alt="Algorand" className="w-5 h-5" />
+                  )}
+                  <span className="font-mono text-sm">
+                    {account?.slice(0, 6)}...{account?.slice(-4)}
+                  </span>
+                </div>
+              </button>
+            )}
 
             {/* Mobile Menu Button */}
             <button 
@@ -194,6 +220,12 @@ export default function AppNavigation() {
       <AddressBookModal
         isOpen={isAddressBookOpen}
         onClose={() => setIsAddressBookOpen(false)}
+      />
+      
+      {/* Network & Wallet Connection Modal */}
+      <NetworkWalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
       />
     </nav>
   );

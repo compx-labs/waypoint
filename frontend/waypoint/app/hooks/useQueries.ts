@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import {
   fetchRoutes,
   fetchToken,
@@ -212,9 +213,6 @@ export function useAptosAccount(
     queryKey: address ? queryKeys.aptosAccount(address, network) : ['aptosAccount', 'null'],
     queryFn: async () => {
       if (!address) throw new Error('Address is required');
-      
-      // Import Aptos client dynamically to avoid SSR issues
-      const { Aptos, AptosConfig, Network } = await import('@aptos-labs/ts-sdk');
       
       // Default to MAINNET if network string is not recognized
       const aptosNetwork = network.toLowerCase() === 'devnet' || network.toLowerCase() === 'testnet' 

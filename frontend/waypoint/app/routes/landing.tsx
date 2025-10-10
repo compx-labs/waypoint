@@ -1,4 +1,3 @@
-import type { Route } from "./+types/landing";
 import { motion, type Variants } from "framer-motion";
 import Navigation from "../components/Navigation";
 import HeroSection from "../components/HeroSection";
@@ -10,21 +9,27 @@ import Vision from "../components/Vision";
 import CallToAction from "../components/CallToAction";
 import TrailDivider from "../components/TrailDivider";
 import Footer from "../components/Footer";
+import { useEffect } from "react";
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Waypoint - Simple Continuous Payments" },
-    {
-      name: "description",
-      content:
-        "Schedule payment routes. Track every route. Waypoint makes continuous stablecoin payments simple and transparent.",
-    },
-    {
-      name: "keywords",
-      content:
-        "stablecoin, routing, payments, DeFi, blockchain, continuous payments, payment routes",
-    },
-  ];
+// Update page title and meta tags
+function updateMeta() {
+  document.title = "Waypoint - Simple Continuous Payments";
+  
+  let metaDescription = document.querySelector('meta[name="description"]');
+  if (!metaDescription) {
+    metaDescription = document.createElement('meta');
+    metaDescription.setAttribute('name', 'description');
+    document.head.appendChild(metaDescription);
+  }
+  metaDescription.setAttribute('content', 'Schedule payment routes. Track every route. Waypoint makes continuous stablecoin payments simple and transparent.');
+  
+  let metaKeywords = document.querySelector('meta[name="keywords"]');
+  if (!metaKeywords) {
+    metaKeywords = document.createElement('meta');
+    metaKeywords.setAttribute('name', 'keywords');
+    document.head.appendChild(metaKeywords);
+  }
+  metaKeywords.setAttribute('content', 'stablecoin, routing, payments, DeFi, blockchain, continuous payments, payment routes');
 }
 
 const sectionVariants: Variants = {
@@ -57,6 +62,10 @@ const containerVariants: Variants = {
 };
 
 export default function Landing() {
+  useEffect(() => {
+    updateMeta();
+  }, []);
+
   return (
     <motion.div 
       className="min-h-screen bg-white"

@@ -1,6 +1,5 @@
-import type { Route } from "./+types/app";
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
@@ -32,18 +31,12 @@ function getTokenColor(symbol: string): string {
   return colorMap[symbol] || 'bg-gradient-to-br from-forest-500 to-forest-600';
 }
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Waypoint App - Your Routes" },
-    {
-      name: "description",
-      content:
-        "Manage your token routes, view analytics, and create new payment flows with Waypoint.",
-    },
-  ];
-}
 
 export default function AppDashboard() {
+  useEffect(() => {
+    document.title = "Waypoint App - Your Routes";
+  }, []);
+  
   const navigate = useNavigate();
   const { account } = useWallet();
   const toast = useToast();
@@ -218,7 +211,8 @@ export default function AppDashboard() {
             <div className="hidden md:flex items-center space-x-4 mt-6 lg:mt-0">
               <button 
                 onClick={handleCreateRoute}
-                className="bg-forest-500 hover:bg-forest-600 text-primary-100 font-display text-sm uppercase tracking-wider font-bold py-3 px-6 rounded-lg transition-all duration-200 ease-out transform hover:translate-y-0.5 hover:scale-105 shadow-lg hover:shadow-xl border-2 border-forest-400"
+                disabled={!account}
+                className="bg-forest-500 hover:bg-forest-600 text-primary-100 font-display text-sm uppercase tracking-wider font-bold py-3 px-6 rounded-lg transition-all duration-200 ease-out transform hover:translate-y-0.5 hover:scale-105 shadow-lg hover:shadow-xl border-2 border-forest-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
               >
                 + CREATE
               </button>
@@ -327,7 +321,8 @@ export default function AppDashboard() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-primary-100 via-primary-100/95 to-transparent p-4 pt-8">
         <button 
           onClick={handleCreateRoute}
-          className="w-full bg-gradient-to-r from-forest-500 to-forest-600 hover:from-forest-600 hover:to-forest-700 text-primary-100 font-display text-base uppercase tracking-wider font-bold py-4 px-8 rounded-xl transition-all duration-200 ease-out active:scale-95 shadow-lg border-2 border-forest-400 flex items-center justify-center space-x-2"
+          disabled={!account}
+          className="w-full bg-gradient-to-r from-forest-500 to-forest-600 hover:from-forest-600 hover:to-forest-700 text-primary-100 font-display text-base uppercase tracking-wider font-bold py-4 px-8 rounded-xl transition-all duration-200 ease-out active:scale-95 shadow-lg border-2 border-forest-400 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
           style={{ 
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent' 

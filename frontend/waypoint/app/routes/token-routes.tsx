@@ -1,6 +1,5 @@
-import type { Route } from "./+types/token-routes";
-import { useSearchParams } from "react-router";
-import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
@@ -82,17 +81,10 @@ function getTokenColor(symbol: string): string {
   return colorMap[symbol] || 'bg-gradient-to-br from-forest-500 to-forest-600';
 }
 
-export function meta({}: Route["MetaArgs"]) {
-  return [
-    { title: "Token Routes - Waypoint" },
-    {
-      name: "description", 
-      content: "View and manage individual routes for your token streams."
-    }
-  ];
-}
-
 export default function TokenRoutes() {
+  useEffect(() => {
+    document.title = "Token Routes - Waypoint";
+  }, []);
   const [searchParams] = useSearchParams();
   const tokenId = searchParams.get('id');
   const { account, signAndSubmitTransaction } = useWallet();

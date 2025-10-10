@@ -22,7 +22,7 @@ let periodSecs: bigint;
 let maxPeriods: bigint;
 let startTs: bigint;
 
-const FEE_BPS = 0n;
+const FEE_BPS = 50n;
 
 describe("orbital-lending Testing - deposit / borrow", async () => {
   const localnet = algorandFixture();
@@ -152,6 +152,7 @@ describe("orbital-lending Testing - deposit / borrow", async () => {
     const appHolding = await getAssetBalance(waypointLinearAppClient.appAddress.toString());
     expect(appHolding).toBe(depositAmount);
   });
+
 
   test("claim releases vested amount to beneficiary", async () => {
     waypointLinearAppClient.algorand.setSignerFromAccount(beneficiaryAccount);

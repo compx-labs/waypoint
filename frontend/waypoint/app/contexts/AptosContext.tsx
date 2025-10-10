@@ -30,7 +30,7 @@ interface AptosContextType {
   listAllRoutes: () => Promise<string[] | null>;
 }
 
-const AptosContext = createContext<AptosContextType | null>(null);
+export const AptosContext = createContext<AptosContextType | null>(null);
 
 interface AptosProviderProps {
   children: ReactNode;

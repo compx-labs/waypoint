@@ -1,10 +1,17 @@
-import { reactRouter } from "@react-router/dev/vite";
-import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
   plugins: [
-    reactRouter(), // SSR is opt-in, so this is already static by default
+    react(),
     tsconfigPaths(),
+    nodePolyfills({
+      protocolImports: true,
+    }),
   ],
+  optimizeDeps: {
+    exclude: ['lucide-react'],
+  },
 });
