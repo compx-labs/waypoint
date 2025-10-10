@@ -18,6 +18,8 @@ export default function AppNavigation() {
     account,
     disconnect,
     currentNetwork: selectedNetwork,
+    nfd,
+    nfdLoading,
   } = useUnifiedWallet();
   const toast = useToast();
 
@@ -225,6 +227,17 @@ export default function AppNavigation() {
                         alt="Aptos"
                         className="w-5 h-5"
                       />
+                    ) : selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.avatar ? (
+                      <img
+                        src={nfd.avatar}
+                        alt={nfd.name}
+                        className="w-5 h-5 rounded-full object-cover"
+                        onError={(e) => {
+                          // Fallback to Algorand logo if avatar fails to load
+                          e.currentTarget.src = "/algorand-logo.svg";
+                          e.currentTarget.className = "w-5 h-5";
+                        }}
+                      />
                     ) : (
                       <img
                         src="/algorand-logo.svg"
@@ -233,8 +246,32 @@ export default function AppNavigation() {
                       />
                     )}
                     <span className="font-mono text-sm">
-                      {account?.slice(0, 6)}...{account?.slice(-4)}
+                      {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name
+                        ? nfd.name
+                        : `${account?.slice(0, 6)}...${account?.slice(-4)}`}
                     </span>
+                    {nfdLoading && selectedNetwork === BlockchainNetwork.ALGORAND && (
+                      <svg
+                        className="animate-spin h-4 w-4 text-primary-300"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    )}
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -260,9 +297,32 @@ export default function AppNavigation() {
                         <p className="text-xs text-primary-300 uppercase tracking-wide mb-1">
                           Connected
                         </p>
-                        <p className="text-sm text-primary-100 font-mono break-all">
-                          {account}
-                        </p>
+                        {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name ? (
+                          <>
+                            <div className="flex items-center gap-2 mb-1">
+                              {nfd.avatar && (
+                                <img
+                                  src={nfd.avatar}
+                                  alt={nfd.name}
+                                  className="w-6 h-6 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              )}
+                              <p className="text-sm text-primary-100 font-display font-bold">
+                                {nfd.name}
+                              </p>
+                            </div>
+                            <p className="text-xs text-primary-300 font-mono break-all">
+                              {account}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-primary-100 font-mono break-all">
+                            {account}
+                          </p>
+                        )}
                       </div>
 
                       {/* Copy Address */}

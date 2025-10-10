@@ -1,8 +1,14 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from 'react';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useWallet as useAlgorandWallet } from '@txnlab/use-wallet-react';
 import { BlockchainNetwork } from './NetworkContext';
 import { NetworkContext } from './NetworkContext';
+
+// NFD data type
+export interface NFDData {
+  name: string;
+  avatar?: string;
+}
 
 // Transaction types
 export interface AptosTransaction {
@@ -20,6 +26,67 @@ export interface AlgorandTransaction {
 
 export type UnifiedTransaction = AptosTransaction | AlgorandTransaction;
 
+// NFD fetching function
+async function getNFD(address: string): Promise<NFDData | null> {
+  const nfdURL = `https://api.nf.domains/nfd/address?address=${address}&limit=1&view=thumbnail`;
+  try {
+    const nfdURLResponseData = await fetch(nfdURL);
+    const nfdURLResponse = await nfdURLResponseData.json();
+    
+    if (
+      !nfdURLResponse ||
+      !Array.isArray(nfdURLResponse) ||
+      nfdURLResponse.length !== 1
+    ) {
+      return null;
+    }
+    
+    const nfdBlob = nfdURLResponse[0];
+    if (!nfdBlob.depositAccount || nfdBlob.depositAccount !== address) {
+      return null;
+    }
+    
+    const nfdData: NFDData = {
+      name: nfdBlob.name
+    };
+    
+    // Check for avatar - prioritize userDefined, then verified
+    let avatarUrl = null;
+    
+    // First check userDefined avatar (direct URL)
+    if (nfdBlob.properties?.userDefined?.avatar) {
+      avatarUrl = nfdBlob.properties.userDefined.avatar;
+      console.log('🖼️ Found userDefined avatar:', avatarUrl);
+    }
+    // Then check verified avatar (IPFS/NFT)
+    else if (nfdBlob.properties?.verified?.avatar) {
+      const verifiedAvatar = nfdBlob.properties.verified.avatar;
+      console.log('🎨 Found verified avatar:', verifiedAvatar);
+      
+      // Convert IPFS links to HTTP using Algonode
+      if (verifiedAvatar.startsWith('ipfs://')) {
+        const ipfsHash = verifiedAvatar.replace('ipfs://', '');
+        avatarUrl = `https://ipfs.algonode.xyz/ipfs/${ipfsHash}?optimizer=image&width=75`;
+        console.log('🔗 Converted IPFS to HTTP:', avatarUrl);
+      } else {
+        // If it's already an HTTP URL, use as-is
+        avatarUrl = verifiedAvatar;
+      }
+    }
+    
+    if (avatarUrl) {
+      nfdData.avatar = avatarUrl;
+    }
+    
+    console.log('nfdBlob', nfdBlob);
+    console.log('✅ NFD found:', nfdData.name, nfdData.avatar ? 'with avatar' : 'no avatar');
+    return nfdData;
+  } catch (e) {
+    console.error('❌ NFD fetch error:', e);
+    return null;
+  }
+}
+
 interface UnifiedWalletContextType {
   // Connection state
   connected: boolean;
@@ -35,6 +102,10 @@ interface UnifiedWalletContextType {
   
   // Network info
   currentNetwork: BlockchainNetwork;
+  
+  // NFD data (Algorand name service)
+  nfd: NFDData | null;
+  nfdLoading: boolean;
   
   // Error state
   error: string | null;
@@ -55,6 +126,28 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
   const aptosWallet = useWallet();
   const algorandWallet = useAlgorandWallet();
 
+  // NFD state for Algorand
+  const [nfdData, setNfdData] = useState<NFDData | null>(null);
+  const [nfdLoading, setNfdLoading] = useState(false);
+
+  // Fetch NFD when Algorand account changes
+  useEffect(() => {
+    const fetchNFD = async () => {
+      if (selectedNetwork === BlockchainNetwork.ALGORAND && algorandWallet.activeAccount?.address) {
+        setNfdLoading(true);
+        const nfd = await getNFD(algorandWallet.activeAccount.address);
+        setNfdData(nfd);
+        setNfdLoading(false);
+      } else {
+        // Clear NFD data when not on Algorand or no account
+        setNfdData(null);
+        setNfdLoading(false);
+      }
+    };
+
+    fetchNFD();
+  }, [selectedNetwork, algorandWallet.activeAccount?.address]);
+
   // Compute unified wallet state based on selected network
   const value: UnifiedWalletContextType = useMemo(() => {
     if (selectedNetwork === BlockchainNetwork.APTOS) {
@@ -66,19 +159,24 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
           // Aptos wallets connect via the WalletSelector modal
           console.log('Use Aptos WalletSelector to connect');
         },
-        disconnect: aptosWallet.disconnect,
-        signAndSubmitTransaction: aptosWallet.signAndSubmitTransaction,
+        disconnect: async () => {
+          aptosWallet.disconnect();
+        },
+        signAndSubmitTransaction: async (transaction: UnifiedTransaction) => {
+          return aptosWallet.signAndSubmitTransaction(transaction as any);
+        },
         currentNetwork: selectedNetwork,
+        nfd: null,
+        nfdLoading: false,
         error: null,
       };
     } else if (selectedNetwork === BlockchainNetwork.ALGORAND) {
       return {
-        connected: algorandWallet.isActive,
-        connecting: algorandWallet.isActive && !algorandWallet.activeAccount,
+        connected: !!algorandWallet.activeAccount,
+        connecting: algorandWallet.isReady && !algorandWallet.activeAccount,
         account: algorandWallet.activeAccount?.address || null,
         connect: async () => {
-          // Algorand wallets connect via their specific connect methods
-          console.log('Use Algorand wallet-specific connect');
+          await algorandWallet.activeWallet?.connect();
         },
         disconnect: async () => {
           if (algorandWallet.activeWallet) {
@@ -89,6 +187,8 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
           throw new Error('Algorand transactions not yet implemented');
         },
         currentNetwork: selectedNetwork,
+        nfd: nfdData,
+        nfdLoading: nfdLoading,
         error: null,
       };
     } else {
@@ -103,10 +203,12 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
           throw new Error('No network selected');
         },
         currentNetwork: selectedNetwork,
+        nfd: null,
+        nfdLoading: false,
         error: null,
       };
     }
-  }, [selectedNetwork, aptosWallet, algorandWallet]);
+  }, [selectedNetwork, aptosWallet, algorandWallet, nfdData, nfdLoading]);
 
   return (
     <UnifiedWalletContext.Provider value={value}>
