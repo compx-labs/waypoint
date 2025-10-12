@@ -20,6 +20,11 @@ cp .env.example .env
 npm run migrate
 ```
 
+**Optional: Add shortname column to existing address_book table:**
+```bash
+node src/migrations/add-shortname-to-address-book.js
+```
+
 4. **Seed token data:**
 ```bash
 npm run seed
@@ -46,6 +51,13 @@ npm run dev
 - `GET /api/analytics` - Get overall analytics
 - `GET /api/analytics/:network` - Get network-specific analytics
 
+### Address Book
+- `GET /api/address-book?owner_wallet=ADDRESS` - List all address book entries for a wallet
+- `GET /api/address-book/:id` - Get single address book entry
+- `POST /api/address-book` - Create new address book entry
+- `PUT /api/address-book/:id` - Update address book entry
+- `DELETE /api/address-book/:id` - Delete address book entry
+
 ## Database Schema
 
 ### Tokens Table
@@ -55,6 +67,11 @@ npm run dev
 - id, sender, recipient, token_id, amount_token_units
 - start_date, payment_frequency_unit, payment_frequency_number
 - blockchain_tx_hash, status
+
+### Address Book Table
+- id, owner_wallet, name, wallet_address
+- shortname (optional - stores NFDs and other blockchain shortnames)
+- created_at, updated_at
 
 ## Production Deployment
 

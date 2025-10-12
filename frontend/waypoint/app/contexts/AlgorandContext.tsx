@@ -60,9 +60,17 @@ export function AlgorandProvider({
         },
       ],
       network: networkId,
+      // Enable persistence to maintain wallet connections across page refreshes
+      algod: {
+        token: '',
+        baseServer: networkId === NetworkId.MAINNET
+          ? 'https://mainnet-api.algonode.cloud'
+          : 'https://testnet-api.algonode.cloud',
+        port: '',
+      },
     });
 
-    console.log('Algorand WalletManager initialized', manager);
+    console.log('Algorand WalletManager initialized with persistence', manager);
     return manager;
   }, [network]);
 

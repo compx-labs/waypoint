@@ -35,6 +35,7 @@ export interface AddressBookEntry {
   owner_wallet: string;
   name: string;
   wallet_address: string;
+  shortname?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -56,11 +57,13 @@ export interface CreateAddressBookPayload {
   owner_wallet: string;
   name: string;
   wallet_address: string;
+  shortname?: string | null;
 }
 
 export interface UpdateAddressBookPayload {
   name: string;
   wallet_address: string;
+  shortname?: string | null;
 }
 
 // Aptos Account Types

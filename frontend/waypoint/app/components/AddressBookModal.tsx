@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import { useUnifiedWallet } from "../contexts/UnifiedWalletContext";
 import { 
   useAddressBook, 
   useCreateAddressBookEntry,
@@ -17,17 +17,19 @@ export default function AddressBookModal({
   isOpen,
   onClose,
 }: AddressBookModalProps) {
-  const { account } = useWallet();
+  const wallet = useUnifiedWallet();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState("");
   const [formAddress, setFormAddress] = useState("");
+  const [formShortname, setFormShortname] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [isResolvingNFD, setIsResolvingNFD] = useState(false);
 
-  // Get owner wallet address
-  const ownerWallet = account?.address?.toString() || null;
+  // Get owner wallet address (works for both Aptos and Algorand)
+  const ownerWallet = wallet.account || null;
 
   // Fetch address book entries
   const { data: entries = [], isLoading, error: queryError } = useAddressBook(ownerWallet, {
@@ -64,18 +66,58 @@ export default function AddressBookModal({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // NFD resolution function
+  const resolveNFD = async (nfdName: string): Promise<string | null> => {
+    if (!nfdName || !nfdName.endsWith('.algo')) {
+      return null;
+    }
+
+    try {
+      setIsResolvingNFD(true);
+      const response = await fetch(`https://api.nf.domains/nfd/lookup?name=${encodeURIComponent(nfdName)}&view=brief`);
+      const data = await response.json();
+      
+      if (data && data.depositAccount) {
+        return data.depositAccount;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to resolve NFD:', error);
+      return null;
+    } finally {
+      setIsResolvingNFD(false);
+    }
+  };
+
+  // Auto-resolve NFD when shortname changes (if it's a .algo domain)
+  useEffect(() => {
+    const resolveIfNFD = async () => {
+      if (formShortname && formShortname.endsWith('.algo')) {
+        const address = await resolveNFD(formShortname);
+        if (address) {
+          setFormAddress(address);
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(resolveIfNFD, 500); // Debounce by 500ms
+    return () => clearTimeout(timeoutId);
+  }, [formShortname]);
+
   const handleAdd = async () => {
-    if (!account?.address || !formName.trim() || !formAddress.trim()) return;
+    if (!wallet.account || !formName.trim() || !formAddress.trim()) return;
 
     try {
       await createMutation.mutateAsync({
-        owner_wallet: account.address.toStringLong(),
+        owner_wallet: wallet.account,
         name: formName.trim(),
         wallet_address: formAddress.trim(),
+        shortname: formShortname.trim() || null,
       });
       
       setFormName("");
       setFormAddress("");
+      setFormShortname("");
       setIsAdding(false);
     } catch (err) {
       // Error is handled by the mutation hook and displayed via error state
@@ -92,12 +134,14 @@ export default function AddressBookModal({
         payload: {
           name: formName.trim(),
           wallet_address: formAddress.trim(),
+          shortname: formShortname.trim() || null,
         },
       });
       
       setEditingId(null);
       setFormName("");
       setFormAddress("");
+      setFormShortname("");
     } catch (err) {
       // Error is handled by the mutation hook and displayed via error state
       console.error("Failed to update entry:", err);
@@ -119,6 +163,7 @@ export default function AddressBookModal({
     setEditingId(entry.id);
     setFormName(entry.name);
     setFormAddress(entry.wallet_address);
+    setFormShortname(entry.shortname || "");
     setIsAdding(false);
   };
 
@@ -127,6 +172,7 @@ export default function AddressBookModal({
     setIsAdding(false);
     setFormName("");
     setFormAddress("");
+    setFormShortname("");
   };
 
   const startAdd = () => {
@@ -134,11 +180,12 @@ export default function AddressBookModal({
     setEditingId(null);
     setFormName("");
     setFormAddress("");
+    setFormShortname("");
   };
 
   if (!isOpen) return null;
 
-  if (!account?.address) {
+  if (!wallet.account) {
     return (
       <div className="fixed inset-0 z-50 overflow-y-auto">
         <div
@@ -268,6 +315,21 @@ export default function AddressBookModal({
                   </div>
                   <div>
                     <label className="block text-xs font-display text-primary-300 mb-1">
+                      NFD / Shortname <span className="text-primary-400">(Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formShortname}
+                      onChange={(e) => setFormShortname(e.target.value)}
+                      placeholder="e.g., alice.algo"
+                      className="w-full bg-forest-800 text-primary-100 border border-forest-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sunset-500"
+                    />
+                    {isResolvingNFD && (
+                      <p className="text-xs text-sunset-400 mt-1">Resolving NFD...</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-display text-primary-300 mb-1">
                       Wallet Address
                     </label>
                     <input
@@ -329,6 +391,11 @@ export default function AddressBookModal({
                         <h5 className="font-display font-semibold text-sm text-primary-100 truncate">
                           {entry.name}
                         </h5>
+                        {entry.shortname && (
+                          <p className="text-xs text-sunset-400 truncate mt-1">
+                            {entry.shortname}
+                          </p>
+                        )}
                         <p className="text-xs text-primary-300 font-mono truncate mt-1">
                           {entry.wallet_address}
                         </p>
@@ -455,6 +522,21 @@ export default function AddressBookModal({
                 </div>
                 <div>
                   <label className="block text-xs font-display text-primary-300 mb-1">
+                    NFD / Shortname <span className="text-primary-400">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formShortname}
+                    onChange={(e) => setFormShortname(e.target.value)}
+                    placeholder="e.g., alice.algo"
+                    className="w-full bg-forest-800 text-primary-100 border border-forest-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-sunset-500 transition-colors"
+                  />
+                  {isResolvingNFD && (
+                    <p className="text-xs text-sunset-400 mt-1">Resolving NFD...</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-display text-primary-300 mb-1">
                     Wallet Address
                   </label>
                   <input
@@ -516,6 +598,11 @@ export default function AddressBookModal({
                       <h5 className="font-display font-semibold text-sm text-primary-100">
                         {entry.name}
                       </h5>
+                      {entry.shortname && (
+                        <p className="text-xs text-sunset-400 mt-1">
+                          {entry.shortname}
+                        </p>
+                      )}
                       <p className="text-xs text-primary-300 font-mono mt-1 break-all">
                         {entry.wallet_address}
                       </p>

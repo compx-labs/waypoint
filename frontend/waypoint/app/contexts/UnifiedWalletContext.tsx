@@ -130,16 +130,28 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
   const [nfdData, setNfdData] = useState<NFDData | null>(null);
   const [nfdLoading, setNfdLoading] = useState(false);
 
+  // Debug logging for Algorand wallet state
+  useEffect(() => {
+    console.log('🔍 Algorand Wallet State:', {
+      isReady: algorandWallet.isReady,
+      activeAccount: algorandWallet.activeAccount?.address,
+      activeWallet: algorandWallet.activeWallet?.id,
+      wallets: algorandWallet.wallets.map(w => ({ id: w.id, isActive: w.isActive, accounts: w.accounts.length })),
+    });
+  }, [algorandWallet.isReady, algorandWallet.activeAccount, algorandWallet.activeWallet]);
+
   // Fetch NFD when Algorand account changes
   useEffect(() => {
     const fetchNFD = async () => {
       if (selectedNetwork === BlockchainNetwork.ALGORAND && algorandWallet.activeAccount?.address) {
+        console.log('🔄 Fetching NFD for:', algorandWallet.activeAccount.address);
         setNfdLoading(true);
         const nfd = await getNFD(algorandWallet.activeAccount.address);
         setNfdData(nfd);
         setNfdLoading(false);
       } else {
         // Clear NFD data when not on Algorand or no account
+        console.log('🧹 Clearing NFD data:', { selectedNetwork, hasAccount: !!algorandWallet.activeAccount });
         setNfdData(null);
         setNfdLoading(false);
       }

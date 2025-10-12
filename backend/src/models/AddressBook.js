@@ -19,6 +19,11 @@ export const AddressBook = sequelize.define('AddressBook', {
     type: DataTypes.STRING(255),
     allowNull: false,
   },
+  shortname: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'NFD (Algorand Name Service) or other blockchain shortname',
+  },
 }, {
   tableName: 'address_book',
   timestamps: true,
