@@ -23,6 +23,8 @@ import {
   type AptosAccountBalance,
   type AptosModule,
   type AptosToken,
+  type AlgorandAccountData,
+  type AlgorandAccountBalance,
   type AnalyticsData,
 } from '../lib/api';
 
@@ -34,6 +36,7 @@ export const queryKeys = {
   token: (id: number) => ['tokens', id] as const,
   addressBook: (ownerWallet: string) => ['addressBook', ownerWallet] as const,
   aptosAccount: (address: string, network: string) => ['aptosAccount', address, network] as const,
+  algorandAccount: (address: string, network: string) => ['algorandAccount', address, network] as const,
   analytics: ['analytics'] as const,
 };
 
@@ -291,6 +294,86 @@ export function useAptosAccount(
     staleTime: 1000 * 60 * 2, // Consider data fresh for 2 minutes
     gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
     // Removed refetchInterval - only refetch when needed, not on a timer
+    ...options,
+  });
+}
+
+// Algorand Account Queries
+export function useAlgorandAccount(
+  address: string | null,
+  network: string = 'mainnet', // Default to mainnet
+  options?: Omit<UseQueryOptions<AlgorandAccountData, Error>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: address ? queryKeys.algorandAccount(address, network) : ['algorandAccount', 'null'],
+    queryFn: async () => {
+      if (!address) throw new Error('Address is required');
+      
+      // Determine the correct API endpoint based on network
+      const baseUrl = network.toLowerCase() === 'testnet'
+        ? 'https://testnet-api.algonode.cloud'
+        : 'https://mainnet-api.algonode.cloud';
+      
+      // Fetch account information from AlgoNode
+      const accountUrl = `${baseUrl}/v2/accounts/${address}`;
+      const response = await fetch(accountUrl);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // Account doesn't exist yet
+          return {
+            address,
+            algoBalance: 0,
+            balances: [],
+            network,
+          };
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const accountData = await response.json();
+      
+      // Extract ALGO balance (in microalgos)
+      const algoBalance = accountData.amount || 0;
+      
+      // Fetch tokens from backend to get asset details
+      const tokensResponse = await fetchTokensByNetwork('algorand');
+      const tokenMap = new Map(tokensResponse.map(t => [parseInt(t.contract_address), t]));
+      
+      // Extract ASA balances
+      const assetBalances: AlgorandAccountBalance[] = [];
+      if (accountData.assets && Array.isArray(accountData.assets)) {
+        for (const asset of accountData.assets) {
+          const assetId = asset['asset-id'];
+          const amount = asset.amount || 0;
+          
+          // Only include assets with non-zero balance
+          if (amount > 0) {
+            const tokenInfo = tokenMap.get(assetId);
+            if (tokenInfo) {
+              assetBalances.push({
+                assetId,
+                symbol: tokenInfo.symbol,
+                name: tokenInfo.name,
+                amount: amount / Math.pow(10, tokenInfo.decimals),
+                decimals: tokenInfo.decimals,
+                logoUrl: tokenInfo.logo_url || '/logo.svg',
+              });
+            }
+          }
+        }
+      }
+      
+      return {
+        address,
+        algoBalance,
+        balances: assetBalances,
+        network,
+      };
+    },
+    enabled: !!address,
+    staleTime: 1000 * 60 * 2, // Consider data fresh for 2 minutes
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
     ...options,
   });
 }

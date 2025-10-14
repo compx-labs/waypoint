@@ -1,14 +1,63 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import { useWallet as useAlgorandWallet } from "@txnlab/use-wallet-react";
 import {
   useTokensByNetwork,
   useAddressBook,
   useAptosAccount,
+  useAlgorandAccount,
   useCreateRoute,
 } from "../hooks/useQueries";
 import { useAptos } from "../contexts/AptosContext";
+import { useAlgorand } from "../contexts/AlgorandContext";
+import { useNetwork, BlockchainNetwork } from "../contexts/NetworkContext";
 import { useToast } from "../contexts/ToastContext";
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+
+// Fee calculation utility
+interface FeeCalculation {
+  feePercentage: number;
+  feeBps: number;
+  feeAmount: number;
+}
+
+const calculateFee = (
+  amount: number,
+  network: BlockchainNetwork,
+  tokenSymbol: string,
+  fluxTier: number = 0
+): FeeCalculation => {
+  let feeBps: number;
+  
+  if (network === BlockchainNetwork.APTOS) {
+    // Aptos always has 0.5% fees (50 bps)
+    feeBps = 50;
+  } else {
+    // Algorand fees vary by token and Flux tier
+    const isXUSD = tokenSymbol === "xUSD";
+    
+    if (isXUSD) {
+      // xUSD base fee: 0.25% (25 bps)
+      if (fluxTier === 0) feeBps = 25;
+      else if (fluxTier === 1) feeBps = 20;
+      else if (fluxTier === 2) feeBps = 15;
+      else if (fluxTier === 3) feeBps = 12;
+      else feeBps = 10; // Tier 4+
+    } else {
+      // Non-xUSD base fee: 0.5% (50 bps)
+      if (fluxTier === 0) feeBps = 50;
+      else if (fluxTier === 1) feeBps = 45;
+      else if (fluxTier === 2) feeBps = 38;
+      else if (fluxTier === 3) feeBps = 30;
+      else feeBps = 20; // Tier 4+
+    }
+  }
+  
+  const feePercentage = feeBps / 10000;
+  const feeAmount = amount * feePercentage;
+  
+  return { feePercentage, feeBps, feeAmount };
+};
 
 // Helper function to format duration in a human-readable way
 const formatDuration = (
@@ -128,7 +177,8 @@ export interface RouteFormData {
   startTime?: Date;
 
   // Step 4: Recipient
-  recipientAddress?: string;
+  recipientAddress?: string; // The final resolved address (or direct address)
+  recipientNFD?: string; // The NFD name if one was used (e.g., "alice.algo")
 }
 
 interface RouteCreationWizardProps {
@@ -145,25 +195,48 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
   isFirstStep,
   isLastStep,
 }) => {
-  const { account } = useWallet();
-  const { network } = useAptos();
+  const { selectedNetwork } = useNetwork();
+  
+  // Aptos wallet and context
+  const aptosWallet = useWallet();
+  const { network: aptosNetwork } = useAptos();
+  
+  // Algorand wallet and context
+  const algorandWallet = useAlgorandWallet();
+  const { network: algorandNetwork } = useAlgorand();
 
-  // Use React Query to fetch tokens
+  // Get current account address based on network
+  const accountAddress = selectedNetwork === BlockchainNetwork.APTOS
+    ? aptosWallet.account?.address?.toStringLong() || null
+    : algorandWallet.activeAccount?.address || null;
+
+  // Use React Query to fetch tokens for the selected network
   const {
     data: availableTokens = [],
     isLoading: loading,
     error: queryError,
-  } = useTokensByNetwork("aptos");
+  } = useTokensByNetwork(selectedNetwork === BlockchainNetwork.APTOS ? "aptos" : "algorand");
 
-  // Fetch Aptos account data
+  // Fetch account data based on network
   const {
     data: aptosAccountData,
-    isLoading: loadingAccount,
-    error: accountError,
+    isLoading: loadingAptosAccount,
   } = useAptosAccount(
-    account?.address?.toStringLong() || null,
-    network === "mainnet" ? "mainnet" : "devnet"
+    selectedNetwork === BlockchainNetwork.APTOS ? accountAddress : null,
+    aptosNetwork === "mainnet" ? "mainnet" : "devnet"
   );
+
+  const {
+    data: algorandAccountData,
+    isLoading: loadingAlgorandAccount,
+  } = useAlgorandAccount(
+    selectedNetwork === BlockchainNetwork.ALGORAND ? accountAddress : null,
+    algorandNetwork === "mainnet" ? "mainnet" : "testnet"
+  );
+
+  const loadingAccount = selectedNetwork === BlockchainNetwork.APTOS 
+    ? loadingAptosAccount 
+    : loadingAlgorandAccount;
 
   const error =
     queryError instanceof Error
@@ -174,11 +247,19 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
 
   // Helper function to get balance for a token
   const getTokenBalance = (tokenSymbol: string): number | null => {
-    if (!aptosAccountData?.balances) return null;
-    const balance = aptosAccountData.balances.find(
-      (b) => b.symbol === tokenSymbol
-    );
-    return balance ? balance.amount : null;
+    if (selectedNetwork === BlockchainNetwork.APTOS) {
+      if (!aptosAccountData?.balances) return null;
+      const balance = aptosAccountData.balances.find(
+        (b) => b.symbol === tokenSymbol
+      );
+      return balance ? balance.amount : null;
+    } else {
+      if (!algorandAccountData?.balances) return null;
+      const balance = algorandAccountData.balances.find(
+        (b) => b.symbol === tokenSymbol
+      );
+      return balance ? balance.amount : null;
+    }
   };
 
   // Check if user has any token balances
@@ -325,6 +406,14 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                     })}
                   </p>
                 )}
+                {token.symbol === "xUSD" && (
+                  <p className="text-green-400 text-xs font-display font-semibold mt-1 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    50% Fee Reduction
+                  </p>
+                )}
               </div>
               {data.selectedToken?.id === token.id && (
                 <div className="flex-shrink-0 ml-4">
@@ -358,14 +447,65 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
   isFirstStep,
   isLastStep,
 }) => {
-  const { account } = useWallet();
-  const { network } = useAptos();
+  const { selectedNetwork } = useNetwork();
+  
+  // Aptos wallet and context
+  const aptosWallet = useWallet();
+  const { network: aptosNetwork } = useAptos();
+  
+  // Algorand wallet and context
+  const algorandWallet = useAlgorandWallet();
+  const { network: algorandNetwork, getUserFluxTier } = useAlgorand();
 
-  // Fetch Aptos account data to get balances
+  // State for Flux tier
+  const [fluxTier, setFluxTier] = useState<number>(0);
+  const [loadingFluxTier, setLoadingFluxTier] = useState(false);
+
+  // Get current account address based on network
+  const accountAddress = selectedNetwork === BlockchainNetwork.APTOS
+    ? aptosWallet.account?.address?.toStringLong() || null
+    : algorandWallet.activeAccount?.address || null;
+
+  // Fetch account data based on network
   const { data: aptosAccountData } = useAptosAccount(
-    account?.address?.toStringLong() || null,
-    network === "mainnet" ? "mainnet" : "devnet"
+    selectedNetwork === BlockchainNetwork.APTOS ? accountAddress : null,
+    aptosNetwork === "mainnet" ? "mainnet" : "devnet"
   );
+
+  const { data: algorandAccountData } = useAlgorandAccount(
+    selectedNetwork === BlockchainNetwork.ALGORAND ? accountAddress : null,
+    algorandNetwork === "mainnet" ? "mainnet" : "testnet"
+  );
+
+  // Fetch Flux tier for Algorand users
+  useEffect(() => {
+    const fetchFluxTier = async () => {
+      if (
+        selectedNetwork === BlockchainNetwork.ALGORAND &&
+        algorandWallet.activeAccount &&
+        algorandWallet.transactionSigner
+      ) {
+        try {
+          setLoadingFluxTier(true);
+          const tier = await getUserFluxTier({
+            appId: 3219204562, // Flux Gate app ID
+            signer: algorandWallet.transactionSigner,
+            activeAddress: algorandWallet.activeAccount.address,
+          });
+          setFluxTier(tier);
+        } catch (error) {
+          console.error("Failed to fetch Flux tier:", error);
+          setFluxTier(0); // Default to tier 0 on error
+        } finally {
+          setLoadingFluxTier(false);
+        }
+      } else {
+        setFluxTier(0); // Reset to 0 if not on Algorand
+      }
+    };
+
+    fetchFluxTier();
+  }, [selectedNetwork, algorandWallet.activeAccount]);
 
   const unlockUnits = [
     {
@@ -380,15 +520,28 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
   ];
 
   // Get user's balance for the selected token
-  const tokenBalance =
-    aptosAccountData?.balances.find(
-      (b) => b.symbol === data.selectedToken?.symbol
-    )?.amount || 0;
+  const tokenBalance = selectedNetwork === BlockchainNetwork.APTOS
+    ? (aptosAccountData?.balances.find(
+        (b) => b.symbol === data.selectedToken?.symbol
+      )?.amount || 0)
+    : (algorandAccountData?.balances.find(
+        (b) => b.symbol === data.selectedToken?.symbol
+      )?.amount || 0);
 
-  const FEE_PERCENTAGE = 0.005; // 0.5%
   const DEPOSIT_LIMIT = 100; // Maximum tokens allowed per route during initial launch period
   const totalAmount = parseFloat(data.totalAmount || "0");
-  const feeAmount = totalAmount * FEE_PERCENTAGE;
+  
+  // Calculate fee based on network, token, and Flux tier
+  const feeCalc = calculateFee(
+    totalAmount,
+    selectedNetwork,
+    data.selectedToken?.symbol || "",
+    selectedNetwork === BlockchainNetwork.ALGORAND ? fluxTier : 0
+  );
+  const feeAmount = feeCalc.feeAmount;
+  const feePercentage = feeCalc.feePercentage;
+  const feeBps = feeCalc.feeBps;
+  
   const totalWithFee = totalAmount + feeAmount;
   const unlockAmount = parseFloat(data.unlockAmount || "0");
   const exceedsBalance = totalWithFee > tokenBalance;
@@ -484,8 +637,15 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
           <button
             type="button"
             onClick={() => {
-              // Set amount to 99.5% of balance so that amount + 0.5% fee = balance
-              const maxAmount = tokenBalance / (1 + FEE_PERCENTAGE);
+              // Calculate max amount considering fee (solve: amount + fee = balance)
+              // For fee calculation, use current flux tier and token
+              const tempFeeCalc = calculateFee(
+                100, // Use a reference amount to get fee percentage
+                selectedNetwork,
+                data.selectedToken?.symbol || "",
+                selectedNetwork === BlockchainNetwork.ALGORAND ? fluxTier : 0
+              );
+              const maxAmount = tokenBalance / (1 + tempFeeCalc.feePercentage);
               // Respect the deposit limit
               const limitedMaxAmount = Math.min(maxAmount, DEPOSIT_LIMIT);
               updateData({ totalAmount: limitedMaxAmount.toString() });
@@ -510,7 +670,14 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
               </span>
             </div>
             <div className="flex justify-between items-center text-xs font-display mb-1">
-              <span className="text-primary-400">Platform Fee (0.5%)</span>
+              <span className="text-primary-400">
+                Platform Fee ({(feePercentage * 100).toFixed(2)}%)
+                {selectedNetwork === BlockchainNetwork.ALGORAND && fluxTier > 0 && (
+                  <span className="text-green-400 ml-1">
+                    (Flux Tier {fluxTier} discount applied)
+                  </span>
+                )}
+              </span>
               <span className="text-sunset-400 font-semibold">
                 +{" "}
                 {feeAmount.toLocaleString(undefined, {
@@ -834,13 +1001,141 @@ const RecipientStep: React.FC<WizardStepProps> = ({
   isFirstStep,
   isLastStep,
 }) => {
-  const { account } = useWallet();
+  const { selectedNetwork } = useNetwork();
+  const aptosWallet = useWallet();
+  const algorandWallet = useAlgorandWallet();
+  
+  // Address validation function
+  const validateAddress = (address: string, network: BlockchainNetwork): boolean => {
+    if (!address || address.trim() === "") return false;
+    
+    if (network === BlockchainNetwork.ALGORAND) {
+      // Algorand addresses: 58 chars, base32 encoded (A-Z, 2-7)
+      const algorandRegex = /^[A-Z2-7]{58}$/;
+      return algorandRegex.test(address);
+    } else if (network === BlockchainNetwork.APTOS) {
+      // Aptos addresses: hex with 0x prefix
+      const aptosRegex = /^0x[a-fA-F0-9]{1,64}$/;
+      return aptosRegex.test(address);
+    }
+    
+    return false;
+  };
+
+  // State declarations
   const [showAddressBook, setShowAddressBook] = useState(false);
+  const [inputValue, setInputValue] = useState(data.recipientNFD || data.recipientAddress || "");
+  const [isResolvingNFD, setIsResolvingNFD] = useState(false);
+  const [nfdResolved, setNfdResolved] = useState(
+    !!data.recipientNFD && !!data.recipientAddress && data.recipientNFD !== data.recipientAddress
+  );
+  const [nfdNotFound, setNfdNotFound] = useState(false);
+  const [resolvedAddress, setResolvedAddress] = useState(
+    (data.recipientNFD && data.recipientAddress && data.recipientNFD !== data.recipientAddress) 
+      ? data.recipientAddress 
+      : ""
+  );
+  const [isAddressValid, setIsAddressValid] = useState(() => {
+    // Initialize validation state based on existing data
+    if (!data.recipientAddress) return false;
+    if (data.recipientNFD && data.recipientAddress !== data.recipientNFD) return true; // Already resolved
+    return validateAddress(data.recipientAddress, selectedNetwork);
+  });
 
-  const canProceed = data.recipientAddress && data.recipientAddress.length > 0;
+  // NFD resolution function
+  const resolveNFD = async (nfdName: string): Promise<string | null> => {
+    if (!nfdName || !nfdName.endsWith('.algo')) {
+      return null;
+    }
 
-  // Get owner wallet address
-  const ownerWallet = account?.address?.toString() || null;
+    try {
+      setIsResolvingNFD(true);
+      const response = await fetch(
+        `https://api.nf.domains/nfd/${encodeURIComponent(nfdName)}?view=tiny&poll=false&nocache=false`
+      );
+      const data = await response.json();
+      
+      // Check if NFD was found (error response has name: "notFound")
+      if (data && data.name !== "notFound" && data.depositAccount) {
+        return data.depositAccount;
+      }
+      
+      // NFD not found or invalid
+      console.warn(`NFD not found: ${nfdName}`);
+      return null;
+    } catch (error) {
+      console.error('Failed to resolve NFD:', error);
+      return null;
+    } finally {
+      setIsResolvingNFD(false);
+    }
+  };
+
+  // Auto-resolve NFD when input changes (if on Algorand and it's a .algo domain)
+  useEffect(() => {
+    const resolveIfNFD = async () => {
+      if (!inputValue) {
+        setResolvedAddress("");
+        setNfdResolved(false);
+        setNfdNotFound(false);
+        setIsAddressValid(false);
+        updateData({ recipientAddress: undefined, recipientNFD: undefined });
+        return;
+      }
+      
+      if (selectedNetwork === BlockchainNetwork.ALGORAND && inputValue.endsWith('.algo')) {
+        // This is an NFD - try to resolve it
+        const address = await resolveNFD(inputValue);
+        if (address) {
+          setResolvedAddress(address);
+          setNfdResolved(true);
+          setNfdNotFound(false);
+          // Validate the resolved address
+          const isValid = validateAddress(address, selectedNetwork);
+          setIsAddressValid(isValid);
+          // Update form data: recipientAddress gets the resolved address, recipientNFD gets the NFD name
+          if (isValid) {
+            updateData({ 
+              recipientAddress: address,  // Store the resolved address
+              recipientNFD: inputValue     // Store the NFD name
+            });
+          }
+        } else {
+          setResolvedAddress("");
+          setNfdResolved(false);
+          setNfdNotFound(true);
+          setIsAddressValid(false);
+          updateData({ recipientAddress: undefined, recipientNFD: undefined });
+        }
+      } else {
+        // Not an NFD, treat as direct address - validate it
+        setResolvedAddress("");
+        setNfdResolved(false);
+        setNfdNotFound(false);
+        const isValid = validateAddress(inputValue, selectedNetwork);
+        setIsAddressValid(isValid);
+        // For direct address, only store in recipientAddress
+        if (isValid) {
+          updateData({ 
+            recipientAddress: inputValue,
+            recipientNFD: undefined
+          });
+        } else {
+          updateData({ recipientAddress: undefined, recipientNFD: undefined });
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(resolveIfNFD, 500); // Debounce by 500ms
+    return () => clearTimeout(timeoutId);
+  }, [inputValue, selectedNetwork]);
+
+  const canProceed = inputValue.length > 0 && !isResolvingNFD && (isAddressValid || nfdResolved);
+
+  // Get owner wallet address based on network
+  const ownerWallet = selectedNetwork === BlockchainNetwork.APTOS
+    ? (aptosWallet.account?.address?.toString() || null)
+    : (algorandWallet.activeAccount?.address || null);
 
   // Use React Query to fetch address book entries
   const { data: addressBookEntries = [], isLoading: loadingAddressBook } =
@@ -849,7 +1144,7 @@ const RecipientStep: React.FC<WizardStepProps> = ({
     });
 
   const selectFromAddressBook = (address: string) => {
-    updateData({ recipientAddress: address });
+    setInputValue(address);
     setShowAddressBook(false);
   };
 
@@ -871,9 +1166,9 @@ const RecipientStep: React.FC<WizardStepProps> = ({
         <div className="flex space-x-2">
           <input
             type="text"
-            placeholder="0x1234567890abcdef..."
-            value={data.recipientAddress || ""}
-            onChange={(e) => updateData({ recipientAddress: e.target.value })}
+            placeholder="Wallet address or short name..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             className="flex-1 bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 focus:border-sunset-500 focus:outline-none transition-colors"
           />
           {addressBookEntries.length > 0 && (
@@ -900,8 +1195,76 @@ const RecipientStep: React.FC<WizardStepProps> = ({
           )}
         </div>
         <div className="mt-2 text-xs text-primary-400 font-display">
-          Enter the wallet address that will receive the token route
+          {selectedNetwork === BlockchainNetwork.ALGORAND 
+            ? "Enter the wallet address or NFD (e.g., alice.algo) that will receive the token route"
+            : "Enter the wallet address that will receive the token route"}
         </div>
+
+        {/* NFD Resolution Status */}
+        {selectedNetwork === BlockchainNetwork.ALGORAND && inputValue && inputValue.endsWith('.algo') && (
+          <div className="mt-3">
+            {isResolvingNFD && (
+              <div className="bg-primary-500 bg-opacity-20 border border-primary-400 border-opacity-30 rounded-lg p-3">
+                <div className="flex items-center space-x-2">
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-300"></div>
+                  <span className="text-sm text-primary-300 font-display">
+                    Resolving NFD...
+                  </span>
+                </div>
+              </div>
+            )}
+            {!isResolvingNFD && nfdResolved && resolvedAddress && (
+              <div className="bg-green-900 bg-opacity-30 border border-green-500 border-opacity-40 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <svg
+                    className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-display font-semibold text-green-300 uppercase tracking-wide">
+                      NFD Resolved
+                    </p>
+                    <p className="text-xs text-primary-300 font-mono mt-1 break-all">
+                      {resolvedAddress}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!isResolvingNFD && nfdNotFound && (
+              <div className="bg-sunset-900 bg-opacity-30 border border-sunset-500 border-opacity-40 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <svg
+                    className="w-5 h-5 text-sunset-400 flex-shrink-0 mt-0.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide">
+                      NFD Not Found
+                    </p>
+                    <p className="text-xs text-primary-300 font-display mt-1">
+                      Please check the NFD name or enter a wallet address directly.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Address Book Dropdown */}
         {showAddressBook && addressBookEntries.length > 0 && (
@@ -977,71 +1340,130 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   isFirstStep,
   isLastStep,
 }) => {
-  const { account, signAndSubmitTransaction } = useWallet();
-  const { network } = useAptos();
+  const { selectedNetwork } = useNetwork();
+  
+  // Aptos wallet and context
+  const aptosWallet = useWallet();
+  const { network: aptosNetwork } = useAptos();
+  
+  // Algorand wallet and context
+  const algorandWallet = useAlgorandWallet();
+  const { network: algorandNetwork, getUserFluxTier } = useAlgorand();
+  
   const toast = useToast();
   const createRouteMutation = useCreateRoute();
 
-  // Fetch Aptos account data to check APT balance
+  // Get current account address based on network
+  const accountAddress = selectedNetwork === BlockchainNetwork.APTOS
+    ? aptosWallet.account?.address?.toStringLong() || null
+    : algorandWallet.activeAccount?.address || null;
+
+  // Fetch account data based on network
   const { data: aptosAccountData } = useAptosAccount(
-    account?.address?.toStringLong() || null,
-    network === "mainnet" ? "mainnet" : "devnet"
+    selectedNetwork === BlockchainNetwork.APTOS ? accountAddress : null,
+    aptosNetwork === "mainnet" ? "mainnet" : "devnet"
   );
 
-  const FEE_AMOUNT = 0.001; // APT
-  const FEE_PERCENTAGE = 0.005; // 0.5% platform fee
-  const [aptBalance, setAptBalance] = useState<number>(0);
+  const { data: algorandAccountData } = useAlgorandAccount(
+    selectedNetwork === BlockchainNetwork.ALGORAND ? accountAddress : null,
+    algorandNetwork === "mainnet" ? "mainnet" : "testnet"
+  );
+
+  const GAS_FEE_APT = 0.001; // APT gas fee
+  const GAS_FEE_ALGO = 0.002; // ALGO gas fee (in ALGO, will convert to microalgos)
+  const [fluxTier, setFluxTier] = useState<number>(0);
+  const [gasBalance, setGasBalance] = useState<number>(0);
   const [isBuilding, setIsBuilding] = useState<boolean>(false);
   const [buildError, setBuildError] = useState<string | null>(null);
   const [transactionStatus, setTransactionStatus] = useState<
     "idle" | "signing" | "confirming"
   >("idle");
 
-  // Get user's balance for the selected token
-  const tokenBalance =
-    aptosAccountData?.balances.find(
-      (b) => b.symbol === data.selectedToken?.symbol
-    )?.amount || 0;
-
-  // Fetch APT balance
+  // Fetch Flux tier for Algorand users
   useEffect(() => {
-    const fetchAptBalance = async () => {
-      if (!account?.address) return;
-
-      try {
-        const aptosNetwork =
-          network === "mainnet" ? Network.MAINNET : Network.DEVNET;
-        const config = new AptosConfig({ network: aptosNetwork });
-        const aptos = new Aptos(config);
-
-        const accountAddress = account.address.toStringLong();
-        const baseUrl =
-          aptosNetwork === Network.MAINNET
-            ? "https://fullnode.mainnet.aptoslabs.com"
-            : "https://fullnode.devnet.aptoslabs.com";
-
-        const response = await fetch(
-          `${baseUrl}/v1/accounts/${accountAddress}/balance/0x1::aptos_coin::AptosCoin`
-        );
-
-        if (response.ok) {
-          const balanceStr = await response.text();
-          const balance = parseInt(balanceStr, 10) / Math.pow(10, 8); // APT has 8 decimals
-          setAptBalance(balance);
+    const fetchFluxTier = async () => {
+      if (
+        selectedNetwork === BlockchainNetwork.ALGORAND &&
+        algorandWallet.activeAccount
+      ) {
+        try {
+          const tier = await getUserFluxTier({
+            appId: 3219204562, // Flux Gate app ID
+            signer: algorandWallet.transactionSigner,
+            activeAddress: algorandWallet.activeAccount.address,
+          });
+          setFluxTier(tier);
+        } catch (error) {
+          console.error("Failed to fetch Flux tier:", error);
+          setFluxTier(0);
         }
-      } catch (error) {
-        console.error("Failed to fetch APT balance:", error);
+      } else {
+        setFluxTier(0);
       }
     };
 
-    fetchAptBalance();
-  }, [account?.address, network]);
+    fetchFluxTier();
+  }, [selectedNetwork, algorandWallet.activeAccount, algorandWallet.transactionSigner, getUserFluxTier]);
 
-  const hasInsufficientGas = aptBalance < FEE_AMOUNT;
+  // Get user's balance for the selected token
+  const tokenBalance = selectedNetwork === BlockchainNetwork.APTOS
+    ? (aptosAccountData?.balances.find(
+        (b) => b.symbol === data.selectedToken?.symbol
+      )?.amount || 0)
+    : (algorandAccountData?.balances.find(
+        (b) => b.symbol === data.selectedToken?.symbol
+      )?.amount || 0);
 
-  // Check if user has sufficient token balance for route + fee
+  // Fetch gas balance (APT or ALGO)
+  useEffect(() => {
+    const fetchGasBalance = async () => {
+      if (!accountAddress) return;
+
+      try {
+        if (selectedNetwork === BlockchainNetwork.APTOS) {
+          // Fetch APT balance
+          const aptosNet = aptosNetwork === "mainnet" ? Network.MAINNET : Network.DEVNET;
+          const baseUrl =
+            aptosNet === Network.MAINNET
+              ? "https://fullnode.mainnet.aptoslabs.com"
+              : "https://fullnode.devnet.aptoslabs.com";
+
+          const response = await fetch(
+            `${baseUrl}/v1/accounts/${accountAddress}/balance/0x1::aptos_coin::AptosCoin`
+          );
+
+          if (response.ok) {
+            const balanceStr = await response.text();
+            const balance = parseInt(balanceStr, 10) / Math.pow(10, 8); // APT has 8 decimals
+            setGasBalance(balance);
+          }
+        } else {
+          // Fetch ALGO balance
+          if (algorandAccountData) {
+            const balance = algorandAccountData.algoBalance / 1_000_000; // Convert microalgos to ALGO
+            setGasBalance(balance);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch gas balance:", error);
+      }
+    };
+
+    fetchGasBalance();
+  }, [accountAddress, selectedNetwork, aptosNetwork, algorandAccountData]);
+
+  const requiredGasFee = selectedNetwork === BlockchainNetwork.APTOS ? GAS_FEE_APT : GAS_FEE_ALGO;
+  const hasInsufficientGas = gasBalance < requiredGasFee;
+
+  // Calculate fee dynamically based on network, token, and Flux tier
   const totalAmountValue = parseFloat(data.totalAmount || "0");
-  const totalRequiredWithFee = totalAmountValue * (1 + FEE_PERCENTAGE);
+  const feeCalc = calculateFee(
+    totalAmountValue,
+    selectedNetwork,
+    data.selectedToken?.symbol || "",
+    selectedNetwork === BlockchainNetwork.ALGORAND ? fluxTier : 0
+  );
+  const totalRequiredWithFee = totalAmountValue + feeCalc.feeAmount;
   const hasInsufficientTokenBalance = totalRequiredWithFee > tokenBalance;
 
   const totalDuration =
@@ -1074,9 +1496,9 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         })()
       : null;
 
-  const handleCreateRoute = async () => {
+  const handleCreateAptosRoute = async () => {
     if (
-      !account ||
+      !aptosWallet.account ||
       !data.selectedToken ||
       !data.totalAmount ||
       !data.unlockAmount ||
@@ -1088,9 +1510,16 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       return;
     }
 
+    // Note: data.recipientAddress already contains the resolved address if an NFD was used
     // Validate sufficient token balance (route amount + fee)
     const routeAmount = parseFloat(data.totalAmount);
-    const platformFee = routeAmount * FEE_PERCENTAGE;
+    const routeFeeCalc = calculateFee(
+      routeAmount,
+      BlockchainNetwork.APTOS, // Always Aptos in this function
+      data.selectedToken.symbol,
+      0 // Aptos doesn't use Flux tiers
+    );
+    const platformFee = routeFeeCalc.feeAmount;
     const totalRequired = routeAmount + platformFee;
 
     if (totalRequired > tokenBalance) {
@@ -1125,11 +1554,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         parseFloat(data.totalAmount) / parseFloat(data.unlockAmount)
       );
 
-      // Platform fee: 0.5% of the route amount in the selected token's units
-      const FEE_PERCENTAGE = 0.005; // 0.5%
-      const feeAmountInUnits = Math.floor(
-        parseFloat(data.totalAmount) * FEE_PERCENTAGE * Math.pow(10, decimals)
-      );
+      // Platform fee in token units (using routeFeeCalc from above)
+      const feeAmountInUnits = Math.floor(platformFee * Math.pow(10, decimals));
 
       console.log("Building transaction with params:", {
         faObjectAddress: data.selectedToken.contract_address,
@@ -1172,7 +1598,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         description: "Please confirm the transaction in your wallet...",
       });
 
-      const response = await signAndSubmitTransaction({
+      const response = await aptosWallet.signAndSubmitTransaction({
         data: {
           function: `${moduleAddress}::${moduleName}::${functionName}`,
           functionArguments: [
@@ -1244,7 +1670,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
       // Prepare route payload for database
       const routePayload = {
-        sender: account.address.toStringLong(),
+        sender: aptosWallet.account.address.toStringLong(),
         recipient: data.recipientAddress,
         token_id: data.selectedToken.id,
         amount_token_units: amountInUnits.toString(),
@@ -1304,6 +1730,36 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     } finally {
       setIsBuilding(false);
       setTransactionStatus("idle");
+    }
+  };
+
+  const handleCreateAlgorandRoute = async () => {
+    // TODO: Implement Algorand route creation
+    // This function should:
+    // 1. Validate form data and balances
+    // 2. Build Algorand transactions:
+    //    - Create application call to waypoint_linear contract
+    //    - Include asset transfer transaction
+    //    - Set up route parameters (start_ts, period_secs, payout_amount, max_periods, deposit_amount)
+    // 3. Sign and submit transaction group using algorandWallet
+    // 4. Wait for confirmation
+    // 5. Extract route application ID from transaction
+    // 6. Save route to database with blockchain_tx_hash and route_obj_address (app ID)
+    // 7. Show success toast and redirect
+    
+    setBuildError("Algorand route creation is not yet implemented. Coming soon!");
+    toast.error({
+      title: "Not Yet Available",
+      description: "Algorand route creation is coming soon!",
+      duration: 5000,
+    });
+  };
+
+  const handleCreateRoute = async () => {
+    if (selectedNetwork === BlockchainNetwork.APTOS) {
+      await handleCreateAptosRoute();
+    } else {
+      await handleCreateAlgorandRoute();
     }
   };
 
@@ -1385,9 +1841,23 @@ const SummaryStep: React.FC<WizardStepProps> = ({
           <div className="text-sm font-display text-primary-400 uppercase tracking-wide mb-1">
             Recipient
           </div>
-          <div className="text-primary-100 font-mono text-sm break-all">
-            {data.recipientAddress}
-          </div>
+          {data.recipientNFD ? (
+            <>
+              <div className="text-sunset-400 font-display text-sm mb-1">
+                {data.recipientNFD}
+              </div>
+              {/* Only show resolved address if it's different from the NFD */}
+              {data.recipientAddress !== data.recipientNFD && (
+                <div className="text-primary-100 font-mono text-sm break-all">
+                  {data.recipientAddress}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-primary-100 font-mono text-sm break-all">
+              {data.recipientAddress}
+            </div>
+          )}
         </div>
 
         {/* Token Balance & Fee Breakdown */}
@@ -1410,13 +1880,16 @@ const SummaryStep: React.FC<WizardStepProps> = ({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-primary-300 font-display">
-                Platform Fee (0.5%)
+                Platform Fee ({(feeCalc.feePercentage * 100).toFixed(2)}%)
+                {selectedNetwork === BlockchainNetwork.ALGORAND && fluxTier > 0 && (
+                  <span className="text-green-400 ml-1 text-xs">
+                    (Flux Tier {fluxTier})
+                  </span>
+                )}
               </span>
               <span className="text-sunset-400 font-display font-semibold">
                 +{" "}
-                {(
-                  parseFloat(data.totalAmount || "0") * FEE_PERCENTAGE
-                ).toLocaleString(undefined, {
+                {feeCalc.feeAmount.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 6,
                 })}{" "}
@@ -1428,10 +1901,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
                 Total Required
               </span>
               <span className="text-primary-100 font-display font-bold">
-                {(
-                  parseFloat(data.totalAmount || "0") *
-                  (1 + FEE_PERCENTAGE)
-                ).toLocaleString(undefined, {
+                {totalRequiredWithFee.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 6,
                 })}{" "}
@@ -1444,8 +1914,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
               </span>
               <span
                 className={`font-display font-semibold ${
-                  tokenBalance >=
-                  parseFloat(data.totalAmount || "0") * (1 + FEE_PERCENTAGE)
+                  tokenBalance >= totalRequiredWithFee
                     ? "text-green-400"
                     : "text-sunset-400"
                 }`}
@@ -1478,11 +1947,11 @@ const SummaryStep: React.FC<WizardStepProps> = ({
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide">
-                    Insufficient APT for Gas
+                    Insufficient {selectedNetwork === BlockchainNetwork.APTOS ? 'APT' : 'ALGO'} for Gas
                   </p>
                   <p className="text-xs text-primary-300 font-display mt-1">
-                    You need at least {FEE_AMOUNT} APT to cover transaction
-                    fees. Please add APT to your wallet.
+                    You need at least {requiredGasFee} {selectedNetwork === BlockchainNetwork.APTOS ? 'APT' : 'ALGO'} to cover transaction
+                    fees. Please add {selectedNetwork === BlockchainNetwork.APTOS ? 'APT' : 'ALGO'} to your wallet.
                   </p>
                 </div>
               </div>

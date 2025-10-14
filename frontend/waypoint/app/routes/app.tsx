@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
 import RouteCreationModal from "../components/RouteCreationModal";
 import RoutesList, { type TokenRoute } from "../components/RoutesList";
 import { useToast } from "../contexts/ToastContext";
+import { useUnifiedWallet } from "../contexts/UnifiedWalletContext";
 import { useRoutes } from "../hooks/useQueries";
 import type { RouteData } from "../lib/api";
 
@@ -38,7 +38,7 @@ export default function AppDashboard() {
   }, []);
   
   const navigate = useNavigate();
-  const { account } = useWallet();
+  const { account, connected } = useUnifiedWallet();
   const toast = useToast();
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   
@@ -89,9 +89,9 @@ export default function AppDashboard() {
 
   // Calculate token routes based on wallet address and routes
   const tokenRoutes = useMemo(() => {
-    if (!account?.address || !allRoutes) return [];
+    if (!account || !allRoutes) return [];
     
-    const walletAddress = account.address.toStringLong();
+    const walletAddress = account;
     
     // Filter routes for this wallet
     const userRoutes = allRoutes.filter(
@@ -168,7 +168,7 @@ export default function AppDashboard() {
     });
     
     return routes;
-  }, [account?.address, allRoutes]);
+  }, [account, allRoutes]);
 
   const error = fetchError ? (fetchError instanceof Error ? fetchError.message : 'Failed to fetch routes') : null;
 

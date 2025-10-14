@@ -9,6 +9,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@algorandfoundation/algokit-utils": "^9.1.2",
     "@aptos-labs/ts-sdk": "^5.1.1",
     "@aptos-labs/wallet-adapter-ant-design": "^5.2.2",
     "@aptos-labs/wallet-adapter-react": "^7.1.2",
@@ -19,6 +20,8 @@
     "@txnlab/use-wallet-react": "^4.3.1",
     "@txnlab/use-wallet-ui-react": "^0.3.0",
     "@wallet-standard/core": "^1.1.1",
+    "algokit-utils": "link:@algorandfoundation/algokit-utils",
+    "algosdk": "^3.5.2",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.544.0",
     "lute-connect": "1.6.3",

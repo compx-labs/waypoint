@@ -129,6 +129,23 @@ export interface AptosToken {
   last_transaction_version: string;
 }
 
+// Algorand Account Types
+export interface AlgorandAccountBalance {
+  assetId: number;
+  symbol: string;
+  name: string;
+  amount: number;
+  decimals: number;
+  logoUrl: string;
+}
+
+export interface AlgorandAccountData {
+  address: string;
+  algoBalance: number; // ALGO balance in microalgos
+  balances: AlgorandAccountBalance[]; // ASA balances
+  network: string;
+}
+
 // API Functions
 
 // Routes
