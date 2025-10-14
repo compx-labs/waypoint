@@ -20,7 +20,7 @@ export const AddressBook = sequelize.define('AddressBook', {
     allowNull: false,
   },
   shortname: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.TEXT,
     allowNull: true,
     comment: 'NFD (Algorand Name Service) or other blockchain shortname',
   },

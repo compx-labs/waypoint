@@ -23,10 +23,13 @@ export default function AddressBookModal({
 
   // Form state
   const [formName, setFormName] = useState("");
-  const [formAddress, setFormAddress] = useState("");
-  const [formShortname, setFormShortname] = useState("");
+  const [formAddressOrNFD, setFormAddressOrNFD] = useState("");
+  const [resolvedAddress, setResolvedAddress] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [isResolvingNFD, setIsResolvingNFD] = useState(false);
+  const [nfdResolved, setNfdResolved] = useState(false);
+  const [nfdNotFound, setNfdNotFound] = useState(false);
+  const [isAddressValid, setIsAddressValid] = useState(false);
 
   // Get owner wallet address (works for both Aptos and Algorand)
   const ownerWallet = wallet.account || null;
@@ -66,6 +69,25 @@ export default function AddressBookModal({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // Address validation function
+  const validateAddress = (address: string, network: string): boolean => {
+    if (!address || address.trim() === "") return false;
+    
+    if (network === 'ALGORAND') {
+      // Algorand addresses are base64 encoded, typically 58 characters
+      // Valid chars: A-Z, a-z, 0-9, and sometimes = for padding
+      const algorandRegex = /^[A-Z2-7]{58}$/;
+      return algorandRegex.test(address);
+    } else if (network === 'APTOS') {
+      // Aptos addresses are hex format, start with 0x
+      // Can be various lengths (short form or long form)
+      const aptosRegex = /^0x[a-fA-F0-9]{1,64}$/;
+      return aptosRegex.test(address);
+    }
+    
+    return false;
+  };
+
   // NFD resolution function
   const resolveNFD = async (nfdName: string): Promise<string | null> => {
     if (!nfdName || !nfdName.endsWith('.algo')) {
@@ -74,12 +96,18 @@ export default function AddressBookModal({
 
     try {
       setIsResolvingNFD(true);
-      const response = await fetch(`https://api.nf.domains/nfd/lookup?name=${encodeURIComponent(nfdName)}&view=brief`);
+      const response = await fetch(
+        `https://api.nf.domains/nfd/${encodeURIComponent(nfdName)}?view=tiny&poll=false&nocache=false`
+      );
       const data = await response.json();
       
-      if (data && data.depositAccount) {
+      // Check if NFD was found (error response has name: "notFound")
+      if (data && data.name !== "notFound" && data.depositAccount) {
         return data.depositAccount;
       }
+      
+      // NFD not found or invalid
+      console.warn(`NFD not found: ${nfdName}`);
       return null;
     } catch (error) {
       console.error('Failed to resolve NFD:', error);
@@ -89,35 +117,60 @@ export default function AddressBookModal({
     }
   };
 
-  // Auto-resolve NFD when shortname changes (if it's a .algo domain)
+  // Auto-resolve NFD when input changes (if it's a .algo domain)
   useEffect(() => {
     const resolveIfNFD = async () => {
-      if (formShortname && formShortname.endsWith('.algo')) {
-        const address = await resolveNFD(formShortname);
+      if (formAddressOrNFD && formAddressOrNFD.endsWith('.algo')) {
+        // This is an NFD - try to resolve it
+        const address = await resolveNFD(formAddressOrNFD);
         if (address) {
-          setFormAddress(address);
+          setResolvedAddress(address);
+          setNfdResolved(true);
+          setNfdNotFound(false);
+          // Validate the resolved address
+          const isValid = validateAddress(address, wallet.currentNetwork);
+          setIsAddressValid(isValid);
+        } else {
+          setResolvedAddress("");
+          setNfdResolved(false);
+          setNfdNotFound(true);
+          setIsAddressValid(false);
         }
+      } else {
+        // Not an NFD, treat as direct address - validate it
+        setResolvedAddress("");
+        setNfdResolved(false);
+        setNfdNotFound(false);
+        const isValid = validateAddress(formAddressOrNFD, wallet.currentNetwork);
+        setIsAddressValid(isValid);
       }
     };
 
     const timeoutId = setTimeout(resolveIfNFD, 500); // Debounce by 500ms
     return () => clearTimeout(timeoutId);
-  }, [formShortname]);
+  }, [formAddressOrNFD, wallet.currentNetwork]);
 
   const handleAdd = async () => {
-    if (!wallet.account || !formName.trim() || !formAddress.trim()) return;
+    if (!wallet.account || !formName.trim() || !formAddressOrNFD.trim()) return;
+
+    // Determine final address and shortname based on whether NFD was used
+    const finalAddress = nfdResolved ? resolvedAddress : formAddressOrNFD.trim();
+    const finalShortname = nfdResolved ? formAddressOrNFD.trim() : null;
 
     try {
       await createMutation.mutateAsync({
         owner_wallet: wallet.account,
         name: formName.trim(),
-        wallet_address: formAddress.trim(),
-        shortname: formShortname.trim() || null,
+        wallet_address: finalAddress,
+        shortname: finalShortname,
       });
       
       setFormName("");
-      setFormAddress("");
-      setFormShortname("");
+      setFormAddressOrNFD("");
+      setResolvedAddress("");
+      setNfdResolved(false);
+      setNfdNotFound(false);
+      setIsAddressValid(false);
       setIsAdding(false);
     } catch (err) {
       // Error is handled by the mutation hook and displayed via error state
@@ -126,22 +179,29 @@ export default function AddressBookModal({
   };
 
   const handleUpdate = async (id: number) => {
-    if (!formName.trim() || !formAddress.trim()) return;
+    if (!formName.trim() || !formAddressOrNFD.trim()) return;
+
+    // Determine final address and shortname based on whether NFD was used
+    const finalAddress = nfdResolved ? resolvedAddress : formAddressOrNFD.trim();
+    const finalShortname = nfdResolved ? formAddressOrNFD.trim() : null;
 
     try {
       await updateMutation.mutateAsync({
         id,
         payload: {
           name: formName.trim(),
-          wallet_address: formAddress.trim(),
-          shortname: formShortname.trim() || null,
+          wallet_address: finalAddress,
+          shortname: finalShortname,
         },
       });
       
       setEditingId(null);
       setFormName("");
-      setFormAddress("");
-      setFormShortname("");
+      setFormAddressOrNFD("");
+      setResolvedAddress("");
+      setNfdResolved(false);
+      setNfdNotFound(false);
+      setIsAddressValid(false);
     } catch (err) {
       // Error is handled by the mutation hook and displayed via error state
       console.error("Failed to update entry:", err);
@@ -162,8 +222,12 @@ export default function AddressBookModal({
   const startEdit = (entry: AddressBookEntry) => {
     setEditingId(entry.id);
     setFormName(entry.name);
-    setFormAddress(entry.wallet_address);
-    setFormShortname(entry.shortname || "");
+    // If entry has shortname (NFD), show that; otherwise show the address
+    setFormAddressOrNFD(entry.shortname || entry.wallet_address);
+    setResolvedAddress(entry.shortname ? entry.wallet_address : "");
+    setNfdResolved(!!entry.shortname);
+    setNfdNotFound(false);
+    setIsAddressValid(true); // Existing entries are already valid
     setIsAdding(false);
   };
 
@@ -171,16 +235,22 @@ export default function AddressBookModal({
     setEditingId(null);
     setIsAdding(false);
     setFormName("");
-    setFormAddress("");
-    setFormShortname("");
+    setFormAddressOrNFD("");
+    setResolvedAddress("");
+    setNfdResolved(false);
+    setNfdNotFound(false);
+    setIsAddressValid(false);
   };
 
   const startAdd = () => {
     setIsAdding(true);
     setEditingId(null);
     setFormName("");
-    setFormAddress("");
-    setFormShortname("");
+    setFormAddressOrNFD("");
+    setResolvedAddress("");
+    setNfdResolved(false);
+    setNfdNotFound(false);
+    setIsAddressValid(false);
   };
 
   if (!isOpen) return null;
@@ -315,30 +385,27 @@ export default function AddressBookModal({
                   </div>
                   <div>
                     <label className="block text-xs font-display text-primary-300 mb-1">
-                      NFD / Shortname <span className="text-primary-400">(Optional)</span>
+                      NFD or Wallet Address
                     </label>
                     <input
                       type="text"
-                      value={formShortname}
-                      onChange={(e) => setFormShortname(e.target.value)}
-                      placeholder="e.g., alice.algo"
+                      value={formAddressOrNFD}
+                      onChange={(e) => setFormAddressOrNFD(e.target.value)}
+                      placeholder={wallet.currentNetwork === 'ALGORAND' ? 'alice.algo or ALGORAND_ADDRESS...' : 'name.apt or 0x...'}
                       className="w-full bg-forest-800 text-primary-100 border border-forest-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sunset-500"
                     />
                     {isResolvingNFD && (
                       <p className="text-xs text-sunset-400 mt-1">Resolving NFD...</p>
                     )}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-display text-primary-300 mb-1">
-                      Wallet Address
-                    </label>
-                    <input
-                      type="text"
-                      value={formAddress}
-                      onChange={(e) => setFormAddress(e.target.value)}
-                      placeholder="0x..."
-                      className="w-full bg-forest-800 text-primary-100 border border-forest-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sunset-500 font-mono"
-                    />
+                    {nfdResolved && resolvedAddress && (
+                      <div className="mt-2 p-2 bg-forest-800 rounded border border-sunset-500 border-opacity-30">
+                        <p className="text-xs text-primary-300 mb-1">✓ Resolved to:</p>
+                        <p className="text-xs text-sunset-400 font-mono break-all">{resolvedAddress}</p>
+                      </div>
+                    )}
+                    {nfdNotFound && !isResolvingNFD && (
+                      <p className="text-xs text-red-400 mt-1">⚠ NFD not found. Please check the name or enter a wallet address directly.</p>
+                    )}
                   </div>
                   <div className="flex space-x-2">
                     <button
@@ -346,7 +413,7 @@ export default function AddressBookModal({
                         isAdding ? handleAdd() : handleUpdate(editingId!)
                       }
                       disabled={
-                        isMutating || !formName.trim() || !formAddress.trim()
+                        isMutating || !formName.trim() || !formAddressOrNFD.trim() || isResolvingNFD || !isAddressValid
                       }
                       className="flex-1 bg-sunset-500 hover:bg-sunset-600 disabled:bg-forest-600 text-primary-100 font-display text-xs uppercase tracking-wider font-bold py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50"
                     >
@@ -522,30 +589,27 @@ export default function AddressBookModal({
                 </div>
                 <div>
                   <label className="block text-xs font-display text-primary-300 mb-1">
-                    NFD / Shortname <span className="text-primary-400">(Optional)</span>
+                    NFD or Wallet Address
                   </label>
                   <input
                     type="text"
-                    value={formShortname}
-                    onChange={(e) => setFormShortname(e.target.value)}
-                    placeholder="e.g., alice.algo"
+                    value={formAddressOrNFD}
+                    onChange={(e) => setFormAddressOrNFD(e.target.value)}
+                    placeholder={wallet.currentNetwork === 'ALGORAND' ? 'alice.algo or ALGORAND_ADDRESS...' : 'name.apt or 0x...'}
                     className="w-full bg-forest-800 text-primary-100 border border-forest-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-sunset-500 transition-colors"
                   />
                   {isResolvingNFD && (
                     <p className="text-xs text-sunset-400 mt-1">Resolving NFD...</p>
                   )}
-                </div>
-                <div>
-                  <label className="block text-xs font-display text-primary-300 mb-1">
-                    Wallet Address
-                  </label>
-                  <input
-                    type="text"
-                    value={formAddress}
-                    onChange={(e) => setFormAddress(e.target.value)}
-                    placeholder="0x..."
-                    className="w-full bg-forest-800 text-primary-100 border border-forest-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-sunset-500 transition-colors font-mono"
-                  />
+                  {nfdResolved && resolvedAddress && (
+                    <div className="mt-2 p-2 bg-forest-800 rounded border border-sunset-500 border-opacity-30">
+                      <p className="text-xs text-primary-300 mb-1">✓ Resolved to:</p>
+                      <p className="text-xs text-sunset-400 font-mono break-all">{resolvedAddress}</p>
+                    </div>
+                  )}
+                  {nfdNotFound && !isResolvingNFD && (
+                    <p className="text-xs text-red-400 mt-1">⚠ NFD not found. Please check the name or enter a wallet address directly.</p>
+                  )}
                 </div>
                 <div className="flex space-x-3">
                   <button
@@ -553,7 +617,7 @@ export default function AddressBookModal({
                       isAdding ? handleAdd() : handleUpdate(editingId!)
                     }
                     disabled={
-                      isMutating || !formName.trim() || !formAddress.trim()
+                      isMutating || !formName.trim() || !formAddressOrNFD.trim() || isResolvingNFD || !isAddressValid
                     }
                     className="flex-1 bg-sunset-500 hover:bg-sunset-600 disabled:bg-forest-600 text-primary-100 font-display text-sm uppercase tracking-wider font-bold py-2 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                   >
