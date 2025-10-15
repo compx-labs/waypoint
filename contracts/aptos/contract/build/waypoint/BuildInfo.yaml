@@ -12,10 +12,10 @@ compiled_package_info:
     vm: "0000000000000000000000000000000000000000000000000000000000000000"
     vm_reserved: "0000000000000000000000000000000000000000000000000000000000000000"
     waypoint: 12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0
-  source_digest: AC5C9F3AD35C048939D7CF9B024FDB5C99505F8228D32E0FE87A78BB2342C141
+  source_digest: E49B2C7DB0D21789FF329ABBD7EFD2B859773F128D5DC2B74CE78E15B1B11151
   build_flags:
-    dev_mode: false
-    test_mode: false
+    dev_mode: true
+    test_mode: true
     override_std: ~
     generate_docs: false
     generate_abis: false
@@ -23,7 +23,8 @@ compiled_package_info:
     full_model_generation: true
     install_dir: ~
     force_recompilation: false
-    additional_named_addresses: {}
+    additional_named_addresses:
+      waypoint: 12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0
     fetch_deps_only: false
     skip_fetch_latest_git_deps: false
     compiler_config:
