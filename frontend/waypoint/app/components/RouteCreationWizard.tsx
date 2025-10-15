@@ -13,6 +13,13 @@ import { useAlgorand } from "../contexts/AlgorandContext";
 import { useNetwork, BlockchainNetwork } from "../contexts/NetworkContext";
 import { useToast } from "../contexts/ToastContext";
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+import {
+  WaypointLinearClient,
+  WaypointLinearFactory,
+} from "~/algorand-clients/waypoint-linearClient";
+import * as algokit from "@algorandfoundation/algokit-utils";
+import { Account } from "algosdk";
+import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 
 // Fee calculation utility
 interface FeeCalculation {
@@ -28,14 +35,14 @@ const calculateFee = (
   fluxTier: number = 0
 ): FeeCalculation => {
   let feeBps: number;
-  
+
   if (network === BlockchainNetwork.APTOS) {
     // Aptos always has 0.5% fees (50 bps)
     feeBps = 50;
   } else {
     // Algorand fees vary by token and Flux tier
     const isXUSD = tokenSymbol === "xUSD";
-    
+
     if (isXUSD) {
       // xUSD base fee: 0.25% (25 bps)
       if (fluxTier === 0) feeBps = 25;
@@ -52,10 +59,10 @@ const calculateFee = (
       else feeBps = 20; // Tier 4+
     }
   }
-  
+
   const feePercentage = feeBps / 10000;
   const feeAmount = amount * feePercentage;
-  
+
   return { feePercentage, feeBps, feeAmount };
 };
 
@@ -196,47 +203,47 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
   isLastStep,
 }) => {
   const { selectedNetwork } = useNetwork();
-  
+
   // Aptos wallet and context
   const aptosWallet = useWallet();
   const { network: aptosNetwork } = useAptos();
-  
+
   // Algorand wallet and context
   const algorandWallet = useAlgorandWallet();
   const { network: algorandNetwork } = useAlgorand();
 
   // Get current account address based on network
-  const accountAddress = selectedNetwork === BlockchainNetwork.APTOS
-    ? aptosWallet.account?.address?.toStringLong() || null
-    : algorandWallet.activeAccount?.address || null;
+  const accountAddress =
+    selectedNetwork === BlockchainNetwork.APTOS
+      ? aptosWallet.account?.address?.toStringLong() || null
+      : algorandWallet.activeAccount?.address || null;
 
   // Use React Query to fetch tokens for the selected network
   const {
     data: availableTokens = [],
     isLoading: loading,
     error: queryError,
-  } = useTokensByNetwork(selectedNetwork === BlockchainNetwork.APTOS ? "aptos" : "algorand");
+  } = useTokensByNetwork(
+    selectedNetwork === BlockchainNetwork.APTOS ? "aptos" : "algorand"
+  );
 
   // Fetch account data based on network
-  const {
-    data: aptosAccountData,
-    isLoading: loadingAptosAccount,
-  } = useAptosAccount(
-    selectedNetwork === BlockchainNetwork.APTOS ? accountAddress : null,
-    aptosNetwork === "mainnet" ? "mainnet" : "devnet"
-  );
+  const { data: aptosAccountData, isLoading: loadingAptosAccount } =
+    useAptosAccount(
+      selectedNetwork === BlockchainNetwork.APTOS ? accountAddress : null,
+      aptosNetwork === "mainnet" ? "mainnet" : "devnet"
+    );
 
-  const {
-    data: algorandAccountData,
-    isLoading: loadingAlgorandAccount,
-  } = useAlgorandAccount(
-    selectedNetwork === BlockchainNetwork.ALGORAND ? accountAddress : null,
-    algorandNetwork === "mainnet" ? "mainnet" : "testnet"
-  );
+  const { data: algorandAccountData, isLoading: loadingAlgorandAccount } =
+    useAlgorandAccount(
+      selectedNetwork === BlockchainNetwork.ALGORAND ? accountAddress : null,
+      algorandNetwork === "mainnet" ? "mainnet" : "testnet"
+    );
 
-  const loadingAccount = selectedNetwork === BlockchainNetwork.APTOS 
-    ? loadingAptosAccount 
-    : loadingAlgorandAccount;
+  const loadingAccount =
+    selectedNetwork === BlockchainNetwork.APTOS
+      ? loadingAptosAccount
+      : loadingAlgorandAccount;
 
   const error =
     queryError instanceof Error
@@ -353,20 +360,20 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
 
       {!loading && !loadingAccount && (
         <div className="grid grid-cols-1 gap-3">
-        {availableTokens.map((token) => {
-          const balance = getTokenBalance(token.symbol);
-          const hasBalance = balance !== null && balance > 0;
-          return (
-            <button
-              key={token.id}
-              onClick={() => {
-                if (hasBalance) {
-                  updateData({ selectedToken: token });
-                  setTimeout(() => onNext(), 150);
-                }
-              }}
-              disabled={!hasBalance}
-              className={`
+          {availableTokens.map((token) => {
+            const balance = getTokenBalance(token.symbol);
+            const hasBalance = balance !== null && balance > 0;
+            return (
+              <button
+                key={token.id}
+                onClick={() => {
+                  if (hasBalance) {
+                    updateData({ selectedToken: token });
+                    setTimeout(() => onNext(), 150);
+                  }
+                }}
+                disabled={!hasBalance}
+                className={`
               flex items-center p-4 rounded-xl border-2 transition-all duration-200 text-left
               ${
                 !hasBalance
@@ -376,63 +383,71 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                     : "bg-gradient-to-r from-forest-700 to-forest-600 border-forest-500 border-opacity-30 hover:border-opacity-60 hover:border-sunset-500"
               }
             `}
-            >
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white flex items-center justify-center mr-4 p-2">
-                {token.logo_url ? (
-                  <img
-                    src={token.logo_url}
-                    alt={`${token.name} logo`}
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <span className="text-forest-800 font-display font-bold text-lg">
-                    {token.symbol.charAt(0)}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-display font-semibold text-primary-100 uppercase tracking-wide text-sm">
-                  {token.symbol}
-                </h3>
-                <p className="text-primary-300 text-xs font-display">
-                  {token.name}
-                </p>
-                {balance !== null && (
-                  <p className="text-sunset-400 text-xs font-display font-semibold mt-1">
-                    Balance:{" "}
-                    {balance.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 6,
-                    })}
-                  </p>
-                )}
-                {token.symbol === "xUSD" && (
-                  <p className="text-green-400 text-xs font-display font-semibold mt-1 flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    50% Fee Reduction
-                  </p>
-                )}
-              </div>
-              {data.selectedToken?.id === token.id && (
-                <div className="flex-shrink-0 ml-4">
-                  <svg
-                    className="w-5 h-5 text-sunset-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
+              >
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white flex items-center justify-center mr-4 p-2">
+                  {token.logo_url ? (
+                    <img
+                      src={token.logo_url}
+                      alt={`${token.name} logo`}
+                      className="w-full h-full object-contain"
                     />
-                  </svg>
+                  ) : (
+                    <span className="text-forest-800 font-display font-bold text-lg">
+                      {token.symbol.charAt(0)}
+                    </span>
+                  )}
                 </div>
-              )}
-            </button>
-          );
-        })}
+                <div className="flex-1">
+                  <h3 className="font-display font-semibold text-primary-100 uppercase tracking-wide text-sm">
+                    {token.symbol}
+                  </h3>
+                  <p className="text-primary-300 text-xs font-display">
+                    {token.name}
+                  </p>
+                  {balance !== null && (
+                    <p className="text-sunset-400 text-xs font-display font-semibold mt-1">
+                      Balance:{" "}
+                      {balance.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 6,
+                      })}
+                    </p>
+                  )}
+                  {token.symbol === "xUSD" && (
+                    <p className="text-green-400 text-xs font-display font-semibold mt-1 flex items-center gap-1">
+                      <svg
+                        className="w-3 h-3"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      50% Fee Reduction
+                    </p>
+                  )}
+                </div>
+                {data.selectedToken?.id === token.id && (
+                  <div className="flex-shrink-0 ml-4">
+                    <svg
+                      className="w-5 h-5 text-sunset-500"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -448,11 +463,11 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
   isLastStep,
 }) => {
   const { selectedNetwork } = useNetwork();
-  
+
   // Aptos wallet and context
   const aptosWallet = useWallet();
   const { network: aptosNetwork } = useAptos();
-  
+
   // Algorand wallet and context
   const algorandWallet = useAlgorandWallet();
   const { network: algorandNetwork, getUserFluxTier } = useAlgorand();
@@ -462,9 +477,10 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
   const [loadingFluxTier, setLoadingFluxTier] = useState(false);
 
   // Get current account address based on network
-  const accountAddress = selectedNetwork === BlockchainNetwork.APTOS
-    ? aptosWallet.account?.address?.toStringLong() || null
-    : algorandWallet.activeAccount?.address || null;
+  const accountAddress =
+    selectedNetwork === BlockchainNetwork.APTOS
+      ? aptosWallet.account?.address?.toStringLong() || null
+      : algorandWallet.activeAccount?.address || null;
 
   // Fetch account data based on network
   const { data: aptosAccountData } = useAptosAccount(
@@ -520,17 +536,18 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
   ];
 
   // Get user's balance for the selected token
-  const tokenBalance = selectedNetwork === BlockchainNetwork.APTOS
-    ? (aptosAccountData?.balances.find(
-        (b) => b.symbol === data.selectedToken?.symbol
-      )?.amount || 0)
-    : (algorandAccountData?.balances.find(
-        (b) => b.symbol === data.selectedToken?.symbol
-      )?.amount || 0);
+  const tokenBalance =
+    selectedNetwork === BlockchainNetwork.APTOS
+      ? aptosAccountData?.balances.find(
+          (b) => b.symbol === data.selectedToken?.symbol
+        )?.amount || 0
+      : algorandAccountData?.balances.find(
+          (b) => b.symbol === data.selectedToken?.symbol
+        )?.amount || 0;
 
   const DEPOSIT_LIMIT = 100; // Maximum tokens allowed per route during initial launch period
   const totalAmount = parseFloat(data.totalAmount || "0");
-  
+
   // Calculate fee based on network, token, and Flux tier
   const feeCalc = calculateFee(
     totalAmount,
@@ -541,7 +558,7 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
   const feeAmount = feeCalc.feeAmount;
   const feePercentage = feeCalc.feePercentage;
   const feeBps = feeCalc.feeBps;
-  
+
   const totalWithFee = totalAmount + feeAmount;
   const unlockAmount = parseFloat(data.unlockAmount || "0");
   const exceedsBalance = totalWithFee > tokenBalance;
@@ -586,7 +603,8 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
               Launch Period Limit
             </p>
             <p className="text-xs text-primary-300 font-display mt-1">
-              Routes are currently limited to {DEPOSIT_LIMIT} tokens maximum during our initial launch period.
+              Routes are currently limited to {DEPOSIT_LIMIT} tokens maximum
+              during our initial launch period.
             </p>
           </div>
         </div>
@@ -672,11 +690,12 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
             <div className="flex justify-between items-center text-xs font-display mb-1">
               <span className="text-primary-400">
                 Platform Fee ({(feePercentage * 100).toFixed(2)}%)
-                {selectedNetwork === BlockchainNetwork.ALGORAND && fluxTier > 0 && (
-                  <span className="text-green-400 ml-1">
-                    (Flux Tier {fluxTier} discount applied)
-                  </span>
-                )}
+                {selectedNetwork === BlockchainNetwork.ALGORAND &&
+                  fluxTier > 0 && (
+                    <span className="text-green-400 ml-1">
+                      (Flux Tier {fluxTier} discount applied)
+                    </span>
+                  )}
               </span>
               <span className="text-sunset-400 font-semibold">
                 +{" "}
@@ -723,7 +742,8 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
                   Deposit Limit Exceeded
                 </p>
                 <p className="text-xs text-primary-300 font-display mt-1">
-                  During our initial launch period, routes are limited to {DEPOSIT_LIMIT} tokens maximum. Please reduce your amount.
+                  During our initial launch period, routes are limited to{" "}
+                  {DEPOSIT_LIMIT} tokens maximum. Please reduce your amount.
                 </p>
               </div>
             </div>
@@ -1004,11 +1024,14 @@ const RecipientStep: React.FC<WizardStepProps> = ({
   const { selectedNetwork } = useNetwork();
   const aptosWallet = useWallet();
   const algorandWallet = useAlgorandWallet();
-  
+
   // Address validation function
-  const validateAddress = (address: string, network: BlockchainNetwork): boolean => {
+  const validateAddress = (
+    address: string,
+    network: BlockchainNetwork
+  ): boolean => {
     if (!address || address.trim() === "") return false;
-    
+
     if (network === BlockchainNetwork.ALGORAND) {
       // Algorand addresses: 58 chars, base32 encoded (A-Z, 2-7)
       const algorandRegex = /^[A-Z2-7]{58}$/;
@@ -1018,33 +1041,40 @@ const RecipientStep: React.FC<WizardStepProps> = ({
       const aptosRegex = /^0x[a-fA-F0-9]{1,64}$/;
       return aptosRegex.test(address);
     }
-    
+
     return false;
   };
 
   // State declarations
   const [showAddressBook, setShowAddressBook] = useState(false);
-  const [inputValue, setInputValue] = useState(data.recipientNFD || data.recipientAddress || "");
+  const [inputValue, setInputValue] = useState(
+    data.recipientNFD || data.recipientAddress || ""
+  );
   const [isResolvingNFD, setIsResolvingNFD] = useState(false);
   const [nfdResolved, setNfdResolved] = useState(
-    !!data.recipientNFD && !!data.recipientAddress && data.recipientNFD !== data.recipientAddress
+    !!data.recipientNFD &&
+      !!data.recipientAddress &&
+      data.recipientNFD !== data.recipientAddress
   );
   const [nfdNotFound, setNfdNotFound] = useState(false);
   const [resolvedAddress, setResolvedAddress] = useState(
-    (data.recipientNFD && data.recipientAddress && data.recipientNFD !== data.recipientAddress) 
-      ? data.recipientAddress 
+    data.recipientNFD &&
+      data.recipientAddress &&
+      data.recipientNFD !== data.recipientAddress
+      ? data.recipientAddress
       : ""
   );
   const [isAddressValid, setIsAddressValid] = useState(() => {
     // Initialize validation state based on existing data
     if (!data.recipientAddress) return false;
-    if (data.recipientNFD && data.recipientAddress !== data.recipientNFD) return true; // Already resolved
+    if (data.recipientNFD && data.recipientAddress !== data.recipientNFD)
+      return true; // Already resolved
     return validateAddress(data.recipientAddress, selectedNetwork);
   });
 
   // NFD resolution function
   const resolveNFD = async (nfdName: string): Promise<string | null> => {
-    if (!nfdName || !nfdName.endsWith('.algo')) {
+    if (!nfdName || !nfdName.endsWith(".algo")) {
       return null;
     }
 
@@ -1054,17 +1084,17 @@ const RecipientStep: React.FC<WizardStepProps> = ({
         `https://api.nf.domains/nfd/${encodeURIComponent(nfdName)}?view=tiny&poll=false&nocache=false`
       );
       const data = await response.json();
-      
+
       // Check if NFD was found (error response has name: "notFound")
       if (data && data.name !== "notFound" && data.depositAccount) {
         return data.depositAccount;
       }
-      
+
       // NFD not found or invalid
       console.warn(`NFD not found: ${nfdName}`);
       return null;
     } catch (error) {
-      console.error('Failed to resolve NFD:', error);
+      console.error("Failed to resolve NFD:", error);
       return null;
     } finally {
       setIsResolvingNFD(false);
@@ -1082,8 +1112,11 @@ const RecipientStep: React.FC<WizardStepProps> = ({
         updateData({ recipientAddress: undefined, recipientNFD: undefined });
         return;
       }
-      
-      if (selectedNetwork === BlockchainNetwork.ALGORAND && inputValue.endsWith('.algo')) {
+
+      if (
+        selectedNetwork === BlockchainNetwork.ALGORAND &&
+        inputValue.endsWith(".algo")
+      ) {
         // This is an NFD - try to resolve it
         const address = await resolveNFD(inputValue);
         if (address) {
@@ -1095,9 +1128,9 @@ const RecipientStep: React.FC<WizardStepProps> = ({
           setIsAddressValid(isValid);
           // Update form data: recipientAddress gets the resolved address, recipientNFD gets the NFD name
           if (isValid) {
-            updateData({ 
-              recipientAddress: address,  // Store the resolved address
-              recipientNFD: inputValue     // Store the NFD name
+            updateData({
+              recipientAddress: address, // Store the resolved address
+              recipientNFD: inputValue, // Store the NFD name
             });
           }
         } else {
@@ -1116,9 +1149,9 @@ const RecipientStep: React.FC<WizardStepProps> = ({
         setIsAddressValid(isValid);
         // For direct address, only store in recipientAddress
         if (isValid) {
-          updateData({ 
+          updateData({
             recipientAddress: inputValue,
-            recipientNFD: undefined
+            recipientNFD: undefined,
           });
         } else {
           updateData({ recipientAddress: undefined, recipientNFD: undefined });
@@ -1130,12 +1163,14 @@ const RecipientStep: React.FC<WizardStepProps> = ({
     return () => clearTimeout(timeoutId);
   }, [inputValue, selectedNetwork]);
 
-  const canProceed = inputValue.length > 0 && !isResolvingNFD && (isAddressValid || nfdResolved);
+  const canProceed =
+    inputValue.length > 0 && !isResolvingNFD && (isAddressValid || nfdResolved);
 
   // Get owner wallet address based on network
-  const ownerWallet = selectedNetwork === BlockchainNetwork.APTOS
-    ? (aptosWallet.account?.address?.toString() || null)
-    : (algorandWallet.activeAccount?.address || null);
+  const ownerWallet =
+    selectedNetwork === BlockchainNetwork.APTOS
+      ? aptosWallet.account?.address?.toString() || null
+      : algorandWallet.activeAccount?.address || null;
 
   // Use React Query to fetch address book entries
   const { data: addressBookEntries = [], isLoading: loadingAddressBook } =
@@ -1195,76 +1230,79 @@ const RecipientStep: React.FC<WizardStepProps> = ({
           )}
         </div>
         <div className="mt-2 text-xs text-primary-400 font-display">
-          {selectedNetwork === BlockchainNetwork.ALGORAND 
+          {selectedNetwork === BlockchainNetwork.ALGORAND
             ? "Enter the wallet address or NFD (e.g., alice.algo) that will receive the token route"
             : "Enter the wallet address that will receive the token route"}
         </div>
 
         {/* NFD Resolution Status */}
-        {selectedNetwork === BlockchainNetwork.ALGORAND && inputValue && inputValue.endsWith('.algo') && (
-          <div className="mt-3">
-            {isResolvingNFD && (
-              <div className="bg-primary-500 bg-opacity-20 border border-primary-400 border-opacity-30 rounded-lg p-3">
-                <div className="flex items-center space-x-2">
-                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-300"></div>
-                  <span className="text-sm text-primary-300 font-display">
-                    Resolving NFD...
-                  </span>
-                </div>
-              </div>
-            )}
-            {!isResolvingNFD && nfdResolved && resolvedAddress && (
-              <div className="bg-green-900 bg-opacity-30 border border-green-500 border-opacity-40 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                  <svg
-                    className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <div className="flex-1">
-                    <p className="text-sm font-display font-semibold text-green-300 uppercase tracking-wide">
-                      NFD Resolved
-                    </p>
-                    <p className="text-xs text-primary-300 font-mono mt-1 break-all">
-                      {resolvedAddress}
-                    </p>
+        {selectedNetwork === BlockchainNetwork.ALGORAND &&
+          inputValue &&
+          inputValue.endsWith(".algo") && (
+            <div className="mt-3">
+              {isResolvingNFD && (
+                <div className="bg-primary-500 bg-opacity-20 border border-primary-400 border-opacity-30 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-300"></div>
+                    <span className="text-sm text-primary-300 font-display">
+                      Resolving NFD...
+                    </span>
                   </div>
                 </div>
-              </div>
-            )}
-            {!isResolvingNFD && nfdNotFound && (
-              <div className="bg-sunset-900 bg-opacity-30 border border-sunset-500 border-opacity-40 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                  <svg
-                    className="w-5 h-5 text-sunset-400 flex-shrink-0 mt-0.5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <div className="flex-1">
-                    <p className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide">
-                      NFD Not Found
-                    </p>
-                    <p className="text-xs text-primary-300 font-display mt-1">
-                      Please check the NFD name or enter a wallet address directly.
-                    </p>
+              )}
+              {!isResolvingNFD && nfdResolved && resolvedAddress && (
+                <div className="bg-green-900 bg-opacity-30 border border-green-500 border-opacity-40 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <svg
+                      className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-display font-semibold text-green-300 uppercase tracking-wide">
+                        NFD Resolved
+                      </p>
+                      <p className="text-xs text-primary-300 font-mono mt-1 break-all">
+                        {resolvedAddress}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+              {!isResolvingNFD && nfdNotFound && (
+                <div className="bg-sunset-900 bg-opacity-30 border border-sunset-500 border-opacity-40 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <svg
+                      className="w-5 h-5 text-sunset-400 flex-shrink-0 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide">
+                        NFD Not Found
+                      </p>
+                      <p className="text-xs text-primary-300 font-display mt-1">
+                        Please check the NFD name or enter a wallet address
+                        directly.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
         {/* Address Book Dropdown */}
         {showAddressBook && addressBookEntries.length > 0 && (
@@ -1341,22 +1379,23 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   isLastStep,
 }) => {
   const { selectedNetwork } = useNetwork();
-  
+
   // Aptos wallet and context
   const aptosWallet = useWallet();
   const { network: aptosNetwork } = useAptos();
-  
+
   // Algorand wallet and context
   const algorandWallet = useAlgorandWallet();
   const { network: algorandNetwork, getUserFluxTier } = useAlgorand();
-  
+
   const toast = useToast();
   const createRouteMutation = useCreateRoute();
 
   // Get current account address based on network
-  const accountAddress = selectedNetwork === BlockchainNetwork.APTOS
-    ? aptosWallet.account?.address?.toStringLong() || null
-    : algorandWallet.activeAccount?.address || null;
+  const accountAddress =
+    selectedNetwork === BlockchainNetwork.APTOS
+      ? aptosWallet.account?.address?.toStringLong() || null
+      : algorandWallet.activeAccount?.address || null;
 
   // Fetch account data based on network
   const { data: aptosAccountData } = useAptosAccount(
@@ -1403,16 +1442,22 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     };
 
     fetchFluxTier();
-  }, [selectedNetwork, algorandWallet.activeAccount, algorandWallet.transactionSigner, getUserFluxTier]);
+  }, [
+    selectedNetwork,
+    algorandWallet.activeAccount,
+    algorandWallet.transactionSigner,
+    getUserFluxTier,
+  ]);
 
   // Get user's balance for the selected token
-  const tokenBalance = selectedNetwork === BlockchainNetwork.APTOS
-    ? (aptosAccountData?.balances.find(
-        (b) => b.symbol === data.selectedToken?.symbol
-      )?.amount || 0)
-    : (algorandAccountData?.balances.find(
-        (b) => b.symbol === data.selectedToken?.symbol
-      )?.amount || 0);
+  const tokenBalance =
+    selectedNetwork === BlockchainNetwork.APTOS
+      ? aptosAccountData?.balances.find(
+          (b) => b.symbol === data.selectedToken?.symbol
+        )?.amount || 0
+      : algorandAccountData?.balances.find(
+          (b) => b.symbol === data.selectedToken?.symbol
+        )?.amount || 0;
 
   // Fetch gas balance (APT or ALGO)
   useEffect(() => {
@@ -1422,7 +1467,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       try {
         if (selectedNetwork === BlockchainNetwork.APTOS) {
           // Fetch APT balance
-          const aptosNet = aptosNetwork === "mainnet" ? Network.MAINNET : Network.DEVNET;
+          const aptosNet =
+            aptosNetwork === "mainnet" ? Network.MAINNET : Network.DEVNET;
           const baseUrl =
             aptosNet === Network.MAINNET
               ? "https://fullnode.mainnet.aptoslabs.com"
@@ -1452,7 +1498,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     fetchGasBalance();
   }, [accountAddress, selectedNetwork, aptosNetwork, algorandAccountData]);
 
-  const requiredGasFee = selectedNetwork === BlockchainNetwork.APTOS ? GAS_FEE_APT : GAS_FEE_ALGO;
+  const requiredGasFee =
+    selectedNetwork === BlockchainNetwork.APTOS ? GAS_FEE_APT : GAS_FEE_ALGO;
   const hasInsufficientGas = gasBalance < requiredGasFee;
 
   // Calculate fee dynamically based on network, token, and Flux tier
@@ -1625,11 +1672,13 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       });
 
       // Wait for transaction confirmation
-      const txn = await aptos.waitForTransaction({ transactionHash: response.hash });
-      
+      const txn = await aptos.waitForTransaction({
+        transactionHash: response.hash,
+      });
+
       // Extract the route object address from transaction changes
       let routeObjAddress: string | null = null;
-      
+
       // Transaction confirmed! Now save to database
       toast.update(loadingToastId, {
         title: "Transaction Confirmed",
@@ -1638,24 +1687,24 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       });
 
       // Look for the created route object in the transaction changes
-      if ('changes' in txn && Array.isArray(txn.changes)) {
+      if ("changes" in txn && Array.isArray(txn.changes)) {
         for (const change of txn.changes) {
           // Look for write_resource changes that create the Route resource
           if (
-            change.type === 'write_resource' &&
-            'address' in change &&
-            'data' in change
+            change.type === "write_resource" &&
+            "address" in change &&
+            "data" in change
           ) {
             const data = change.data as any;
             // Check if this is the Route resource (not Routes collection)
             if (
               data?.type &&
-              typeof data.type === 'string' &&
-              data.type.includes('Route') &&
-              !data.type.includes('Routes')
+              typeof data.type === "string" &&
+              data.type.includes("Route") &&
+              !data.type.includes("Routes")
             ) {
               routeObjAddress = change.address;
-              console.log('Found route object address:', routeObjAddress);
+              console.log("Found route object address:", routeObjAddress);
               break;
             }
           }
@@ -1664,15 +1713,17 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
       // If we couldn't find it in changes, log for debugging
       if (!routeObjAddress) {
-        console.warn('Could not extract route object address from transaction changes');
-        console.log('Transaction result:', txn);
+        console.warn(
+          "Could not extract route object address from transaction changes"
+        );
+        console.log("Transaction result:", txn);
       }
 
       // Prepare route payload for database
       const routePayload = {
         sender: aptosWallet.account.address.toStringLong(),
         recipient: data.recipientAddress,
-        token_id: data.selectedToken.id,
+        token_id: Number(data.selectedToken.contract_address),
         amount_token_units: amountInUnits.toString(),
         amount_per_period_token_units: payoutAmountInUnits.toString(),
         start_date: data.startTime.toISOString(),
@@ -1690,7 +1741,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       });
 
       await createRouteMutation.mutateAsync(routePayload);
-      
+
       // Success! Show success toast
       toast.update(loadingToastId, {
         title: "Route Created Successfully!",
@@ -1706,21 +1757,22 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       }, 2000);
     } catch (error) {
       console.error("Failed to create route:", error);
-      
+
       // Determine error message
       let errorMessage = "Failed to create route. Please try again.";
       if (error instanceof Error) {
         if (error.message.includes("User rejected")) {
-          errorMessage = "Transaction was rejected. Please try again if you'd like to create this route.";
+          errorMessage =
+            "Transaction was rejected. Please try again if you'd like to create this route.";
         } else if (error.message.includes("Insufficient")) {
           errorMessage = "Insufficient funds to complete this transaction.";
         } else {
           errorMessage = error.message;
         }
       }
-      
+
       setBuildError(errorMessage);
-      
+
       // Show error toast
       toast.error({
         title: "Route Creation Failed",
@@ -1734,25 +1786,248 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   };
 
   const handleCreateAlgorandRoute = async () => {
-    // TODO: Implement Algorand route creation
-    // This function should:
-    // 1. Validate form data and balances
-    // 2. Build Algorand transactions:
-    //    - Create application call to waypoint_linear contract
-    //    - Include asset transfer transaction
-    //    - Set up route parameters (start_ts, period_secs, payout_amount, max_periods, deposit_amount)
-    // 3. Sign and submit transaction group using algorandWallet
-    // 4. Wait for confirmation
-    // 5. Extract route application ID from transaction
-    // 6. Save route to database with blockchain_tx_hash and route_obj_address (app ID)
-    // 7. Show success toast and redirect
-    
-    setBuildError("Algorand route creation is not yet implemented. Coming soon!");
-    toast.error({
-      title: "Not Yet Available",
-      description: "Algorand route creation is coming soon!",
-      duration: 5000,
+    // Validate required data
+    if (
+      !algorandWallet.activeAccount ||
+      !data.selectedToken ||
+      !data.totalAmount ||
+      !data.unlockAmount ||
+      !data.unlockUnit ||
+      !data.startTime ||
+      !data.recipientAddress
+    ) {
+      setBuildError("Missing required form data");
+      return;
+    }
+
+    // Calculate fee dynamically for Algorand
+    const routeAmount = parseFloat(data.totalAmount);
+    const routeFeeCalc = calculateFee(
+      routeAmount,
+      BlockchainNetwork.ALGORAND,
+      data.selectedToken.symbol,
+      fluxTier
+    );
+    const platformFee = routeFeeCalc.feeAmount;
+    const totalRequired = routeAmount + platformFee;
+
+    // Validate sufficient token balance
+    if (totalRequired > tokenBalance) {
+      setBuildError(
+        `Insufficient ${data.selectedToken.symbol} balance. You need ${totalRequired.toFixed(6)} ${data.selectedToken.symbol} (${routeAmount.toFixed(6)} route + ${platformFee.toFixed(6)} fee) but only have ${tokenBalance.toFixed(6)} ${data.selectedToken.symbol}.`
+      );
+      return;
+    }
+
+    setIsBuilding(true);
+    setBuildError(null);
+    setTransactionStatus("signing");
+
+    // Show loading toast
+    const loadingToastId = toast.loading({
+      title: "Creating Route",
+      description: "Building transactions...",
     });
+
+    try {
+      // Initialize Algorand client
+      const algorand = algokit.AlgorandClient.mainNet();
+      algorand.setDefaultValidityWindow(1000);
+
+      // Convert amounts to token base units (considering decimals)
+      const decimals = data.selectedToken.decimals;
+      const amountInUnits = Math.floor(routeAmount * Math.pow(10, decimals));
+      const payoutAmountInUnits = Math.floor(
+        parseFloat(data.unlockAmount) * Math.pow(10, decimals)
+      );
+      const feeAmountInUnits = Math.floor(platformFee * Math.pow(10, decimals));
+
+      // Calculate max periods
+      const maxPeriods = Math.ceil(
+        parseFloat(data.totalAmount) / parseFloat(data.unlockAmount)
+      );
+
+      // Convert start time to unix timestamp (seconds)
+      const startTimestamp = Math.floor(data.startTime.getTime() / 1000);
+
+      // Convert unlock period to seconds
+      const periodInSeconds = timeUnitToSeconds(data.unlockUnit);
+
+      console.log("Building Algorand transaction with params:", {
+        tokenId: data.selectedToken.contract_address,
+        depositAmount: amountInUnits,
+        start_ts: startTimestamp,
+        period_secs: periodInSeconds,
+        payout_amount: payoutAmountInUnits,
+        max_periods: maxPeriods,
+        fee_amount: feeAmountInUnits,
+        beneficiary: data.recipientAddress,
+      });
+
+      // Update toast
+      toast.update(loadingToastId, {
+        title: "Creating Route",
+        description: "Please approve the transactions in your wallet...",
+        type: "loading",
+      });
+
+      algorand.setDefaultSigner(algorandWallet.transactionSigner);
+      // Create the app factory
+      const factory = algorand.client.getTypedAppFactory(
+        WaypointLinearFactory,
+        {
+          defaultSender: algorandWallet.activeAccount.address,
+        }
+      );
+      factory.algorand.setDefaultSigner(algorandWallet.transactionSigner);
+      // Create the application
+      const { appClient } = await factory.send.create.createApplication({
+        args: {
+          registryAppId: BigInt(3253603509), // Registry app ID
+          tokenId: BigInt(Number(data.selectedToken.contract_address)),
+        },
+        sender: algorandWallet.activeAccount.address,
+        accountReferences: [algorandWallet.activeAccount.address],
+        assetReferences: [BigInt(Number(data.selectedToken.contract_address))],
+      });
+
+      console.log("appClient", appClient);
+
+      // Set the transaction signer
+      appClient.algorand.setDefaultSigner(algorandWallet.transactionSigner);
+
+      // Transaction signed, now confirming
+      setTransactionStatus("confirming");
+
+      // Update toast
+      toast.update(loadingToastId, {
+        title: "Transaction Submitted",
+        description: "Initializing route contract...",
+        type: "loading",
+      });
+
+      // Initialize the app with MBR payment
+      const initMbrTxn = await algorand.createTransaction.payment({
+        amount: AlgoAmount.MicroAlgos(400_000n),
+        sender: algorandWallet.activeAccount.address,
+        receiver: appClient.appAddress,
+      });
+
+      const initTxn = await appClient.send.initApp({
+        args: { mbrTxn: initMbrTxn },
+        sender: algorandWallet.activeAccount.address,
+      });
+
+      // Update toast
+      toast.update(loadingToastId, {
+        title: "Contract Initialized",
+        description: "Creating your route...",
+        type: "loading",
+      });
+      console.log("transaction params", data);
+      // Create the asset transfer transaction for the route
+      const routeCreationAssetTransfer =
+        appClient.algorand.createTransaction.assetTransfer({
+          amount: BigInt(amountInUnits),
+          sender: algorandWallet.activeAccount.address,
+          receiver: appClient.appAddress,
+          assetId: BigInt(Number(data.selectedToken.contract_address)),
+        });
+
+      // Create the route
+      const createRouteTxn = await appClient.send.createRoute({
+        args: {
+          beneficiary: data.recipientAddress,
+          startTs: BigInt(startTimestamp),
+          periodSecs: BigInt(periodInSeconds),
+          payoutAmount: BigInt(payoutAmountInUnits),
+          maxPeriods: BigInt(maxPeriods),
+          depositAmount: BigInt(amountInUnits),
+          tokenId: BigInt(Number(data.selectedToken.contract_address)),
+          tokenTransfer: routeCreationAssetTransfer,
+        },
+        sender: algorandWallet.activeAccount.address,
+      });
+
+      // Extract the app ID (this is the route's unique identifier)
+      const routeAppId = appClient.appId.toString();
+
+      console.log("Route created successfully! App ID:", routeAppId);
+      console.log("Transaction ID:", createRouteTxn.txIds[0]);
+
+      // Transaction confirmed! Now save to database
+      toast.update(loadingToastId, {
+        title: "Transaction Confirmed",
+        description: "Saving route to database...",
+        type: "loading",
+      });
+
+      // Prepare route payload for database
+      const routePayload = {
+        sender: algorandWallet.activeAccount.address,
+        recipient: data.recipientAddress,
+        token_id: Number(data.selectedToken.contract_address),
+        amount_token_units: amountInUnits.toString(),
+        amount_per_period_token_units: payoutAmountInUnits.toString(),
+        start_date: data.startTime.toISOString(),
+        payment_frequency_unit: data.unlockUnit,
+        payment_frequency_number: 1, // Always 1 - we unlock every 1 unit (hour, day, etc.)
+        blockchain_tx_hash: createRouteTxn.txIds[0],
+        route_obj_address: routeAppId, // Store the app ID as the route address
+      };
+
+      // Save route to database
+      await createRouteMutation.mutateAsync(routePayload);
+
+      // Success! Show success toast
+      toast.update(loadingToastId, {
+        title: "Route Created Successfully!",
+        description: `Your ${data.selectedToken.symbol} route has been created and is now active.`,
+        type: "success",
+      });
+
+      // Wait a moment for user to see the success message
+      setTimeout(() => {
+        toast.dismiss(loadingToastId);
+        // Navigate back to dashboard
+        window.location.href = "/app";
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to create Algorand route:", error);
+
+      // Determine error message
+      let errorMessage = "Failed to create route. Please try again.";
+      if (error instanceof Error) {
+        if (
+          error.message.includes("rejected") ||
+          error.message.includes("cancelled")
+        ) {
+          errorMessage =
+            "Transaction was rejected. Please try again if you'd like to create this route.";
+        } else if (error.message.includes("insufficient")) {
+          errorMessage = "Insufficient funds to complete this transaction.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      setBuildError(errorMessage);
+
+      // Show error toast
+      toast.update(loadingToastId, {
+        title: "Route Creation Failed",
+        description: errorMessage,
+        type: "error",
+      });
+
+      // Auto-dismiss error toast after 5 seconds
+      setTimeout(() => {
+        toast.dismiss(loadingToastId);
+      }, 5000);
+    } finally {
+      setIsBuilding(false);
+      setTransactionStatus("idle");
+    }
   };
 
   const handleCreateRoute = async () => {
@@ -1881,11 +2156,12 @@ const SummaryStep: React.FC<WizardStepProps> = ({
             <div className="flex justify-between items-center">
               <span className="text-primary-300 font-display">
                 Platform Fee ({(feeCalc.feePercentage * 100).toFixed(2)}%)
-                {selectedNetwork === BlockchainNetwork.ALGORAND && fluxTier > 0 && (
-                  <span className="text-green-400 ml-1 text-xs">
-                    (Flux Tier {fluxTier})
-                  </span>
-                )}
+                {selectedNetwork === BlockchainNetwork.ALGORAND &&
+                  fluxTier > 0 && (
+                    <span className="text-green-400 ml-1 text-xs">
+                      (Flux Tier {fluxTier})
+                    </span>
+                  )}
               </span>
               <span className="text-sunset-400 font-display font-semibold">
                 +{" "}
@@ -1947,11 +2223,22 @@ const SummaryStep: React.FC<WizardStepProps> = ({
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide">
-                    Insufficient {selectedNetwork === BlockchainNetwork.APTOS ? 'APT' : 'ALGO'} for Gas
+                    Insufficient{" "}
+                    {selectedNetwork === BlockchainNetwork.APTOS
+                      ? "APT"
+                      : "ALGO"}{" "}
+                    for Gas
                   </p>
                   <p className="text-xs text-primary-300 font-display mt-1">
-                    You need at least {requiredGasFee} {selectedNetwork === BlockchainNetwork.APTOS ? 'APT' : 'ALGO'} to cover transaction
-                    fees. Please add {selectedNetwork === BlockchainNetwork.APTOS ? 'APT' : 'ALGO'} to your wallet.
+                    You need at least {requiredGasFee}{" "}
+                    {selectedNetwork === BlockchainNetwork.APTOS
+                      ? "APT"
+                      : "ALGO"}{" "}
+                    to cover transaction fees. Please add{" "}
+                    {selectedNetwork === BlockchainNetwork.APTOS
+                      ? "APT"
+                      : "ALGO"}{" "}
+                    to your wallet.
                   </p>
                 </div>
               </div>

@@ -11,7 +11,7 @@ import {
   NetworkId,
   WalletProvider,
 } from "@txnlab/use-wallet-react";
-import { FluxGateClient } from "~/clients/flux-gateClient";
+import { FluxGateClient } from "~/algorand-clients/flux-gateClient";
 import algosdk, { type TransactionSigner } from "algosdk";
 import * as algokit from "@algorandfoundation/algokit-utils";
 
@@ -125,6 +125,8 @@ export function AlgorandProvider({
       return null;
     }
   };
+
+
 
   const getUserFluxTier = async ({
     appId,
