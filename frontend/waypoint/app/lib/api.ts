@@ -26,6 +26,7 @@ export interface RouteData {
   status: 'active' | 'completed' | 'cancelled';
   blockchain_tx_hash: string | null;
   route_obj_address: string | null;
+  route_type?: string;
   created_at: string;
   token: Token;
 }
@@ -51,6 +52,7 @@ export interface CreateRoutePayload {
   payment_frequency_number: number;
   blockchain_tx_hash: string | null;
   route_obj_address?: string | null;
+  route_type?: string;
 }
 
 export interface CreateAddressBookPayload {
@@ -64,6 +66,20 @@ export interface UpdateAddressBookPayload {
   name: string;
   wallet_address: string;
   shortname?: string | null;
+}
+
+export interface RouteType {
+  id: number;
+  route_type_id: string;
+  display_name: string;
+  description: string;
+  network: 'aptos' | 'algorand';
+  module_name: string | null;
+  contract_address: string | null;
+  enabled: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // Aptos Account Types
@@ -297,6 +313,35 @@ export async function getAnalytics(): Promise<AnalyticsData> {
   
   if (!response.ok) {
     throw new Error('Failed to fetch analytics');
+  }
+  
+  return response.json();
+}
+
+// Route Types API
+export async function fetchRouteTypes(network?: string): Promise<RouteType[]> {
+  const url = network 
+    ? `${API_BASE_URL}/api/route-types?network=${network}`
+    : `${API_BASE_URL}/api/route-types`;
+    
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch route types');
+  }
+  
+  return response.json();
+}
+
+export async function fetchEnabledRouteTypes(network?: string): Promise<RouteType[]> {
+  const url = network 
+    ? `${API_BASE_URL}/api/route-types/enabled?network=${network}`
+    : `${API_BASE_URL}/api/route-types/enabled`;
+    
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch enabled route types');
   }
   
   return response.json();

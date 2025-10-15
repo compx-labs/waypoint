@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import AddressBookModal from "./AddressBookModal";
 import NetworkWalletModal from "./NetworkWalletModal";
 import { BlockchainNetwork } from "../contexts/NetworkContext";
@@ -6,7 +7,7 @@ import { useUnifiedWallet } from "../contexts/UnifiedWalletContext";
 import { useToast } from "../contexts/ToastContext";
 
 export default function AppNavigation() {
-  const [currentPath, setCurrentPath] = useState("");
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAddressBookOpen, setIsAddressBookOpen] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
@@ -51,46 +52,6 @@ export default function AppNavigation() {
     }
   };
 
-  useEffect(() => {
-    // Set initial path and listen for changes
-    setCurrentPath(window.location.pathname);
-
-    const handleLocationChange = () => {
-      setCurrentPath(window.location.pathname);
-    };
-
-    // Listen for navigation changes
-    window.addEventListener("popstate", handleLocationChange);
-
-    // Also listen for pushstate/replacestate (for programmatic navigation)
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
-
-    history.pushState = function (
-      data: any,
-      unused: string,
-      url?: string | URL | null
-    ) {
-      originalPushState.call(history, data, unused, url);
-      handleLocationChange();
-    };
-
-    history.replaceState = function (
-      data: any,
-      unused: string,
-      url?: string | URL | null
-    ) {
-      originalReplaceState.call(history, data, unused, url);
-      handleLocationChange();
-    };
-
-    return () => {
-      window.removeEventListener("popstate", handleLocationChange);
-      history.pushState = originalPushState;
-      history.replaceState = originalReplaceState;
-    };
-  }, []);
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -106,7 +67,7 @@ export default function AppNavigation() {
 
   // Helper function to determine if a link is active
   const isActiveLink = (path: string) => {
-    return currentPath === path;
+    return location.pathname === path;
   };
 
   // Helper function to get link classes
@@ -149,24 +110,24 @@ export default function AppNavigation() {
 
             {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-6">
-              <a href="/app" className={getLinkClasses("/app")}>
+              <Link to="/app" className={getLinkClasses("/app")}>
                 Your Routes
-              </a>
-              <a
-                href="/app/analytics"
+              </Link>
+              <Link
+                to="/app/analytics"
                 className={getLinkClasses("/app/analytics")}
               >
                 Analytics
-              </a>
-              <a
-                href="/app/vision-roadmap"
+              </Link>
+              <Link
+                to="/app/vision-roadmap"
                 className={getLinkClasses("/app/vision-roadmap")}
               >
                 Vision & Roadmap
-              </a>
-              <a href="/app/docs" className={getLinkClasses("/app/docs")}>
+              </Link>
+              <Link to="/app/docs" className={getLinkClasses("/app/docs")}>
                 Docs
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -414,34 +375,34 @@ export default function AppNavigation() {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-forest-700 pt-4 pb-4">
             <div className="flex flex-col space-y-3">
-              <a
-                href="/app"
+              <Link
+                to="/app"
                 className={getMobileLinkClasses("/app")}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Your Routes
-              </a>
-              <a
-                href="/app/analytics"
+              </Link>
+              <Link
+                to="/app/analytics"
                 className={getMobileLinkClasses("/app/analytics")}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Analytics
-              </a>
-              <a
-                href="/app/vision-roadmap"
+              </Link>
+              <Link
+                to="/app/vision-roadmap"
                 className={getMobileLinkClasses("/app/vision-roadmap")}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Vision & Roadmap
-              </a>
-              <a
-                href="/app/docs"
+              </Link>
+              <Link
+                to="/app/docs"
                 className={getMobileLinkClasses("/app/docs")}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Docs
-              </a>
+              </Link>
             </div>
           </div>
         )}

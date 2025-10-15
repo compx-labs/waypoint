@@ -13,6 +13,7 @@ import {
   updateAddressBookEntry,
   deleteAddressBookEntry,
   getAnalytics,
+  fetchEnabledRouteTypes,
   type RouteData,
   type Token,
   type AddressBookEntry,
@@ -26,6 +27,7 @@ import {
   type AlgorandAccountData,
   type AlgorandAccountBalance,
   type AnalyticsData,
+  type RouteType,
 } from '../lib/api';
 
 // Query Keys
@@ -38,6 +40,7 @@ export const queryKeys = {
   aptosAccount: (address: string, network: string) => ['aptosAccount', address, network] as const,
   algorandAccount: (address: string, network: string) => ['algorandAccount', address, network] as const,
   analytics: ['analytics'] as const,
+  routeTypes: (network?: string) => network ? ['routeTypes', network] as const : ['routeTypes'] as const,
 };
 
 // Routes Queries
@@ -387,6 +390,20 @@ export function useAnalytics(
     queryFn: getAnalytics,
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
+    ...options,
+  });
+}
+
+// Route Types Queries
+export function useRouteTypes(
+  network?: string,
+  options?: Omit<UseQueryOptions<RouteType[], Error>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: queryKeys.routeTypes(network),
+    queryFn: () => fetchEnabledRouteTypes(network),
+    staleTime: 1000 * 60 * 10, // Consider data fresh for 10 minutes (route types don't change often)
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
     ...options,
   });
 }

@@ -8,6 +8,7 @@ import tokenRoutes from "./routes/tokens.js";
 import routeRoutes from "./routes/routes.js";
 import analyticsRoutes from "./routes/analytics.js";
 import addressBookRoutes from "./routes/addressBook.js";
+import routeTypeRoutes from "./routes/routeTypes.js";
 
 dotenv.config();
 
@@ -16,13 +17,13 @@ const PORT = process.env.PORT || 3001;
 
 // Security middleware
 app.use(helmet());
-
+/* 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
 });
-app.use("/api/", limiter);
+app.use("/api/", limiter); */
 
 // CORS configuration
 app.use(
@@ -44,6 +45,7 @@ app.use("/api/tokens", tokenRoutes);
 app.use("/api/routes", routeRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/address-book", addressBookRoutes);
+app.use("/api/route-types", routeTypeRoutes);
 
 // Health check
 app.get("/health", (req, res) => {

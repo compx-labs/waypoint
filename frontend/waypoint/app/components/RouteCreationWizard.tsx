@@ -7,6 +7,7 @@ import {
   useAptosAccount,
   useAlgorandAccount,
   useCreateRoute,
+  useRouteTypes,
 } from "../hooks/useQueries";
 import { useAptos } from "../contexts/AptosContext";
 import { useAlgorand } from "../contexts/AlgorandContext";
@@ -161,6 +162,7 @@ interface WizardStepProps {
   onPrevious: () => void;
   isFirstStep: boolean;
   isLastStep: boolean;
+  routeType?: string;
 }
 
 export interface RouteFormData {
@@ -1377,6 +1379,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   onPrevious,
   isFirstStep,
   isLastStep,
+  routeType,
 }) => {
   const { selectedNetwork } = useNetwork();
 
@@ -1390,6 +1393,13 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
   const toast = useToast();
   const createRouteMutation = useCreateRoute();
+
+  // Fetch route types to get module name and contract address
+  const networkName = selectedNetwork === BlockchainNetwork.APTOS ? "aptos" : "algorand";
+  const { data: routeTypesFromAPI = [], isLoading: loadingRouteTypes } = useRouteTypes(networkName);
+  
+  // Find the current route type configuration
+  const currentRouteTypeConfig = routeTypesFromAPI.find(rt => rt.route_type_id === routeType);
 
   // Get current account address based on network
   const accountAddress =
@@ -1629,9 +1639,19 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         network === "mainnet" ? "mainnet" : "devnet"
       ); */
 
-      const moduleAddress =
-        "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
-      const moduleName = "linear_stream_fa";
+      // Get module name and contract address from database
+      if (!currentRouteTypeConfig) {
+        setBuildError("Route type configuration not found. Please try again.");
+        return;
+      }
+
+      if (!currentRouteTypeConfig.module_name || !currentRouteTypeConfig.contract_address) {
+        setBuildError("Route type is not properly configured. Please contact support.");
+        return;
+      }
+
+      const moduleAddress = currentRouteTypeConfig.contract_address;
+      const moduleName = currentRouteTypeConfig.module_name;
       const functionName = "create_route_and_fund";
 
       // Configure Aptos SDK with the correct network
@@ -1723,7 +1743,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       const routePayload = {
         sender: aptosWallet.account.address.toStringLong(),
         recipient: data.recipientAddress,
-        token_id: Number(data.selectedToken.contract_address),
+        token_id: Number(data.selectedToken.id),
         amount_token_units: amountInUnits.toString(),
         amount_per_period_token_units: payoutAmountInUnits.toString(),
         start_date: data.startTime.toISOString(),
@@ -2037,6 +2057,64 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       await handleCreateAlgorandRoute();
     }
   };
+
+  // Show loading state if route types are still loading
+  if (loadingRouteTypes) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-display font-bold text-primary-100 uppercase tracking-wider mb-2">
+            Review Route
+          </h2>
+          <p className="text-primary-300 font-display text-sm">
+            Loading route configuration...
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-sunset-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if route type config not found
+  if (!currentRouteTypeConfig) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-display font-bold text-primary-100 uppercase tracking-wider mb-2">
+            Review Route
+          </h2>
+          <p className="text-primary-300 font-display text-sm">
+            Configuration Error
+          </p>
+        </div>
+        <div className="bg-sunset-900 bg-opacity-30 border-2 border-sunset-500 border-opacity-40 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <svg className="w-6 h-6 text-sunset-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide mb-1">
+                Route Type Not Found
+              </h3>
+              <p className="text-xs text-primary-300 font-display">
+                The selected route type configuration could not be found. Please go back and select a different route type.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-between pt-4">
+          <button
+            onClick={onPrevious}
+            className="px-6 py-3 bg-forest-600 hover:bg-forest-500 text-primary-100 font-display text-sm uppercase tracking-wider rounded-lg transition-all duration-200 border-2 border-forest-400"
+          >
+            ← Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -2383,6 +2461,9 @@ export default function RouteCreationWizard({
 }: RouteCreationWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<RouteFormData>({});
+  
+  // Determine if this is a milestone route
+  const isMilestoneRoute = routeType === "milestone-routes";
 
   const updateFormData = (updates: Partial<RouteFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
@@ -2429,7 +2510,7 @@ export default function RouteCreationWizard({
           </button>
 
           <h1 className="text-3xl lg:text-4xl font-display font-bold text-forest-800 uppercase tracking-wide mb-2">
-            Create {routeType.replace("-", " ")} Route
+            Create {routeType === "milestone-routes" ? "Milestone" : routeType === "simple-transfer" ? "Simple Transfer" : routeType.replace("-", " ")} Route
           </h1>
 
           {/* Progress Indicator */}
@@ -2477,6 +2558,7 @@ export default function RouteCreationWizard({
             onPrevious={handlePrevious}
             isFirstStep={currentStep === 0}
             isLastStep={currentStep === wizardSteps.length - 1}
+            routeType={routeType}
           />
         </div>
       </div>
