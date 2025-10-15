@@ -5,19 +5,24 @@ interface RouteBlockchainDataProps {
   routeObjAddress: string | null;
   decimals: number;
   symbol: string;
+  refreshTrigger?: number;
   onDataLoaded?: (data: RouteCore | null) => void;
   onCompletionStatusChange?: (isComplete: boolean) => void;
+  onFullyApprovedStatusChange?: (isFullyApproved: boolean) => void;
 }
 
 /**
  * Component that fetches and displays real-time blockchain data for a route
+ * Route type is automatically determined from the database by getRouteCore
  */
 export default function RouteBlockchainData({
   routeObjAddress,
   decimals,
   symbol,
+  refreshTrigger = 0,
   onDataLoaded,
   onCompletionStatusChange,
+  onFullyApprovedStatusChange,
 }: RouteBlockchainDataProps) {
   const { getRouteCore } = useAptos();
   const [routeData, setRouteData] = useState<RouteCore | null>(null);
@@ -34,7 +39,7 @@ export default function RouteBlockchainData({
       setLoading(true);
       setError(null);
       try {
-        const data = await getRouteCore(routeObjAddress);
+        const data = await getRouteCore(routeObjAddress!);
         setRouteData(data);
         if (onDataLoaded) {
           onDataLoaded(data);
@@ -46,6 +51,14 @@ export default function RouteBlockchainData({
           const claimedAmount = BigInt(data.claimed_amount);
           const isComplete = claimedAmount >= depositAmount;
           onCompletionStatusChange(isComplete);
+        }
+        
+        // Check if milestone route is fully approved
+        if (data && onFullyApprovedStatusChange && data.approved_amount !== undefined) {
+          const depositAmount = BigInt(data.deposit_amount);
+          const approvedAmount = BigInt(data.approved_amount);
+          const isFullyApproved = approvedAmount >= depositAmount;
+          onFullyApprovedStatusChange(isFullyApproved);
         }
       } catch (err) {
         console.error("Error fetching route blockchain data:", err);
@@ -61,7 +74,8 @@ export default function RouteBlockchainData({
     const intervalId = setInterval(fetchData, 60000);
 
     return () => clearInterval(intervalId);
-  }, [routeObjAddress, getRouteCore, onDataLoaded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeObjAddress, refreshTrigger]); // Refetch when address or refresh trigger changes
 
   if (loading && !routeData) {
     return (
@@ -78,13 +92,39 @@ export default function RouteBlockchainData({
   // Calculate amounts
   const depositedBigInt = BigInt(routeData.deposit_amount);
   const claimedBigInt = BigInt(routeData.claimed_amount);
-  const remainingBigInt = depositedBigInt - claimedBigInt;
+  const decimalsNum = BigInt(10 ** decimals);
+  
+  // For milestone routes, check if approved_amount exists
+  const isMilestone = routeData.approved_amount !== undefined;
+  const approvedBigInt = isMilestone ? BigInt(routeData.approved_amount!) : BigInt(0);
+  
+  console.log('RouteBlockchainData:', {
+    isMilestone,
+    approved_amount: routeData.approved_amount,
+    deposit_amount: routeData.deposit_amount,
+    claimed_amount: routeData.claimed_amount,
+    routeObjAddress
+  });
+  
+  // Calculate remaining based on route type
+  let remainingBigInt: bigint;
+  let approvedRemaining = 0;
+  
+  if (isMilestone) {
+    // For milestone routes: show amount available to claim (approved - claimed)
+    remainingBigInt = approvedBigInt - claimedBigInt;
+    // Also calculate total in escrow
+    approvedRemaining = Number(depositedBigInt - claimedBigInt) / Number(decimalsNum);
+  } else {
+    // For simple routes: show total remaining (deposit - claimed)
+    remainingBigInt = depositedBigInt - claimedBigInt;
+  }
 
   // Convert to human-readable format
-  const decimalsNum = BigInt(10 ** decimals);
   const deposited = Number(depositedBigInt) / Number(decimalsNum);
   const claimed = Number(claimedBigInt) / Number(decimalsNum);
   const remaining = Number(remainingBigInt) / Number(decimalsNum);
+  const approved = Number(approvedBigInt) / Number(decimalsNum);
 
   return (
     <div className="inline-flex items-center gap-2">
@@ -101,13 +141,17 @@ export default function RouteBlockchainData({
             Claimed: {claimed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
           </span>
         )}
+        {isMilestone && (
+          <span className="text-xs text-green-600">
+            Approved: {approved.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} / {deposited.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+          </span>
+        )}
       </div>
       <div className="relative group">
         <svg
           className="w-4 h-4 text-green-500"
           fill="currentColor"
           viewBox="0 0 20 20"
-          title="Live blockchain data"
         >
           <path
             fillRule="evenodd"

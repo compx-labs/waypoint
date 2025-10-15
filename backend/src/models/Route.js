@@ -53,6 +53,12 @@ export const Route = sequelize.define('Route', {
     allowNull: true,
     comment: 'The route object address on the Aptos blockchain',
   },
+  route_type: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    defaultValue: 'simple',
+    comment: 'Type of route: simple or milestone',
+  },
   status: {
     type: DataTypes.ENUM('active', 'completed', 'cancelled'),
     defaultValue: 'active',

@@ -41,7 +41,7 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/address-book - Create new address book entry
 router.post('/', async (req, res, next) => {
   try {
-    const { owner_wallet, name, wallet_address } = req.body;
+    const { owner_wallet, name, wallet_address, shortname } = req.body;
     
     // Validation
     if (!owner_wallet || !name || !wallet_address) {
@@ -52,6 +52,7 @@ router.post('/', async (req, res, next) => {
       owner_wallet,
       name,
       wallet_address,
+      shortname: shortname || null,
     });
     
     res.status(201).json(entry);
@@ -63,7 +64,7 @@ router.post('/', async (req, res, next) => {
 // PUT /api/address-book/:id - Update address book entry
 router.put('/:id', async (req, res, next) => {
   try {
-    const { name, wallet_address } = req.body;
+    const { name, wallet_address, shortname } = req.body;
     
     const entry = await AddressBook.findByPk(req.params.id);
     if (!entry) {
@@ -75,6 +76,9 @@ router.put('/:id', async (req, res, next) => {
     }
     if (wallet_address !== undefined) {
       entry.wallet_address = wallet_address;
+    }
+    if (shortname !== undefined) {
+      entry.shortname = shortname || null;
     }
     
     await entry.save();

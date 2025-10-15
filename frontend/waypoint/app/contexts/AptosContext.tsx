@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
+import { fetchRoutes, fetchRouteTypes } from '../lib/api';
 
 // Module address for the Waypoint contract
 const MODULE_ADDRESS = "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
-const MODULE_NAME = "linear_stream_fa";
 
 // Types for route data from blockchain
 export interface RouteCore {
@@ -17,6 +17,7 @@ export interface RouteCore {
   max_periods: string;
   deposit_amount: string;
   claimed_amount: string;
+  approved_amount?: string;
 }
 
 interface AptosContextType {
@@ -27,10 +28,10 @@ interface AptosContextType {
   error: string | null;
   // Blockchain data fetching functions
   getRouteCore: (routeObjAddress: string) => Promise<RouteCore | null>;
-  listAllRoutes: () => Promise<string[] | null>;
+  listAllRoutes: (routeTypeId?: string) => Promise<string[] | null>;
 }
 
-const AptosContext = createContext<AptosContextType | null>(null);
+export const AptosContext = createContext<AptosContextType | null>(null);
 
 interface AptosProviderProps {
   children: ReactNode;
@@ -92,17 +93,41 @@ export function AptosProvider({
     }
 
     try {
+      // Fetch route data from database to get the route type and module name
+      const routes = await fetchRoutes();
+      const route = routes.find(r => r.route_obj_address === routeObjAddress);
+
+      console.log('Route:', route);
+      console.log('Route type:', route?.route_type);
+
+      console.log('Route routeObjAddress:', routeObjAddress);
+      if (!route || !route.route_type) {
+        console.error('Route not found or missing route_type');
+        return null;
+      }
+
+      // Fetch route type configuration to get the module name
+      const routeTypes = await fetchRouteTypes('aptos');
+      const routeType = routeTypes.find(rt => rt.route_type_id === route.route_type);
+      
+      if (!routeType || !routeType.module_name) {
+        console.error(`Route type '${route.route_type}' not found or missing module_name`);
+        return null;
+      }
+
+      console.log(`[${route.route_type}] Using module: ${routeType.module_name}`);
       const payload = {
-        function: `${MODULE_ADDRESS}::${MODULE_NAME}::get_route_core` as `${string}::${string}::${string}`,
+        function: `${MODULE_ADDRESS}::${routeType.module_name}::get_route_core` as `${string}::${string}::${string}`,
         typeArguments: [],
         functionArguments: [routeObjAddress],
       };
       
       const result = await aptos.view({ payload });
+      console.log(`[${route.route_type}] Route core result:`, result);
       
       // Parse the result array into RouteCore object
       if (Array.isArray(result) && result.length >= 9) {
-        return {
+        const routeCore: RouteCore = {
           route_obj_address: String(result[0]),
           depositor: String(result[1]),
           beneficiary: String(result[2]),
@@ -113,26 +138,49 @@ export function AptosProvider({
           deposit_amount: String(result[7]),
           claimed_amount: String(result[8]),
         };
+        
+        // For milestone routes, include approved_amount if available
+        if (route.route_type === 'milestone-routes' && result.length >= 10) {
+          routeCore.approved_amount = String(result[9]);
+          console.log(`[Milestone] Approved amount: ${routeCore.approved_amount}`);
+        }
+        
+        console.log('RouteCore:', routeCore);
+        return routeCore;
       }
       
       console.error('Unexpected result format from get_route_core:', result);
       return null;
     } catch (error) {
-      console.error('Error fetching route core:', error);
+      console.error(`Error fetching route core:`, error);
       return null;
     }
   };
 
-  // Fetch all route addresses from blockchain
-  const listAllRoutes = async (): Promise<string[] | null> => {
+  // Fetch all route addresses from blockchain for a specific route type
+  const listAllRoutes = async (routeTypeId?: string): Promise<string[] | null> => {
     if (!aptos) {
       console.error('Aptos client not initialized');
       return null;
     }
 
+    if (!routeTypeId) {
+      console.error('Route type ID is required');
+      return null;
+    }
+
     try {
+      // Fetch route type configuration to get the module name
+      const routeTypes = await fetchRouteTypes('aptos');
+      const routeType = routeTypes.find(rt => rt.route_type_id === routeTypeId);
+      
+      if (!routeType || !routeType.module_name) {
+        console.error(`Route type '${routeTypeId}' not found or missing module_name`);
+        return null;
+      }
+      
       const payload = {
-        function: `${MODULE_ADDRESS}::${MODULE_NAME}::list_routes` as `${string}::${string}::${string}`,
+        function: `${MODULE_ADDRESS}::${routeType.module_name}::list_routes` as `${string}::${string}::${string}`,
         typeArguments: [],
         functionArguments: [],
       };
@@ -147,10 +195,10 @@ export function AptosProvider({
         }
       }
       
-      console.error('Unexpected result format from list_routes:', result);
+      console.error(`Unexpected result format from list_routes (${routeTypeId}):`, result);
       return null;
     } catch (error) {
-      console.error('Error listing routes:', error);
+      console.error(`Error listing routes (${routeTypeId}):`, error);
       return null;
     }
   };

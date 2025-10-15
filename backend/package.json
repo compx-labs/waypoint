@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "migrate": "node src/migrations/run-migrations.js",
-    "seed": "node src/seeders/seed-tokens.js"
+    "seed:tokens": "node src/seeders/seed-tokens.js",
+    "seed:route-types": "node src/seeders/seed-route-types.js"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useNetwork, BlockchainNetwork } from "../contexts/NetworkContext";
+import { useRouteTypes } from "../hooks/useQueries";
 
 interface RouteType {
   id: string;
@@ -15,55 +17,41 @@ interface RouteCreationModalProps {
   onRouteTypeSelect: (routeTypeId: string) => void;
 }
 
-const routeTypes: RouteType[] = [
-  {
-    id: "simple-transfer",
-    title: "Simple Transfer Over Time",
-    description: "Route tokens to recipients with flexible schedules",
-    icon: (
-      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-      </svg>
-    ),
-    enabled: true,
-  },
-  {
-    id: "milestone-routes",
-    title: "Milestone Routes",
-    description: "Release tokens based on achievement milestones",
-    icon: (
-      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
-      </svg>
-    ),
-    enabled: false,
-    comingSoon: true,
-  },
-  {
-    id: "cliff-vesting",
-    title: "Cliff Based Vesting",
-    description: "Traditional vesting with cliff periods and gradual release",
-    icon: (
-      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
-      </svg>
-    ),
-    enabled: false,
-    comingSoon: true,
-  },
-  {
-    id: "advanced-routes",
-    title: "Advanced Routes",
-    description: "Complex routing with multiple conditions and triggers",
-    icon: (
-      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 000 1.788l4 2.094V11a1 1 0 011-1zM19.5 7.134a1 1 0 00-.553-.894l-8-4a1 1 0 00-.894 0l-8 4A1 1 0 002 7v6a1 1 0 00.553.894l8 4a1 1 0 00.894 0l8-4A1 1 0 0020 13V7a1 1 0 00-.5-.866z" />
-      </svg>
-    ),
-    enabled: false,
-    comingSoon: true,
-  },
-];
+// Icon mapping for route types
+const getIconForRouteType = (routeTypeId: string): React.ReactNode => {
+  switch (routeTypeId) {
+    case "simple-transfer":
+      return (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+        </svg>
+      );
+    case "milestone-routes":
+      return (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
+        </svg>
+      );
+    case "cliff-vesting":
+      return (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+        </svg>
+      );
+    case "advanced-routes":
+      return (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 000 1.788l4 2.094V11a1 1 0 011-1zM19.5 7.134a1 1 0 00-.553-.894l-8-4a1 1 0 00-.894 0l-8 4A1 1 0 002 7v6a1 1 0 00.553.894l8 4a1 1 0 00.894 0l8-4A1 1 0 0020 13V7a1 1 0 00-.5-.866z" />
+        </svg>
+      );
+    default:
+      return (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+        </svg>
+      );
+  }
+};
 
 export default function RouteCreationModal({
   isOpen,
@@ -71,6 +59,21 @@ export default function RouteCreationModal({
   onRouteTypeSelect,
 }: RouteCreationModalProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const { selectedNetwork } = useNetwork();
+  
+  // Fetch route types for the selected network
+  const networkName = selectedNetwork === BlockchainNetwork.APTOS ? "aptos" : "algorand";
+  const { data: routeTypesFromAPI = [], isLoading: loadingRouteTypes } = useRouteTypes(networkName);
+
+  // Transform API data to component format
+  const routeTypes: RouteType[] = routeTypesFromAPI.map((rt) => ({
+    id: rt.route_type_id,
+    title: rt.display_name,
+    description: rt.description,
+    icon: getIconForRouteType(rt.route_type_id),
+    enabled: rt.enabled,
+    comingSoon: !rt.enabled,
+  }));
 
   useEffect(() => {
     const checkMobile = () => {
@@ -137,7 +140,13 @@ export default function RouteCreationModal({
 
           {/* Route Type Cards - Mobile Layout */}
           <div className="px-6 pb-8 space-y-3">
-            {routeTypes.map((routeType) => (
+            {loadingRouteTypes && (
+              <div className="text-center py-4">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-sunset-500"></div>
+                <p className="text-primary-300 text-sm mt-2 font-display">Loading route types...</p>
+              </div>
+            )}
+            {!loadingRouteTypes && routeTypes.map((routeType) => (
               <div
                 key={routeType.id}
                 onClick={() => handleRouteTypeClick(routeType)}
@@ -244,7 +253,13 @@ export default function RouteCreationModal({
 
           {/* Route Type Cards */}
           <div className="space-y-3">
-            {routeTypes.map((routeType) => (
+            {loadingRouteTypes && (
+              <div className="text-center py-4">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-sunset-500"></div>
+                <p className="text-primary-300 text-sm mt-2 font-display">Loading route types...</p>
+              </div>
+            )}
+            {!loadingRouteTypes && routeTypes.map((routeType) => (
               <div
                 key={routeType.id}
                 onClick={() => handleRouteTypeClick(routeType)}

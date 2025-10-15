@@ -2,6 +2,7 @@ import { sequelize } from '../config/database.js';
 import { Token } from '../models/Token.js';
 import { Route } from '../models/Route.js';
 import { AddressBook } from '../models/AddressBook.js';
+import { RouteType } from '../models/RouteType.js';
 
 const runMigrations = async () => {
   try {
@@ -13,6 +14,9 @@ const runMigrations = async () => {
     // Create tables
     await Token.sync({ force: false });
     console.log('✅ Token table created/verified');
+    
+    await RouteType.sync({ force: false });
+    console.log('✅ RouteType table created/verified');
     
     await Route.sync({ force: false });
     console.log('✅ Route table created/verified');

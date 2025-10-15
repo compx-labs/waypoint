@@ -1,25 +1,14 @@
-import type { Route } from "./+types/docs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import DocsNavigation from "../components/DocsNavigation";
 import AppNavigation from "../components/AppNavigation";
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Waypoint Docs - Your Adventure Guide" },
-    {
-      name: "description",
-      content: "Complete documentation for the Waypoint ecosystem. Learn how to create payment routes, manage expeditions, and navigate the future of stablecoin streaming."
-    },
-    {
-      name: "keywords",
-      content: "waypoint, documentation, payment routes, stablecoin streaming, DeFi, blockchain, adventure guide"
-    }
-  ];
-}
-
 export default function Docs() {
   const [activeSection, setActiveSection] = useState("overview");
+
+  useEffect(() => {
+    document.title = "Waypoint Docs - Your Adventure Guide";
+  }, []);
 
   return (
     <div className="min-h-screen bg-primary-100">

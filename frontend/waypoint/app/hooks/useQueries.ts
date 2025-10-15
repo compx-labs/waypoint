@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import {
   fetchRoutes,
   fetchToken,
@@ -12,6 +13,7 @@ import {
   updateAddressBookEntry,
   deleteAddressBookEntry,
   getAnalytics,
+  fetchEnabledRouteTypes,
   type RouteData,
   type Token,
   type AddressBookEntry,
@@ -22,7 +24,10 @@ import {
   type AptosAccountBalance,
   type AptosModule,
   type AptosToken,
+  type AlgorandAccountData,
+  type AlgorandAccountBalance,
   type AnalyticsData,
+  type RouteType,
 } from '../lib/api';
 
 // Query Keys
@@ -33,7 +38,9 @@ export const queryKeys = {
   token: (id: number) => ['tokens', id] as const,
   addressBook: (ownerWallet: string) => ['addressBook', ownerWallet] as const,
   aptosAccount: (address: string, network: string) => ['aptosAccount', address, network] as const,
+  algorandAccount: (address: string, network: string) => ['algorandAccount', address, network] as const,
   analytics: ['analytics'] as const,
+  routeTypes: (network?: string) => network ? ['routeTypes', network] as const : ['routeTypes'] as const,
 };
 
 // Routes Queries
@@ -213,9 +220,6 @@ export function useAptosAccount(
     queryFn: async () => {
       if (!address) throw new Error('Address is required');
       
-      // Import Aptos client dynamically to avoid SSR issues
-      const { Aptos, AptosConfig, Network } = await import('@aptos-labs/ts-sdk');
-      
       // Default to MAINNET if network string is not recognized
       const aptosNetwork = network.toLowerCase() === 'devnet' || network.toLowerCase() === 'testnet' 
         ? Network.DEVNET 
@@ -297,6 +301,86 @@ export function useAptosAccount(
   });
 }
 
+// Algorand Account Queries
+export function useAlgorandAccount(
+  address: string | null,
+  network: string = 'mainnet', // Default to mainnet
+  options?: Omit<UseQueryOptions<AlgorandAccountData, Error>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: address ? queryKeys.algorandAccount(address, network) : ['algorandAccount', 'null'],
+    queryFn: async () => {
+      if (!address) throw new Error('Address is required');
+      
+      // Determine the correct API endpoint based on network
+      const baseUrl = network.toLowerCase() === 'testnet'
+        ? 'https://testnet-api.algonode.cloud'
+        : 'https://mainnet-api.algonode.cloud';
+      
+      // Fetch account information from AlgoNode
+      const accountUrl = `${baseUrl}/v2/accounts/${address}`;
+      const response = await fetch(accountUrl);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // Account doesn't exist yet
+          return {
+            address,
+            algoBalance: 0,
+            balances: [],
+            network,
+          };
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const accountData = await response.json();
+      
+      // Extract ALGO balance (in microalgos)
+      const algoBalance = accountData.amount || 0;
+      
+      // Fetch tokens from backend to get asset details
+      const tokensResponse = await fetchTokensByNetwork('algorand');
+      const tokenMap = new Map(tokensResponse.map(t => [parseInt(t.contract_address), t]));
+      
+      // Extract ASA balances
+      const assetBalances: AlgorandAccountBalance[] = [];
+      if (accountData.assets && Array.isArray(accountData.assets)) {
+        for (const asset of accountData.assets) {
+          const assetId = asset['asset-id'];
+          const amount = asset.amount || 0;
+          
+          // Only include assets with non-zero balance
+          if (amount > 0) {
+            const tokenInfo = tokenMap.get(assetId);
+            if (tokenInfo) {
+              assetBalances.push({
+                assetId,
+                symbol: tokenInfo.symbol,
+                name: tokenInfo.name,
+                amount: amount / Math.pow(10, tokenInfo.decimals),
+                decimals: tokenInfo.decimals,
+                logoUrl: tokenInfo.logo_url || '/logo.svg',
+              });
+            }
+          }
+        }
+      }
+      
+      return {
+        address,
+        algoBalance,
+        balances: assetBalances,
+        network,
+      };
+    },
+    enabled: !!address,
+    staleTime: 1000 * 60 * 2, // Consider data fresh for 2 minutes
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+    ...options,
+  });
+}
+
 // Analytics Queries
 export function useAnalytics(
   options?: Omit<UseQueryOptions<AnalyticsData, Error>, 'queryKey' | 'queryFn'>
@@ -306,6 +390,20 @@ export function useAnalytics(
     queryFn: getAnalytics,
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
+    ...options,
+  });
+}
+
+// Route Types Queries
+export function useRouteTypes(
+  network?: string,
+  options?: Omit<UseQueryOptions<RouteType[], Error>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: queryKeys.routeTypes(network),
+    queryFn: () => fetchEnabledRouteTypes(network),
+    staleTime: 1000 * 60 * 10, // Consider data fresh for 10 minutes (route types don't change often)
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
     ...options,
   });
 }

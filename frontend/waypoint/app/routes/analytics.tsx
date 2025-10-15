@@ -1,4 +1,4 @@
-import type { Route } from "./+types/analytics";
+import { useEffect } from "react";
 import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
 import { useAnalytics } from "../hooks/useQueries";
@@ -21,17 +21,10 @@ interface NetworkDisplayData {
   logoSrc: string;
 }
 
-export function meta({}: Route["MetaArgs"]) {
-  return [
-    { title: "Analytics - Waypoint" },
-    {
-      name: "description",
-      content: "View analytics and metrics for your Waypoint routes across all supported networks."
-    }
-  ];
-}
-
 export default function Analytics() {
+  useEffect(() => {
+    document.title = "Analytics - Waypoint";
+  }, []);
   const { data: analyticsData, isLoading, error } = useAnalytics({
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,

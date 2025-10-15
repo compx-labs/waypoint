@@ -17,7 +17,7 @@ module waypoint::linear_stream_fa {
     use aptos_framework::primary_fungible_store;
     use std::vector;
     use aptos_framework::dispatchable_fungible_asset;
-
+    use aptos_framework::event;
 
     /// Errors
     const E_NOT_ADMIN: u64 = 1;
@@ -51,6 +51,35 @@ module waypoint::linear_stream_fa {
         extend_ref: ExtendRef
     }
 
+    #[event]
+    struct RouteCreated has drop, store {
+        route_addr: address,
+        depositor: address,
+        beneficiary: address,
+        amount: u64,
+        fee_amount: u64,
+        start_ts: u64,
+        period_secs: u64,
+        payout_amount: u64,
+        max_periods: u64
+    }
+
+    #[event]
+    struct MilestoneApproved has drop, store {
+        route_addr: address,
+        depositor: address,
+        unlock_amount: u64,
+        approved_total: u128
+    }
+
+    #[event]
+    struct RouteClaimed has drop, store {
+        route_addr: address,
+        beneficiary: address,
+        claim_amount: u64,
+        claimed_total: u128
+    }
+
     /// Registry: route_id -> route object address
     /// (You can also use event logs. Kept minimal here.)
     struct Routes has key {
@@ -60,10 +89,13 @@ module waypoint::linear_stream_fa {
 
     /// Init once
     entry fun init_module(admin: &signer) {
-        move_to(admin, Config {
-            admin: signer::address_of(admin),
-            treasury: signer::address_of(admin)
-        });
+        move_to(
+            admin,
+            Config {
+                admin: signer::address_of(admin),
+                treasury: signer::address_of(admin)
+            }
+        );
         move_to(
             admin,
             Routes {
@@ -130,9 +162,8 @@ module waypoint::linear_stream_fa {
         // deposit into route-owned secondary store
         dispatchable_fungible_asset::deposit(store, fa_chunk);
 
-        let fee_chunk: FungibleAsset = primary_fungible_store::withdraw(
-            creator, fa, fee_amount
-        );
+        let fee_chunk: FungibleAsset =
+            primary_fungible_store::withdraw(creator, fa, fee_amount);
         primary_fungible_store::deposit(treasury_addr, fee_chunk);
 
         // 4) Materialize the Route resource under the route object’s address
@@ -155,6 +186,20 @@ module waypoint::linear_stream_fa {
         let route_obj: Object<ObjectCore> = Obj::object_from_constructor_ref(ctor);
         let route_addr = Obj::object_address(&route_obj);
         routes.addrs.push_back(route_addr);
+
+        event::emit(
+            RouteCreated {
+                route_addr,
+                depositor: signer::address_of(creator),
+                beneficiary,
+                amount,
+                fee_amount,
+                start_ts,
+                period_secs,
+                payout_amount,
+                max_periods
+            }
+        );
 
     }
 
@@ -187,9 +232,18 @@ module waypoint::linear_stream_fa {
 
         primary_fungible_store::deposit_with_signer(caller, payout);
         route.claimed_amount += claimable_u128;
+        let claimed_total = route.claimed_amount;
+
+        event::emit(
+            RouteClaimed {
+                route_addr: r_addr,
+                beneficiary: caller_addr,
+                claim_amount: claimable_u64,
+                claimed_total
+            }
+        );
 
     }
-
 
     // ---------- Internal math ----------
 
@@ -200,11 +254,12 @@ module waypoint::linear_stream_fa {
 
         let elapsed = now - route.start_ts;
         let periods_elapsed = elapsed / route.period_secs;
-        let capped_periods = if (periods_elapsed > route.max_periods) {
-            route.max_periods
-        } else {
-            periods_elapsed
-        };
+        let capped_periods =
+            if (periods_elapsed > route.max_periods) {
+                route.max_periods
+            } else {
+                periods_elapsed
+            };
 
         let payout_u128 = (route.payout_amount as u128);
         let vested_candidate = payout_u128 * (capped_periods as u128);
@@ -245,9 +300,6 @@ module waypoint::linear_stream_fa {
             r.claimed_amount
         )
     }
-
-
-
 
     #[test(aptos_framework = @0x1, sender = @waypoint)]
     fun test_linear_claim_half_then_full(
@@ -303,8 +355,8 @@ module waypoint::linear_stream_fa {
         // Should now be 1000 total (second 500 payout)
         assert!(bal_final - base_balance == 1_000, 201);
     }
-    #[test(aptos_framework = @0x1,
-sender = @waypoint)]
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
     fun test_multiple_partial_claims(
         aptos_framework: &signer, sender: &signer
     ) acquires Routes, Route, Config {
@@ -405,7 +457,9 @@ sender = @waypoint)]
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
         let route_obj =
-            aptos_framework::object::address_to_object<aptos_framework::object::ObjectCore>(route_addr);
+            aptos_framework::object::address_to_object<aptos_framework::object::ObjectCore>(
+                route_addr
+            );
 
         timestamp::update_global_time_for_test(3_000_000);
         claim(sender, route_obj);
@@ -434,7 +488,8 @@ sender = @waypoint)]
             let addr = aptos_framework::object::object_address(&route_obj);
             let route_ref = borrow_global<Route>(addr);
             assert!(route_ref.claimed_amount == (route_amount as u128), 404);
-            let (claimable_u128_after, claimable_u64_after) = compute_claimable(route_ref, now);
+            let (claimable_u128_after, claimable_u64_after) =
+                compute_claimable(route_ref, now);
             assert!(claimable_u128_after == 0, 405);
             assert!(claimable_u64_after == 0, 406);
         }
@@ -540,7 +595,10 @@ sender = @waypoint)]
 
         let rs = list_routes();
         let route_addr = rs[rs.length() - 1];
-        let route_obj = aptos_framework::object::address_to_object<aptos_framework::object::ObjectCore>(route_addr);
+        let route_obj =
+            aptos_framework::object::address_to_object<aptos_framework::object::ObjectCore>(
+                route_addr
+            );
 
         // Current time (1s) is before start_ts (10s); claim should abort.
         claim(sender, route_obj);
@@ -549,8 +607,7 @@ sender = @waypoint)]
     #[test(aptos_framework = @0x1, sender = @waypoint)]
     #[expected_failure(abort_code = E_NOT_BENEFICIARY)]
     fun test_non_beneficiary_claim_fails(
-        aptos_framework: &signer,
-        sender: &signer
+        aptos_framework: &signer, sender: &signer
     ) acquires Routes, Route, Config {
         let depositor_addr = signer::address_of(sender);
         init_module(sender);
@@ -601,8 +658,7 @@ sender = @waypoint)]
     #[test(aptos_framework = @0x1, sender = @waypoint)]
     #[expected_failure(abort_code = E_BAD_AMOUNT)]
     fun test_create_route_rejects_excess_schedule_total(
-        aptos_framework: &signer,
-        sender: &signer
+        aptos_framework: &signer, sender: &signer
     ) acquires Routes, Config {
         let sender_addr = signer::address_of(sender);
         init_module(sender);
@@ -626,3 +682,4 @@ sender = @waypoint)]
         create_route_and_fund(sender, fa, 1_000, 0, 3, 400, 2, 5, sender_addr);
     }
 }
+
