@@ -1,10 +1,10 @@
-FROM node:20-alpine AS build-env
+FROM node:22-alpine AS build-env
 COPY . /app/
 WORKDIR /app
 RUN npm ci
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:22-alpine
 COPY ./package.json package-lock.json /app/
 WORKDIR /app
 RUN npm ci --omit=dev
