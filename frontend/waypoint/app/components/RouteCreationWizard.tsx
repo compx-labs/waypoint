@@ -1633,39 +1633,45 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         Math.ceil(parseFloat(data.totalAmount) / parseFloat(data.unlockAmount))
       );
 
-      console.log("Building transaction with SDK:", {
-        sender: aptosWallet.account.address.toString(),
-        beneficiary: data.recipientAddress,
-        tokenMetadata: data.selectedToken.contract_address,
-        amount: amountInUnits.toString(),
-        startTimestamp: startTimestamp.toString(),
-        periodSeconds: periodInSeconds.toString(),
-        payoutAmount: payoutAmountInUnits.toString(),
-        maxPeriods: maxPeriods.toString(),
-        routeType: routeType === "milestone-routes" ? "milestone" : "simple",
-      });
-
       // Show loading toast
       const loadingToastId = toast.loading({
         title: "Creating Route",
         description: "Please confirm the transaction in your wallet...",
       });
+      // Configure Aptos SDK with the correct network
+      const aptosNetwork = Network.MAINNET;
+      const config = new AptosConfig({ network: aptosNetwork });
+      const aptos = new Aptos(config);
 
-      // Build transaction using SDK
-      const transactionPayload =
-        await waypointClient.buildCreateLinearRouteTransaction({
-          sender: aptosWallet.account.address.toString(),
-          beneficiary: data.recipientAddress,
-          tokenMetadata: data.selectedToken.contract_address,
-          amount: amountInUnits,
-          startTimestamp: Number(startTimestamp),
-          periodSeconds: Number(periodInSeconds),
-          payoutAmount: payoutAmountInUnits,
-          maxPeriods: Number(maxPeriods),
-        });
+      // Build transaction using SDK based on route type
+      const isMilestone = routeType === "milestone-routes";
+      const transactionPayload = isMilestone
+        ? await waypointClient.buildCreateMilestoneRouteTransaction({
+            sender: aptosWallet.account.address.toString(),
+            beneficiary: data.recipientAddress,
+            tokenMetadata: data.selectedToken.contract_address,
+            amount: amountInUnits,
+            startTimestamp: Number(startTimestamp),
+            periodSeconds: Number(periodInSeconds),
+            payoutAmount: payoutAmountInUnits,
+            maxPeriods: Number(maxPeriods),
+          })
+        : await waypointClient.buildCreateLinearRouteTransaction({
+            sender: aptosWallet.account.address.toString(),
+            beneficiary: data.recipientAddress,
+            tokenMetadata: data.selectedToken.contract_address,
+            amount: amountInUnits,
+            startTimestamp: Number(startTimestamp),
+            periodSeconds: Number(periodInSeconds),
+            payoutAmount: payoutAmountInUnits,
+            maxPeriods: Number(maxPeriods),
+          });
 
-      // Sign and submit transaction using wallet
-      const response = await aptosWallet.signAndSubmitTransaction(transactionPayload);
+      // Sign and submit transaction using wallet adapter
+      const response = await aptosWallet.signAndSubmitTransaction({
+        sender: aptosWallet.account.address,
+        data: transactionPayload,
+      });
 
       // Transaction signed, now confirming
       setTransactionStatus("confirming");
@@ -1676,11 +1682,6 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         description: "Waiting for blockchain confirmation...",
         type: "loading",
       });
-
-      // Configure Aptos SDK with the correct network
-      const aptosNetwork = Network.MAINNET;
-      const config = new AptosConfig({ network: aptosNetwork });
-      const aptos = new Aptos(config);
 
       // Wait for transaction confirmation
       const txn = await aptos.waitForTransaction({
@@ -1730,9 +1731,10 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         console.log("Transaction result:", txn);
       }
 
-      // Register route with backend using SDK (optional but recommended)
+      // Register route with backend using SDK
       if (routeObjAddress) {
         try {
+          console.log("Registering route with backend via SDK...");
           await waypointClient.registerRouteWithBackend({
             sender: aptosWallet.account.address.toString(),
             recipient: data.recipientAddress,
@@ -1747,13 +1749,31 @@ const SummaryStep: React.FC<WizardStepProps> = ({
               routeType === "milestone-routes" ? "milestone" : "simple",
             tokenId: Number(data.selectedToken.id),
           });
+          console.log("✅ Route successfully registered with backend");
         } catch (registrationError) {
           console.error(
-            "Failed to register route with backend:",
+            "❌ Failed to register route with backend:",
             registrationError
           );
-          // Don't fail the entire transaction if backend registration fails
+          // Show info toast but don't fail the entire transaction
+          toast.info({
+            title: "Backend Registration Failed",
+            description:
+              "Your route was created on-chain but couldn't be registered in our database. It may not appear in the dashboard immediately.",
+            duration: 5000,
+          });
         }
+      } else {
+        // Route created but couldn't extract address - still show success
+        console.warn(
+          "⚠️ Could not extract route object address for backend registration"
+        );
+        toast.info({
+          title: "Route Created",
+          description:
+            "Your route was created on-chain but couldn't be registered in our database. Please check your wallet transactions.",
+          duration: 5000,
+        });
       }
 
       // Success! Show success toast

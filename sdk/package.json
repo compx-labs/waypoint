@@ -1,6 +1,6 @@
 {
-  "name": "@waypoint/sdk",
-  "version": "0.1.0",
+  "name": "@compx/waypoint-sdk",
+  "version": "1.0.0",
   "description": "TypeScript SDK for Waypoint token routing on Aptos",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -32,7 +32,7 @@
   "author": "Waypoint",
   "license": "MIT",
   "dependencies": {
-    "@aptos-labs/ts-sdk": "^1.29.0"
+    "@aptos-labs/ts-sdk": "^5.1.1"
   },
   "devDependencies": {
     "@types/node": "^22.18.10",

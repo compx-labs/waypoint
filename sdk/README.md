@@ -17,7 +17,7 @@ The Waypoint SDK is a lightweight TypeScript library that makes it easy to inter
 ## Installation
 
 ```bash
-npm install @waypoint/sdk @aptos-labs/ts-sdk
+npm install @compx/waypoint-sdk @aptos-labs/ts-sdk
 ```
 
 ## Requirements
@@ -29,7 +29,7 @@ npm install @waypoint/sdk @aptos-labs/ts-sdk
 
 ```typescript
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
-import { AptosWaypointClient } from '@waypoint/sdk';
+import { AptosWaypointClient } from '@compx/waypoint-sdk';
 
 // Initialize Aptos SDK
 const aptos = new Aptos(new AptosConfig({ network: Network.MAINNET }));
@@ -244,7 +244,7 @@ const fee = waypoint.calculateFee(1000_000000n);
 console.log(`Fee: ${fee}`); // 5000000 (0.5% of 1000)
 
 // Validate address
-import { isValidAptosAddress } from '@waypoint/sdk';
+import { isValidAptosAddress } from '@compx/waypoint-sdk';
 const valid = isValidAptosAddress('0x123...');
 ```
 
@@ -256,7 +256,7 @@ See [examples/aptos-node.ts](examples/aptos-node.ts) for a complete Node.js exam
 
 ```typescript
 import { Account, Ed25519PrivateKey } from '@aptos-labs/ts-sdk';
-import { AptosWaypointClient } from '@waypoint/sdk';
+import { AptosWaypointClient } from '@compx/waypoint-sdk';
 
 // Initialize SDK
 const waypoint = new AptosWaypointClient({ network: 'mainnet' });
@@ -279,7 +279,7 @@ See [examples/aptos-react.tsx](examples/aptos-react.tsx) for a complete React + 
 
 ```typescript
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { AptosWaypointClient } from '@waypoint/sdk';
+import { AptosWaypointClient } from '@compx/waypoint-sdk';
 
 function MyComponent() {
   const { account, signAndSubmitTransaction } = useWallet();
@@ -309,7 +309,7 @@ import type {
   CreateLinearRouteParams,
   ClaimParams,
   Network,
-} from '@waypoint/sdk';
+} from '@compx/waypoint-sdk';
 ```
 
 ## Error Handling

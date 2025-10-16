@@ -51,7 +51,9 @@ export class AptosTransactions {
   /**
    * Build transaction to create a linear streaming route
    */
-  buildCreateLinearRouteTransaction(params: CreateLinearRouteParams): InputGenerateTransactionPayloadData {
+  buildCreateLinearRouteTransaction(
+    params: CreateLinearRouteParams
+  ): InputGenerateTransactionPayloadData {
     validateCreateLinearRouteParams(params);
 
     // Calculate the 0.5% protocol fee
@@ -109,7 +111,9 @@ export class AptosTransactions {
   /**
    * Build transaction to claim from a linear route
    */
-  buildClaimLinearTransaction(params: ClaimParams): InputGenerateTransactionPayloadData {
+  buildClaimLinearTransaction(
+    params: ClaimParams
+  ): InputGenerateTransactionPayloadData {
     validateCallerAddress(params.caller);
     validateRouteAddress(params.routeAddress);
 
@@ -128,7 +132,9 @@ export class AptosTransactions {
   /**
    * Build transaction to claim from a milestone route
    */
-  buildClaimMilestoneTransaction(params: ClaimParams): InputGenerateTransactionPayloadData {
+  buildClaimMilestoneTransaction(
+    params: ClaimParams
+  ): InputGenerateTransactionPayloadData {
     validateCallerAddress(params.caller);
     validateRouteAddress(params.routeAddress);
 

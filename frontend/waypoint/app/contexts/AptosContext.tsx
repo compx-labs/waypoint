@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
-import { AptosWaypointClient } from '@waypoint/sdk';
+import { AptosWaypointClient } from '@compx/waypoint-sdk';
 import { fetchRoutes, fetchRouteTypes } from '../lib/api';
 
 // Module address for the Waypoint contract
 const MODULE_ADDRESS = "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
 
 // Backend API URL - you should configure this via environment variables
-const BACKEND_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const BACKEND_API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 // Types for route data from blockchain
 export interface RouteCore {
@@ -78,8 +78,8 @@ export function AptosProvider({
         const sdkNetwork = network === Network.MAINNET ? 'mainnet' : 'testnet';
         const waypoint = new AptosWaypointClient({
           network: sdkNetwork,
-          aptosConfig: config,
           backendUrl: BACKEND_API_URL,
+          moduleAddress: MODULE_ADDRESS,
         });
         setWaypointClient(waypoint);
         console.log('Waypoint SDK client initialized');
@@ -102,82 +102,56 @@ export function AptosProvider({
     }
   };
 
-  // Fetch individual route core data from blockchain
+  // Fetch individual route core data from blockchain using SDK
   const getRouteCore = async (routeObjAddress: string): Promise<RouteCore | null> => {
-    if (!aptos) {
-      console.error('Aptos client not initialized');
+    if (!waypointClient) {
+      console.error('Waypoint SDK client not initialized');
       return null;
     }
 
     try {
-      // Fetch route data from database to get the route type and module name
+      // Fetch route data from database to determine route type
       const routes = await fetchRoutes();
       const route = routes.find(r => r.route_obj_address === routeObjAddress);
 
-      console.log('Route:', route);
-      console.log('Route type:', route?.route_type);
-
-      console.log('Route routeObjAddress:', routeObjAddress);
       if (!route || !route.route_type) {
         console.error('Route not found or missing route_type');
         return null;
       }
 
-      // Fetch route type configuration to get the module name
-      const routeTypes = await fetchRouteTypes('aptos');
-      const routeType = routeTypes.find(rt => rt.route_type_id === route.route_type);
-      
-      if (!routeType || !routeType.module_name) {
-        console.error(`Route type '${route.route_type}' not found or missing module_name`);
-        return null;
-      }
+      console.log(`[${route.route_type}] Fetching route details via SDK`);
 
-      console.log(`[${route.route_type}] Using module: ${routeType.module_name}`);
-      const payload = {
-        function: `${MODULE_ADDRESS}::${routeType.module_name}::get_route_core` as `${string}::${string}::${string}`,
-        typeArguments: [],
-        functionArguments: [routeObjAddress],
+      // Use SDK to fetch route details based on route type
+      const isMilestone = route.route_type === 'milestone-routes';
+      const routeDetails = isMilestone
+        ? await waypointClient.getMilestoneRouteDetails(routeObjAddress)
+        : await waypointClient.getLinearRouteDetails(routeObjAddress);
+
+      console.log('SDK Route details:', routeDetails);
+
+      // Convert SDK RouteDetails format to RouteCore format
+      return {
+        route_obj_address: routeDetails.routeAddress,
+        depositor: routeDetails.depositor,
+        beneficiary: routeDetails.beneficiary,
+        start_timestamp: String(routeDetails.startTimestamp),
+        period_seconds: String(routeDetails.periodSeconds),
+        payout_amount: String(routeDetails.payoutAmount),
+        max_periods: String(routeDetails.maxPeriods),
+        deposit_amount: String(routeDetails.depositAmount),
+        claimed_amount: String(routeDetails.claimedAmount),
+        approved_amount: routeDetails.approvedAmount ? String(routeDetails.approvedAmount) : undefined,
       };
-      
-      const result = await aptos.view({ payload });
-      console.log(`[${route.route_type}] Route core result:`, result);
-      
-      // Parse the result array into RouteCore object
-      if (Array.isArray(result) && result.length >= 9) {
-        const routeCore: RouteCore = {
-          route_obj_address: String(result[0]),
-          depositor: String(result[1]),
-          beneficiary: String(result[2]),
-          start_timestamp: String(result[3]),
-          period_seconds: String(result[4]),
-          payout_amount: String(result[5]),
-          max_periods: String(result[6]),
-          deposit_amount: String(result[7]),
-          claimed_amount: String(result[8]),
-        };
-        
-        // For milestone routes, include approved_amount if available
-        if (route.route_type === 'milestone-routes' && result.length >= 10) {
-          routeCore.approved_amount = String(result[9]);
-          console.log(`[Milestone] Approved amount: ${routeCore.approved_amount}`);
-        }
-        
-        console.log('RouteCore:', routeCore);
-        return routeCore;
-      }
-      
-      console.error('Unexpected result format from get_route_core:', result);
-      return null;
     } catch (error) {
-      console.error(`Error fetching route core:`, error);
+      console.error('Error fetching route core via SDK:', error);
       return null;
     }
   };
 
-  // Fetch all route addresses from blockchain for a specific route type
+  // Fetch all route addresses from blockchain for a specific route type using SDK
   const listAllRoutes = async (routeTypeId?: string): Promise<string[] | null> => {
-    if (!aptos) {
-      console.error('Aptos client not initialized');
+    if (!waypointClient) {
+      console.error('Waypoint SDK client not initialized');
       return null;
     }
 
@@ -187,35 +161,17 @@ export function AptosProvider({
     }
 
     try {
-      // Fetch route type configuration to get the module name
-      const routeTypes = await fetchRouteTypes('aptos');
-      const routeType = routeTypes.find(rt => rt.route_type_id === routeTypeId);
+      console.log(`Listing routes for type: ${routeTypeId} via SDK`);
       
-      if (!routeType || !routeType.module_name) {
-        console.error(`Route type '${routeTypeId}' not found or missing module_name`);
-        return null;
-      }
-      
-      const payload = {
-        function: `${MODULE_ADDRESS}::${routeType.module_name}::list_routes` as `${string}::${string}::${string}`,
-        typeArguments: [],
-        functionArguments: [],
-      };
-      
-      const result = await aptos.view({ payload });
-      
-      // Result should be an array where first element is the routes array
-      if (Array.isArray(result) && result.length > 0) {
-        const routes = result[0];
-        if (Array.isArray(routes)) {
-          return routes.map(route => String(route));
-        }
-      }
-      
-      console.error(`Unexpected result format from list_routes (${routeTypeId}):`, result);
-      return null;
+      // Use SDK to list routes based on route type
+      const isMilestone = routeTypeId === 'milestone-routes';
+      const routes = isMilestone
+        ? await waypointClient.listMilestoneRoutes()
+        : await waypointClient.listLinearRoutes();
+
+      return routes;
     } catch (error) {
-      console.error(`Error listing routes (${routeTypeId}):`, error);
+      console.error(`Error listing routes via SDK (${routeTypeId}):`, error);
       return null;
     }
   };

@@ -61,7 +61,6 @@ export class BackendAPIClient {
       }
 
       const result = await response.json();
-      return result;
     } catch (error) {
       console.error('Error registering route with backend:', error);
       throw new Error(`Failed to register route: ${error}`);
@@ -104,7 +103,7 @@ export class BackendAPIClient {
       }
 
       const routes = await response.json();
-      return routes;
+      return routes as any[];
     } catch (error) {
       console.error('Error getting routes from backend:', error);
       throw new Error(`Failed to get routes: ${error}`);
@@ -155,7 +154,6 @@ export class BackendAPIClient {
       }
 
       const result = await response.json();
-      return result;
     } catch (error) {
       console.error('Error updating route status:', error);
       throw new Error(`Failed to update route status: ${error}`);
