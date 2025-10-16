@@ -2,11 +2,16 @@
   "name": "waypoint",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.0",
+    "npm": ">=9.0"
+  },
   "scripts": {
     "build": "tsc && vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "start": "npx serve -s dist -l ${PORT:-3000}"
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "^9.1.2",
@@ -20,11 +25,13 @@
     "@txnlab/use-wallet-react": "^4.3.1",
     "@txnlab/use-wallet-ui-react": "^0.3.0",
     "@wallet-standard/core": "^1.1.1",
-    "algokit-utils": "link:@algorandfoundation/algokit-utils",
     "algosdk": "^3.5.2",
+    "aptos": "^1.22.1",
     "framer-motion": "^12.23.24",
+    "got": "^11.8.6",
     "lucide-react": "^0.544.0",
     "lute-connect": "1.6.3",
+    "picomatch": "^2.3.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^6.28.0",
