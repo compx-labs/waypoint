@@ -15,13 +15,6 @@ import { useAlgorand } from "../contexts/AlgorandContext";
 import { useNetwork, BlockchainNetwork } from "../contexts/NetworkContext";
 import { useToast } from "../contexts/ToastContext";
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
-import {
-  WaypointLinearClient,
-  WaypointLinearFactory,
-} from "~/algorand-clients/waypoint-linearClient";
-import * as algokit from "@algorandfoundation/algokit-utils";
-import { Account } from "algosdk";
-import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { ALGORAND_REGISTRY_APP } from "../lib/constants";
 
 // Fee calculation utility
@@ -474,7 +467,7 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
 
   // Algorand wallet and context
   const algorandWallet = useAlgorandWallet();
-  const { network: algorandNetwork, getUserFluxTier } = useAlgorand();
+  const { network: algorandNetwork, getUserFluxTier, waypointClient: algorandWaypointClient } = useAlgorand();
 
   // State for Flux tier
   const [fluxTier, setFluxTier] = useState<number>(0);
@@ -503,15 +496,11 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
       if (
         selectedNetwork === BlockchainNetwork.ALGORAND &&
         algorandWallet.activeAccount &&
-        algorandWallet.transactionSigner
+        algorandWaypointClient
       ) {
         try {
           setLoadingFluxTier(true);
-          const tier = await getUserFluxTier({
-            appId: 3219204562, // Flux Gate app ID
-            signer: algorandWallet.transactionSigner,
-            activeAddress: algorandWallet.activeAccount.address,
-          });
+          const tier = await algorandWaypointClient!.getUserFluxTier(algorandWallet.activeAccount.address);
           setFluxTier(tier);
         } catch (error) {
           console.error("Failed to fetch Flux tier:", error);
@@ -525,7 +514,7 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
     };
 
     fetchFluxTier();
-  }, [selectedNetwork, algorandWallet.activeAccount]);
+  }, [selectedNetwork, algorandWallet.activeAccount, algorandWaypointClient]);
 
   const unlockUnits = [
     {
@@ -1390,11 +1379,11 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
   // Aptos wallet and context
   const aptosWallet = useWallet();
-  const { network: aptosNetwork, waypointClient } = useAptos();
+  const { network: aptosNetwork, waypointClient: aptosWaypointClient } = useAptos();
 
   // Algorand wallet and context
   const algorandWallet = useAlgorandWallet();
-  const { network: algorandNetwork, getUserFluxTier } = useAlgorand();
+  const { network: algorandNetwork, getUserFluxTier, waypointClient: algorandWaypointClient } = useAlgorand();
 
   const toast = useToast();
   const createRouteMutation = useCreateRoute();
@@ -1442,14 +1431,11 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     const fetchFluxTier = async () => {
       if (
         selectedNetwork === BlockchainNetwork.ALGORAND &&
-        algorandWallet.activeAccount
+        algorandWallet.activeAccount &&
+        algorandWaypointClient
       ) {
         try {
-          const tier = await getUserFluxTier({
-            appId: 3219204562, // Flux Gate app ID
-            signer: algorandWallet.transactionSigner,
-            activeAddress: algorandWallet.activeAccount.address,
-          });
+          const tier = await algorandWaypointClient!.getUserFluxTier(algorandWallet.activeAccount.address);
           setFluxTier(tier);
         } catch (error) {
           console.error("Failed to fetch Flux tier:", error);
@@ -1464,8 +1450,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   }, [
     selectedNetwork,
     algorandWallet.activeAccount,
-    algorandWallet.transactionSigner,
-    getUserFluxTier,
+    algorandWaypointClient,
   ]);
 
   // Get user's balance for the selected token
@@ -1577,7 +1562,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     }
 
     // Check if Waypoint SDK client is available
-    if (!waypointClient) {
+    if (!aptosWaypointClient) {
       setBuildError("Waypoint SDK not initialized");
       return;
     }
@@ -1649,7 +1634,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       // Build transaction using SDK based on route type
       const isMilestone = routeType === "milestone-routes";
       const transactionPayload = isMilestone
-        ? await waypointClient.buildCreateMilestoneRouteTransaction({
+        ? await aptosWaypointClient.buildCreateMilestoneRouteTransaction({
             sender: aptosWallet.account.address.toString(),
             beneficiary: data.recipientAddress,
             tokenMetadata: data.selectedToken.contract_address,
@@ -1659,7 +1644,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
             payoutAmount: payoutAmountInUnits,
             maxPeriods: Number(maxPeriods),
           })
-        : await waypointClient.buildCreateLinearRouteTransaction({
+        : await aptosWaypointClient.buildCreateLinearRouteTransaction({
             sender: aptosWallet.account.address.toString(),
             beneficiary: data.recipientAddress,
             tokenMetadata: data.selectedToken.contract_address,
@@ -1738,7 +1723,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       if (routeObjAddress) {
         try {
           console.log("Registering route with backend via SDK...");
-          await waypointClient.registerRouteWithBackend({
+          await aptosWaypointClient.registerRouteWithBackend({
             sender: aptosWallet.account.address.toString(),
             recipient: data.recipientAddress,
             amountPerPeriodTokenUnits: payoutAmountInUnits.toString(),
@@ -1837,6 +1822,12 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       return;
     }
 
+    // Get the Waypoint SDK client from context
+    if (!algorandWaypointClient) {
+      setBuildError("Waypoint SDK not initialized");
+      return;
+    }
+
     // Calculate fee dynamically for Algorand
     const routeAmount = parseFloat(data.totalAmount);
     const routeFeeCalc = calculateFee(
@@ -1875,37 +1866,31 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     });
 
     try {
-      // Initialize Algorand client
-      const algorand = algokit.AlgorandClient.mainNet();
-      algorand.setDefaultValidityWindow(1000);
-
       // Convert amounts to token base units (considering decimals)
       const decimals = data.selectedToken.decimals;
-      const amountInUnits = Math.floor(routeAmount * Math.pow(10, decimals));
-      const payoutAmountInUnits = Math.floor(
+      const amountInUnits = BigInt(Math.floor(routeAmount * Math.pow(10, decimals)));
+      const payoutAmountInUnits = BigInt(Math.floor(
         parseFloat(data.unlockAmount) * Math.pow(10, decimals)
-      );
-      const feeAmountInUnits = Math.floor(platformFee * Math.pow(10, decimals));
+      ));
 
       // Calculate max periods
-      const maxPeriods = Math.ceil(
+      const maxPeriods = BigInt(Math.ceil(
         parseFloat(data.totalAmount) / parseFloat(data.unlockAmount)
-      );
+      ));
 
       // Convert start time to unix timestamp (seconds)
-      const startTimestamp = Math.floor(data.startTime.getTime() / 1000);
+      const startTimestamp = BigInt(Math.floor(data.startTime.getTime() / 1000));
 
       // Convert unlock period to seconds
-      const periodInSeconds = timeUnitToSeconds(data.unlockUnit);
+      const periodInSeconds = BigInt(timeUnitToSeconds(data.unlockUnit));
 
-      console.log("Building Algorand transaction with params:", {
+      console.log("Creating Algorand route with SDK:", {
         tokenId: data.selectedToken.contract_address,
-        depositAmount: amountInUnits,
-        start_ts: startTimestamp,
-        period_secs: periodInSeconds,
-        payout_amount: payoutAmountInUnits,
-        max_periods: maxPeriods,
-        fee_amount: feeAmountInUnits,
+        depositAmount: amountInUnits.toString(),
+        startTimestamp: startTimestamp.toString(),
+        periodSeconds: periodInSeconds.toString(),
+        payoutAmount: payoutAmountInUnits.toString(),
+        maxPeriods: maxPeriods.toString(),
         beneficiary: data.recipientAddress,
       });
 
@@ -1916,91 +1901,23 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         type: "loading",
       });
 
-      algorand.setDefaultSigner(algorandWallet.transactionSigner);
-      // Create the app factory
-      const factory = algorand.client.getTypedAppFactory(
-        WaypointLinearFactory,
-        {
-          defaultSender: algorandWallet.activeAccount.address,
-        }
-      );
-      factory.algorand.setDefaultSigner(algorandWallet.transactionSigner);
-      // Create the application
-      const { appClient } = await factory.send.create.createApplication({
-        args: {
-          registryAppId: BigInt(ALGORAND_REGISTRY_APP),
-          tokenId: BigInt(Number(data.selectedToken.contract_address)),
-        },
+      // Use SDK to create the route
+      const result = await algorandWaypointClient.createLinearRoute({
         sender: algorandWallet.activeAccount.address,
-        accountReferences: [algorandWallet.activeAccount.address],
-        assetReferences: [BigInt(Number(data.selectedToken.contract_address))],
+        beneficiary: data.recipientAddress,
+        tokenId: BigInt(Number(data.selectedToken.contract_address)),
+        depositAmount: amountInUnits,
+        payoutAmount: payoutAmountInUnits,
+        startTimestamp: startTimestamp,
+        periodSeconds: periodInSeconds,
+        maxPeriods: maxPeriods,
+        signer: algorandWallet.transactionSigner,
       });
 
-      console.log("appClient", appClient);
-
-      // Set the transaction signer
-      appClient.algorand.setDefaultSigner(algorandWallet.transactionSigner);
-
-      // Transaction signed, now confirming
-      setTransactionStatus("confirming");
-
-      // Update toast
-      toast.update(loadingToastId, {
-        title: "Transaction Submitted",
-        description: "Initializing route contract...",
-        type: "loading",
-      });
-
-      // Initialize the app with MBR payment
-      const initMbrTxn = await algorand.createTransaction.payment({
-        amount: AlgoAmount.MicroAlgos(400_000n),
-        sender: algorandWallet.activeAccount.address,
-        receiver: appClient.appAddress,
-      });
-
-      const initTxn = await appClient.send.initApp({
-        args: { mbrTxn: initMbrTxn },
-        sender: algorandWallet.activeAccount.address,
-      });
-
-      // Update toast
-      toast.update(loadingToastId, {
-        title: "Contract Initialized",
-        description: "Creating your route...",
-        type: "loading",
-      });
-      console.log("transaction params", data);
-      // Create the asset transfer transaction for the route
-      const routeCreationAssetTransfer =
-        appClient.algorand.createTransaction.assetTransfer({
-          amount: BigInt(amountInUnits),
-          sender: algorandWallet.activeAccount.address,
-          receiver: appClient.appAddress,
-          assetId: BigInt(Number(data.selectedToken.contract_address)),
-        });
-
-      // Create the route
-      const createRouteTxn = await appClient.send.createRoute({
-        args: {
-          beneficiary: data.recipientAddress,
-          startTs: BigInt(startTimestamp),
-          periodSecs: BigInt(periodInSeconds),
-          payoutAmount: BigInt(payoutAmountInUnits),
-          maxPeriods: BigInt(maxPeriods),
-          depositAmount: BigInt(amountInUnits),
-          tokenId: BigInt(Number(data.selectedToken.contract_address)),
-          tokenTransfer: routeCreationAssetTransfer,
-        },
-        sender: algorandWallet.activeAccount.address,
-      });
-
-      // Extract the app ID (this is the route's unique identifier)
-      const routeAppId = appClient.appId.toString();
-
-      console.log("Route created successfully! App ID:", routeAppId);
-      console.log("Transaction ID:", createRouteTxn.txIds[0]);
+      console.log("Route created successfully!", result);
 
       // Transaction confirmed! Now save to database
+      setTransactionStatus("confirming");
       toast.update(loadingToastId, {
         title: "Transaction Confirmed",
         description: "Saving route to database...",
@@ -2017,8 +1934,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         start_date: data.startTime.toISOString(),
         payment_frequency_unit: data.unlockUnit,
         payment_frequency_number: 1, // Always 1 - we unlock every 1 unit (hour, day, etc.)
-        blockchain_tx_hash: createRouteTxn.txIds[0],
-        route_obj_address: routeAppId, // Store the app ID as the route address
+        blockchain_tx_hash: result.txIds[0],
+        route_obj_address: result.routeAppId.toString(), // Store the app ID as the route address
       };
 
       // Save route to database

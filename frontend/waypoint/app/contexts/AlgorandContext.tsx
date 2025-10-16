@@ -11,23 +11,15 @@ import {
   NetworkId,
   WalletProvider,
 } from "@txnlab/use-wallet-react";
-import { FluxGateClient } from "~/algorand-clients/flux-gateClient";
-import algosdk, { type TransactionSigner } from "algosdk";
-import * as algokit from "@algorandfoundation/algokit-utils";
-import { ALGORAND_FLUX_ORACLE } from "../lib/constants";
-
-// Module configuration for Waypoint Algorand contracts
-const MODULE_APP_ID = ""; // TODO: Set this when contract is deployed
+import { AlgorandWaypointClient } from "@compx/waypoint-sdk";
+import type {
+  AlgorandRouteDetails,
+  AlgorandNetwork,
+} from "@compx/waypoint-sdk";
 
 export enum AlgorandNetworkId {
   MAINNET = "mainnet",
   TESTNET = "testnet",
-}
-
-export interface GetUserFluxTierParams {
-  appId: number;
-  signer: TransactionSigner;
-  activeAddress: string;
 }
 
 // Types for route data from blockchain
@@ -47,10 +39,11 @@ interface AlgorandContextType {
   walletManager: WalletManager;
   network: AlgorandNetworkId;
   setNetwork: (network: AlgorandNetworkId) => void;
-  // Blockchain data fetching functions (to be implemented)
+  waypointClient: AlgorandWaypointClient | null;
+  // Blockchain data fetching functions
   getRouteCore: (routeId: string) => Promise<AlgorandRouteCore | null>;
   listAllRoutes: () => Promise<string[] | null>;
-  getUserFluxTier: (params: GetUserFluxTierParams) => Promise<number>;
+  getUserFluxTier: (userAddress: string) => Promise<number>;
 }
 
 export const AlgorandContext = createContext<AlgorandContextType | null>(null);
@@ -85,24 +78,51 @@ export function AlgorandProvider({
       defaultNetwork: NetworkId.MAINNET,
     });
 
-    console.log("Algorand WalletManager initialized with persistence", manager);
+    console.log("Algorand WalletManager initialized", manager);
     return manager;
+  }, [network]);
+
+  // Create Waypoint SDK client
+  const waypointClient = useMemo(() => {
+    try {
+      return new AlgorandWaypointClient({
+        network: network as AlgorandNetwork,
+      });
+    } catch (error) {
+      console.error("Failed to initialize Waypoint SDK client:", error);
+      return null;
+    }
   }, [network]);
 
   // Fetch individual route core data from blockchain
   const getRouteCore = async (
     routeId: string
   ): Promise<AlgorandRouteCore | null> => {
-    if (!walletManager) {
-      console.error("Algorand wallet manager not initialized");
+    if (!waypointClient) {
+      console.error("Waypoint SDK client not initialized");
       return null;
     }
 
     try {
-      // TODO: Implement actual blockchain data fetching
-      // This will require Algorand SDK integration
-      console.warn("getRouteCore not yet implemented for Algorand");
-      return null;
+      const routeDetails: AlgorandRouteDetails | null = 
+        await waypointClient.getRouteDetails(BigInt(routeId));
+
+      if (!routeDetails) {
+        return null;
+      }
+
+      // Convert SDK type to context type
+      return {
+        routeId: routeDetails.routeId,
+        sender: routeDetails.depositor,
+        recipient: routeDetails.beneficiary,
+        startTimestamp: Number(routeDetails.startTimestamp),
+        periodSeconds: Number(routeDetails.periodSeconds),
+        payoutAmount: Number(routeDetails.payoutAmount),
+        maxPeriods: Number(routeDetails.maxPeriods),
+        depositAmount: Number(routeDetails.depositAmount),
+        claimedAmount: Number(routeDetails.claimedAmount),
+      };
     } catch (error) {
       console.error("Error fetching Algorand route core:", error);
       return null;
@@ -111,61 +131,42 @@ export function AlgorandProvider({
 
   // Fetch all route addresses from blockchain
   const listAllRoutes = async (): Promise<string[] | null> => {
-    if (!walletManager) {
-      console.error("Algorand wallet manager not initialized");
+    if (!waypointClient) {
+      console.error("Waypoint SDK client not initialized");
       return null;
     }
 
     try {
-      // TODO: Implement actual blockchain data fetching
-      // This will require Algorand SDK integration
-      console.warn("listAllRoutes not yet implemented for Algorand");
-      return null;
+      return await waypointClient.listAllRoutes();
     } catch (error) {
       console.error("Error listing Algorand routes:", error);
       return null;
     }
   };
 
-
-
-  const getUserFluxTier = async ({
-    appId,
-    signer,
-    activeAddress,
-  }: GetUserFluxTierParams): Promise<number> => {
-    const algorandClient = algokit.AlgorandClient.mainNet();
-    const api: algosdk.Algodv2 = new algosdk.Algodv2(
-      "F10D011013C676F2EAEC6EBBFD82DC63",
-      "https://mainnet-api.4160.nodely.dev",
-      ""
-    );
-    const algoClientWithtoken = algokit.AlgorandClient.fromClients({
-      algod: api,
-      indexer: algorandClient.client.indexer,
-      kmd: undefined,
-    });
-
-    const appClient = new FluxGateClient({
-      algorand: algoClientWithtoken,
-      appId: BigInt(ALGORAND_FLUX_ORACLE),
-    });
-    const record = await appClient.state.box.fluxRecords.value({
-      userAddress: activeAddress,
-    });
-    if (record) {
-      return Number(record.tier);
+  // Get user's FLUX tier
+  const getUserFluxTier = async (userAddress: string): Promise<number> => {
+    if (!waypointClient) {
+      console.error("Waypoint SDK client not initialized");
+      return 0;
     }
-    return 0;
-  }
+
+    try {
+      return await waypointClient.getUserFluxTier(userAddress);
+    } catch (error) {
+      console.error("Error fetching FLUX tier:", error);
+      return 0;
+    }
+  };
 
   const value: AlgorandContextType = {
     walletManager,
     network,
     setNetwork,
+    waypointClient,
     getRouteCore,
     listAllRoutes,
-    getUserFluxTier
+    getUserFluxTier,
   };
 
   return (
