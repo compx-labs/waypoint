@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import AppNavigation from "../components/AppNavigation";
 
 export default function VisionRoadmap() {
@@ -243,12 +244,12 @@ export default function VisionRoadmap() {
           transition={{ duration: 0.6, delay: 1 }}
           className="text-center"
         >
-          <a
-            href="/app"
+          <Link
+            to="/app"
             className="inline-block bg-sunset-500 hover:bg-sunset-600 text-white font-display text-lg uppercase tracking-wider font-bold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
           >
             Start Building Routes
-          </a>
+          </Link>
         </motion.div>
       </div>
     </div>

@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Footer() {
   const socialLinks = [
     {
@@ -111,15 +113,15 @@ export default function Footer() {
               Navigation
             </h4>
             <div className="grid grid-cols-1 gap-3">
-              <a href="/token-routes" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
+              <Link to="/token-routes" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
                 Routes
-              </a>
-              <a href="/analytics" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
+              </Link>
+              <Link to="/analytics" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
                 Analytics
-              </a>
-              <a href="/docs" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
+              </Link>
+              <Link to="/docs" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
                 Documentation
-              </a>
+              </Link>
               <a href="https://app.compx.io" target="_blank" rel="noopener noreferrer" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
                 CompX Website ↗
               </a>

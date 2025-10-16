@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import React, { useState, useMemo, useEffect } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -694,12 +694,12 @@ export default function TokenRoutes() {
           <div className="bg-red-100 border-2 border-red-400 rounded-lg p-6 text-center">
             <p className="text-red-700 font-display font-semibold mb-2">Error loading routes</p>
             <p className="text-red-600 text-sm">{errorMessage || 'Token not found'}</p>
-            <a
-              href="/app"
+            <Link
+              to="/app"
               className="inline-block mt-4 text-forest-600 hover:text-forest-800 transition-colors duration-200"
             >
               <span className="font-display text-sm uppercase tracking-wide">← Back to Routes</span>
-            </a>
+            </Link>
           </div>
         </div>
         <Footer />
@@ -1144,15 +1144,15 @@ export default function TokenRoutes() {
 
         {/* Back Navigation */}
         <div className="mt-8">
-          <a
-            href="/app"
+          <Link
+            to="/app"
             className="inline-flex items-center space-x-2 text-forest-600 hover:text-forest-800 transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span className="font-display text-sm uppercase tracking-wide">Back to Routes</span>
-          </a>
+          </Link>
         </div>
       </div>
 

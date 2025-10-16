@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { useWallet as useAlgorandWallet } from "@txnlab/use-wallet-react";
 import {
@@ -131,7 +132,7 @@ const formatDuration = (
 // Helper function to convert time units to seconds
 const timeUnitToSeconds = (
   unit: "minutes" | "hours" | "days" | "weeks" | "months"
-): number => {
+): number => {  
   switch (unit) {
     case "minutes":
       return 60;
@@ -1383,6 +1384,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   isLastStep,
   routeType,
 }) => {
+  const navigate = useNavigate();
   const { selectedNetwork } = useNetwork();
 
   // Aptos wallet and context
@@ -1787,7 +1789,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       setTimeout(() => {
         toast.dismiss(loadingToastId);
         // Navigate back to dashboard
-        window.location.href = "/app";
+        navigate("/app");
       }, 2000);
     } catch (error) {
       console.error("Failed to create route:", error);
@@ -2032,7 +2034,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       setTimeout(() => {
         toast.dismiss(loadingToastId);
         // Navigate back to dashboard
-        window.location.href = "/app";
+        navigate("/app");
       }, 2000);
     } catch (error) {
       console.error("Failed to create Algorand route:", error);

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { type TokenRoute } from "./RoutesList";
 
 interface RouteCardProps {
@@ -5,8 +6,10 @@ interface RouteCardProps {
 }
 
 export default function RouteCard({ route }: RouteCardProps) {
+  const navigate = useNavigate();
+
   const handleCardClick = () => {
-    window.location.href = `/app/token?id=${route.id}`;
+    navigate(`/app/token?id=${route.id}`);
   };
 
   return (
