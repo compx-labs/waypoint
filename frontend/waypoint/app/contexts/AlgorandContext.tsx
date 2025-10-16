@@ -14,6 +14,7 @@ import {
 import { FluxGateClient } from "~/algorand-clients/flux-gateClient";
 import algosdk, { type TransactionSigner } from "algosdk";
 import * as algokit from "@algorandfoundation/algokit-utils";
+import { ALGORAND_FLUX_ORACLE } from "../lib/constants";
 
 // Module configuration for Waypoint Algorand contracts
 const MODULE_APP_ID = ""; // TODO: Set this when contract is deployed
@@ -147,7 +148,7 @@ export function AlgorandProvider({
 
     const appClient = new FluxGateClient({
       algorand: algoClientWithtoken,
-      appId: BigInt(3219204562),
+      appId: BigInt(ALGORAND_FLUX_ORACLE),
     });
     const record = await appClient.state.box.fluxRecords.value({
       userAddress: activeAddress,

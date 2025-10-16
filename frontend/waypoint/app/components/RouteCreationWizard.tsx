@@ -22,6 +22,7 @@ import {
 import * as algokit from "@algorandfoundation/algokit-utils";
 import { Account } from "algosdk";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
+import { ALGORAND_REGISTRY_APP } from "../lib/constants";
 
 // Fee calculation utility
 interface FeeCalculation {
@@ -1927,7 +1928,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       // Create the application
       const { appClient } = await factory.send.create.createApplication({
         args: {
-          registryAppId: BigInt(3253603509), // Registry app ID
+          registryAppId: BigInt(ALGORAND_REGISTRY_APP),
           tokenId: BigInt(Number(data.selectedToken.contract_address)),
         },
         sender: algorandWallet.activeAccount.address,

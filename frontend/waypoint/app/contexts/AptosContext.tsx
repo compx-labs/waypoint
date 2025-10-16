@@ -3,12 +3,13 @@ import type { ReactNode } from 'react';
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { AptosWaypointClient } from '@compx/waypoint-sdk';
 import { fetchRoutes, fetchRouteTypes } from '../lib/api';
+import { SIMPLE_LINEAR_ADDRESS, API_BASE_URL } from '../lib/constants';
 
-// Module address for the Waypoint contract
-const MODULE_ADDRESS = "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
+// Module address for the Waypoint contract (extract from full address)
+const MODULE_ADDRESS = SIMPLE_LINEAR_ADDRESS.split('::')[0];
 
-// Backend API URL - you should configure this via environment variables
-const BACKEND_API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+// Backend API URL
+const BACKEND_API_URL = API_BASE_URL;
 
 // Types for route data from blockchain
 export interface RouteCore {
