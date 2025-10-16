@@ -11,7 +11,17 @@ export default defineConfig({
       protocolImports: true,
     }),
   ],
+  resolve: {
+    dedupe: ['@aptos-labs/ts-sdk'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/aptos/, /node_modules/],
+      transformMixedEsModules: true,
+    },
+  },
   optimizeDeps: {
     exclude: ['lucide-react'],
+    include: ['aptos', '@aptos-labs/ts-sdk'],
   },
 });

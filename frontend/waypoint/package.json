@@ -2,6 +2,10 @@
   "name": "waypoint",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.0",
+    "npm": ">=9.0"
+  },
   "scripts": {
     "build": "tsc && vite build",
     "dev": "vite",
@@ -22,6 +26,7 @@
     "@txnlab/use-wallet-ui-react": "^0.3.0",
     "@wallet-standard/core": "^1.1.1",
     "algosdk": "^3.5.2",
+    "aptos": "^1.22.1",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.544.0",
     "lute-connect": "1.6.3",
