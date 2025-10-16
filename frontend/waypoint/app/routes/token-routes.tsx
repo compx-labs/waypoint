@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import React, { useState, useMemo, useEffect } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -90,7 +90,7 @@ export default function TokenRoutes() {
   const [searchParams] = useSearchParams();
   const tokenId = searchParams.get('id');
   const { account, signAndSubmitTransaction } = useWallet();
-  const { network, getRouteCore } = useAptos();
+  const { network, getRouteCore, waypointClient } = useAptos();
   const toast = useToast();
   const queryClient = useQueryClient();
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -263,6 +263,15 @@ export default function TokenRoutes() {
       return;
     }
 
+    // Check if SDK is available
+    if (!waypointClient) {
+      toast.error({
+        title: 'SDK Not Initialized',
+        description: 'Please refresh the page and try again'
+      });
+      return;
+    }
+
     // Find the route to get the route_obj_address
     const route = allRoutes?.find(r => r.id === routeId);
     if (!route || !route.route_obj_address) {
@@ -283,8 +292,6 @@ export default function TokenRoutes() {
     }
 
     setClaimingRouteId(routeId);
-
-    const MODULE_ADDRESS = "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
     
     // Show loading toast
     const loadingToastId = toast.loading({
@@ -293,54 +300,27 @@ export default function TokenRoutes() {
     });
 
     try {
-      // Fetch route type configuration from database to get the module name
-      const routeTypes = await fetchRouteTypes('aptos');
-      const routeType = routeTypes.find(rt => rt.route_type_id === route.route_type);
-      
-      if (!routeType || !routeType.module_name) {
-        toast.update(loadingToastId, {
-          title: "Configuration Error",
-          description: `Route type '${route.route_type}' not found or missing module name.`,
-          type: "error",
-        });
-        setClaimingRouteId(null);
-        return;
-      }
-
-      const MODULE_NAME = routeType.module_name;
-      console.log(`[${route.route_type}] Using module: ${MODULE_NAME}`);
-
       // Configure Aptos SDK
       const aptosNetwork = Network.MAINNET;
       const config = new AptosConfig({ network: aptosNetwork });
       const aptos = new Aptos(config);
 
-      // Verify the route exists on-chain using view function before claiming
-      try {
-        const viewPayload = {
-          function: `${MODULE_ADDRESS}::${MODULE_NAME}::get_route_core` as `${string}::${string}::${string}`,
-          typeArguments: [],
-          functionArguments: [route.route_obj_address],
-        };
-        await aptos.view({ payload: viewPayload });
-      } catch (viewError) {
-        console.error("Route not found on chain:", viewError);
-        toast.update(loadingToastId, {
-          title: "Route Not Found",
-          description: "This route does not exist on the blockchain.",
-          type: "error",
-        });
-        setClaimingRouteId(null);
-        return;
-      }
+      // Build claim transaction using SDK based on route type
+      const isMilestone = route.route_type === 'milestone-routes';
+      const transactionPayload = isMilestone
+        ? await waypointClient.buildClaimMilestoneTransaction({
+            caller: account.address.toString(),
+            routeAddress: route.route_obj_address,
+          })
+        : await waypointClient.buildClaimLinearTransaction({
+            caller: account.address.toString(),
+            routeAddress: route.route_obj_address,
+          });
 
-      // Submit the claim transaction
-      // For Object<ObjectCore> parameters, pass the address as a string
+      // Sign and submit transaction using wallet adapter
       const response = await signAndSubmitTransaction({
-        data: {
-          function: `${MODULE_ADDRESS}::${MODULE_NAME}::claim` as `${string}::${string}::${string}`,
-          functionArguments: [route.route_obj_address],
-        },
+        sender: account.address,
+        data: transactionPayload,
       });
 
       // Update toast to waiting for confirmation
@@ -355,25 +335,22 @@ export default function TokenRoutes() {
 
       // Check if route is now complete on blockchain
       try {
-        const viewPayload = {
-          function: `${MODULE_ADDRESS}::${MODULE_NAME}::get_route_core` as `${string}::${string}::${string}`,
-          typeArguments: [],
-          functionArguments: [route.route_obj_address],
-        };
-        const routeCoreData = await aptos.view({ payload: viewPayload });
+        const routeCoreData = await getRouteCore(route.route_obj_address);
         
-        // Check if all tokens have been claimed
-        const depositAmount = BigInt(String(routeCoreData[7])); // deposit_amount
-        const claimedAmount = BigInt(String(routeCoreData[8])); // claimed_amount
-        
-        if (claimedAmount >= depositAmount) {
-          // Route is complete, update database
-          try {
-            await updateRouteStatus(routeId, 'completed');
-            console.log(`Route ${routeId} marked as completed in database`);
-          } catch (dbError) {
-            console.error('Failed to update route status in database:', dbError);
-            // Don't fail the claim if DB update fails
+        if (routeCoreData) {
+          // Check if all tokens have been claimed
+          const depositAmount = BigInt(routeCoreData.deposit_amount);
+          const claimedAmount = BigInt(routeCoreData.claimed_amount);
+          
+          if (claimedAmount >= depositAmount) {
+            // Route is complete, update database
+            try {
+              await updateRouteStatus(routeId, 'completed');
+              console.log(`Route ${routeId} marked as completed in database`);
+            } catch (dbError) {
+              console.error('Failed to update route status in database:', dbError);
+              // Don't fail the claim if DB update fails
+            }
           }
         }
       } catch (checkError) {
@@ -436,6 +413,15 @@ export default function TokenRoutes() {
       return;
     }
 
+    // Check if SDK is available
+    if (!waypointClient) {
+      toast.error({
+        title: 'SDK Not Initialized',
+        description: 'Please refresh the page and try again'
+      });
+      return;
+    }
+
     if (!approveModalRouteId || !approveAmount) {
       toast.error({
         title: 'Invalid Input',
@@ -473,8 +459,6 @@ export default function TokenRoutes() {
     }
 
     setApprovingRouteId(approveModalRouteId);
-
-    const MODULE_ADDRESS = "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
     
     // Show loading toast
     const loadingToastId = toast.loading({
@@ -483,28 +467,11 @@ export default function TokenRoutes() {
     });
 
     try {
-      // Fetch route type configuration from database to get the module name
-      const routeTypes = await fetchRouteTypes('aptos');
-      const routeType = routeTypes.find(rt => rt.route_type_id === route.route_type);
-      
-      if (!routeType || !routeType.module_name) {
-        toast.update(loadingToastId, {
-          title: "Configuration Error",
-          description: `Route type '${route.route_type}' not found or missing module name.`,
-          type: "error",
-        });
-        setApprovingRouteId(null);
-        return;
-      }
-
-      const MODULE_NAME = routeType.module_name;
-      console.log(`[${route.route_type}] Using module: ${MODULE_NAME}`);
-
       // Get token info to convert amount to token units
       const token = route.token;
-      const unlockAmountInUnits = Math.floor(parseFloat(approveAmount) * Math.pow(10, token.decimals));
+      const unlockAmountInUnits = BigInt(Math.floor(parseFloat(approveAmount) * Math.pow(10, token.decimals)));
 
-      if (unlockAmountInUnits <= 0) {
+      if (unlockAmountInUnits <= 0n) {
         toast.update(loadingToastId, {
           title: "Invalid Amount",
           description: "Please enter a valid amount greater than 0.",
@@ -519,12 +486,17 @@ export default function TokenRoutes() {
       const config = new AptosConfig({ network: aptosNetwork });
       const aptos = new Aptos(config);
 
-      // Submit the approve transaction
+      // Build approve transaction using SDK
+      const transactionPayload = await waypointClient.buildApproveMilestoneTransaction({
+        caller: account.address.toString(),
+        routeAddress: route.route_obj_address,
+        unlockAmount: unlockAmountInUnits,
+      });
+
+      // Sign and submit transaction using wallet adapter
       const response = await signAndSubmitTransaction({
-        data: {
-          function: `${MODULE_ADDRESS}::${MODULE_NAME}::approve_release` as `${string}::${string}::${string}`,
-          functionArguments: [route.route_obj_address, unlockAmountInUnits.toString()],
-        },
+        sender: account.address,
+        data: transactionPayload,
       });
 
       // Update toast to waiting for confirmation
@@ -722,12 +694,12 @@ export default function TokenRoutes() {
           <div className="bg-red-100 border-2 border-red-400 rounded-lg p-6 text-center">
             <p className="text-red-700 font-display font-semibold mb-2">Error loading routes</p>
             <p className="text-red-600 text-sm">{errorMessage || 'Token not found'}</p>
-            <a
-              href="/app"
+            <Link
+              to="/app"
               className="inline-block mt-4 text-forest-600 hover:text-forest-800 transition-colors duration-200"
             >
               <span className="font-display text-sm uppercase tracking-wide">← Back to Routes</span>
-            </a>
+            </Link>
           </div>
         </div>
         <Footer />
@@ -1172,15 +1144,15 @@ export default function TokenRoutes() {
 
         {/* Back Navigation */}
         <div className="mt-8">
-          <a
-            href="/app"
+          <Link
+            to="/app"
             className="inline-flex items-center space-x-2 text-forest-600 hover:text-forest-800 transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span className="font-display text-sm uppercase tracking-wide">Back to Routes</span>
-          </a>
+          </Link>
         </div>
       </div>
 
