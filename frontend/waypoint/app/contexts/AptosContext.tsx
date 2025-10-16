@@ -1,10 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
+import { AptosWaypointClient } from '@waypoint/sdk';
 import { fetchRoutes, fetchRouteTypes } from '../lib/api';
 
 // Module address for the Waypoint contract
 const MODULE_ADDRESS = "0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0";
+
+// Backend API URL - you should configure this via environment variables
+const BACKEND_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Types for route data from blockchain
 export interface RouteCore {
@@ -22,6 +26,7 @@ export interface RouteCore {
 
 interface AptosContextType {
   aptos: Aptos | null;
+  waypointClient: AptosWaypointClient | null;
   network: Network | null;
   setNetwork: (network: Network) => void;
   isLoading: boolean;
@@ -46,8 +51,9 @@ export function AptosProvider({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aptos, setAptos] = useState<Aptos | null>(null);
+  const [waypointClient, setWaypointClient] = useState<AptosWaypointClient | null>(null);
 
-  // Initialize Aptos client when network changes
+  // Initialize Aptos client and Waypoint SDK when network changes
   useEffect(() => {
     // Don't initialize if network is not available yet
     if (!network) {
@@ -67,6 +73,17 @@ export function AptosProvider({
         console.log('Aptos client initialized', client);
         setAptos(client);
         console.log('Aptos client set');
+        
+        // Initialize Waypoint SDK client
+        const sdkNetwork = network === Network.MAINNET ? 'mainnet' : 'testnet';
+        const waypoint = new AptosWaypointClient({
+          network: sdkNetwork,
+          aptosConfig: config,
+          backendUrl: BACKEND_API_URL,
+        });
+        setWaypointClient(waypoint);
+        console.log('Waypoint SDK client initialized');
+        
         setIsLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize Aptos client';
@@ -205,6 +222,7 @@ export function AptosProvider({
 
   const value: AptosContextType = {
     aptos,
+    waypointClient,
     network,
     setNetwork,
     isLoading,

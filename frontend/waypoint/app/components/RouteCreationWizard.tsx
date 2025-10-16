@@ -251,8 +251,8 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
     queryError instanceof Error
       ? queryError.message
       : queryError
-        ? "Failed to load tokens"
-        : null;
+      ? "Failed to load tokens"
+      : null;
 
   // Helper function to get balance for a token
   const getTokenBalance = (tokenSymbol: string): number | null => {
@@ -381,8 +381,8 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                 !hasBalance
                   ? "bg-forest-800 border-forest-600 opacity-50 cursor-not-allowed"
                   : data.selectedToken?.id === token.id
-                    ? "bg-gradient-to-r from-forest-600 to-forest-500 border-sunset-500 border-opacity-60"
-                    : "bg-gradient-to-r from-forest-700 to-forest-600 border-forest-500 border-opacity-30 hover:border-opacity-60 hover:border-sunset-500"
+                  ? "bg-gradient-to-r from-forest-600 to-forest-500 border-sunset-500 border-opacity-60"
+                  : "bg-gradient-to-r from-forest-700 to-forest-600 border-forest-500 border-opacity-30 hover:border-opacity-60 hover:border-sunset-500"
               }
             `}
               >
@@ -1083,7 +1083,9 @@ const RecipientStep: React.FC<WizardStepProps> = ({
     try {
       setIsResolvingNFD(true);
       const response = await fetch(
-        `https://api.nf.domains/nfd/${encodeURIComponent(nfdName)}?view=tiny&poll=false&nocache=false`
+        `https://api.nf.domains/nfd/${encodeURIComponent(
+          nfdName
+        )}?view=tiny&poll=false&nocache=false`
       );
       const data = await response.json();
 
@@ -1385,7 +1387,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
   // Aptos wallet and context
   const aptosWallet = useWallet();
-  const { network: aptosNetwork } = useAptos();
+  const { network: aptosNetwork, waypointClient } = useAptos();
 
   // Algorand wallet and context
   const algorandWallet = useAlgorandWallet();
@@ -1395,11 +1397,15 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   const createRouteMutation = useCreateRoute();
 
   // Fetch route types to get module name and contract address
-  const networkName = selectedNetwork === BlockchainNetwork.APTOS ? "aptos" : "algorand";
-  const { data: routeTypesFromAPI = [], isLoading: loadingRouteTypes } = useRouteTypes(networkName);
-  
+  const networkName =
+    selectedNetwork === BlockchainNetwork.APTOS ? "aptos" : "algorand";
+  const { data: routeTypesFromAPI = [], isLoading: loadingRouteTypes } =
+    useRouteTypes(networkName);
+
   // Find the current route type configuration
-  const currentRouteTypeConfig = routeTypesFromAPI.find(rt => rt.route_type_id === routeType);
+  const currentRouteTypeConfig = routeTypesFromAPI.find(
+    (rt) => rt.route_type_id === routeType
+  );
 
   // Get current account address based on network
   const accountAddress =
@@ -1567,6 +1573,12 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       return;
     }
 
+    // Check if Waypoint SDK client is available
+    if (!waypointClient) {
+      setBuildError("Waypoint SDK not initialized");
+      return;
+    }
+
     // Note: data.recipientAddress already contains the resolved address if an NFD was used
     // Validate sufficient token balance (route amount + fee)
     const routeAmount = parseFloat(data.totalAmount);
@@ -1581,7 +1593,15 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
     if (totalRequired > tokenBalance) {
       setBuildError(
-        `Insufficient ${data.selectedToken.symbol} balance. You need ${totalRequired.toFixed(6)} ${data.selectedToken.symbol} (${routeAmount.toFixed(6)} route + ${platformFee.toFixed(6)} fee) but only have ${tokenBalance.toFixed(6)} ${data.selectedToken.symbol}.`
+        `Insufficient ${
+          data.selectedToken.symbol
+        } balance. You need ${totalRequired.toFixed(6)} ${
+          data.selectedToken.symbol
+        } (${routeAmount.toFixed(6)} route + ${platformFee.toFixed(
+          6
+        )} fee) but only have ${tokenBalance.toFixed(6)} ${
+          data.selectedToken.symbol
+        }.`
       );
       return;
     }
@@ -1593,71 +1613,37 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     try {
       // Convert human-readable amounts to token units (considering decimals)
       const decimals = data.selectedToken.decimals;
-      const amountInUnits = Math.floor(
-        parseFloat(data.totalAmount) * Math.pow(10, decimals)
+      const amountInUnits = BigInt(
+        Math.floor(parseFloat(data.totalAmount) * Math.pow(10, decimals))
       );
-      const payoutAmountInUnits = Math.floor(
-        parseFloat(data.unlockAmount) * Math.pow(10, decimals)
+      const payoutAmountInUnits = BigInt(
+        Math.floor(parseFloat(data.unlockAmount) * Math.pow(10, decimals))
       );
 
       // Convert start time to unix timestamp (seconds)
-      const startTimestamp = Math.floor(data.startTime.getTime() / 1000);
-
-      // Convert unlock period to seconds
-      const periodInSeconds = timeUnitToSeconds(data.unlockUnit);
-
-      // Calculate max periods
-      const maxPeriods = Math.ceil(
-        parseFloat(data.totalAmount) / parseFloat(data.unlockAmount)
+      const startTimestamp = BigInt(
+        Math.floor(data.startTime.getTime() / 1000)
       );
 
-      // Platform fee in token units (using routeFeeCalc from above)
-      const feeAmountInUnits = Math.floor(platformFee * Math.pow(10, decimals));
+      // Convert unlock period to seconds
+      const periodInSeconds = BigInt(timeUnitToSeconds(data.unlockUnit));
 
-      console.log("Building transaction with params:", {
-        faObjectAddress: data.selectedToken.contract_address,
-        amount: amountInUnits,
-        start_ts: startTimestamp,
-        period_secs: periodInSeconds,
-        payout_amount: payoutAmountInUnits,
-        max_periods: maxPeriods,
-        fee_amount: feeAmountInUnits,
+      // Calculate max periods
+      const maxPeriods = BigInt(
+        Math.ceil(parseFloat(data.totalAmount) / parseFloat(data.unlockAmount))
+      );
+
+      console.log("Building transaction with SDK:", {
+        sender: aptosWallet.account.address.toString(),
         beneficiary: data.recipientAddress,
+        tokenMetadata: data.selectedToken.contract_address,
+        amount: amountInUnits.toString(),
+        startTimestamp: startTimestamp.toString(),
+        periodSeconds: periodInSeconds.toString(),
+        payoutAmount: payoutAmountInUnits.toString(),
+        maxPeriods: maxPeriods.toString(),
+        routeType: routeType === "milestone-routes" ? "milestone" : "simple",
       });
-
-      // Build the transaction
-      /* const transaction = await createLinearRoute(
-        account.address,
-        data.selectedToken.contract_address,
-        amountInUnits,
-        startTimestamp,
-        periodInSeconds,
-        payoutAmountInUnits,
-        maxPeriods,
-        feeAmountInUnits,
-        data.recipientAddress,
-        network === "mainnet" ? "mainnet" : "devnet"
-      ); */
-
-      // Get module name and contract address from database
-      if (!currentRouteTypeConfig) {
-        setBuildError("Route type configuration not found. Please try again.");
-        return;
-      }
-
-      if (!currentRouteTypeConfig.module_name || !currentRouteTypeConfig.contract_address) {
-        setBuildError("Route type is not properly configured. Please contact support.");
-        return;
-      }
-
-      const moduleAddress = currentRouteTypeConfig.contract_address;
-      const moduleName = currentRouteTypeConfig.module_name;
-      const functionName = "create_route_and_fund";
-
-      // Configure Aptos SDK with the correct network
-      const aptosNetwork = Network.MAINNET;
-      const config = new AptosConfig({ network: aptosNetwork });
-      const aptos = new Aptos(config);
 
       // Show loading toast
       const loadingToastId = toast.loading({
@@ -1665,21 +1651,21 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         description: "Please confirm the transaction in your wallet...",
       });
 
-      const response = await aptosWallet.signAndSubmitTransaction({
-        data: {
-          function: `${moduleAddress}::${moduleName}::${functionName}`,
-          functionArguments: [
-            data.selectedToken.contract_address, // Object<Metadata> as address
-            amountInUnits, // u64
-            startTimestamp, // u64
-            periodInSeconds, // u64
-            payoutAmountInUnits, // u64
-            maxPeriods, // u64
-            feeAmountInUnits, // u64
-            data.recipientAddress, // address
-          ],
-        },
-      });
+      // Build transaction using SDK
+      const transactionPayload =
+        await waypointClient.buildCreateLinearRouteTransaction({
+          sender: aptosWallet.account.address.toString(),
+          beneficiary: data.recipientAddress,
+          tokenMetadata: data.selectedToken.contract_address,
+          amount: amountInUnits,
+          startTimestamp: Number(startTimestamp),
+          periodSeconds: Number(periodInSeconds),
+          payoutAmount: payoutAmountInUnits,
+          maxPeriods: Number(maxPeriods),
+        });
+
+      // Sign and submit transaction using wallet
+      const response = await aptosWallet.signAndSubmitTransaction(transactionPayload);
 
       // Transaction signed, now confirming
       setTransactionStatus("confirming");
@@ -1690,6 +1676,11 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         description: "Waiting for blockchain confirmation...",
         type: "loading",
       });
+
+      // Configure Aptos SDK with the correct network
+      const aptosNetwork = Network.MAINNET;
+      const config = new AptosConfig({ network: aptosNetwork });
+      const aptos = new Aptos(config);
 
       // Wait for transaction confirmation
       const txn = await aptos.waitForTransaction({
@@ -1702,7 +1693,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       // Transaction confirmed! Now save to database
       toast.update(loadingToastId, {
         title: "Transaction Confirmed",
-        description: "Extracting route address...",
+        description: "Registering route...",
         type: "loading",
       });
 
@@ -1715,13 +1706,13 @@ const SummaryStep: React.FC<WizardStepProps> = ({
             "address" in change &&
             "data" in change
           ) {
-            const data = change.data as any;
+            const changeData = change.data as any;
             // Check if this is the Route resource (not Routes collection)
             if (
-              data?.type &&
-              typeof data.type === "string" &&
-              data.type.includes("Route") &&
-              !data.type.includes("Routes")
+              changeData?.type &&
+              typeof changeData.type === "string" &&
+              changeData.type.includes("Route") &&
+              !changeData.type.includes("Routes")
             ) {
               routeObjAddress = change.address;
               console.log("Found route object address:", routeObjAddress);
@@ -1739,28 +1730,31 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         console.log("Transaction result:", txn);
       }
 
-      // Prepare route payload for database
-      const routePayload = {
-        sender: aptosWallet.account.address.toStringLong(),
-        recipient: data.recipientAddress,
-        token_id: Number(data.selectedToken.id),
-        amount_token_units: amountInUnits.toString(),
-        amount_per_period_token_units: payoutAmountInUnits.toString(),
-        start_date: data.startTime.toISOString(),
-        payment_frequency_unit: data.unlockUnit,
-        payment_frequency_number: 1, // Always 1 - we unlock every 1 unit (hour, day, etc.)
-        blockchain_tx_hash: response.hash,
-        route_obj_address: routeObjAddress,
-      };
-
-      // Save route to database
-      toast.update(loadingToastId, {
-        title: "Saving to Database",
-        description: "Recording your route...",
-        type: "loading",
-      });
-
-      await createRouteMutation.mutateAsync(routePayload);
+      // Register route with backend using SDK (optional but recommended)
+      if (routeObjAddress) {
+        try {
+          await waypointClient.registerRouteWithBackend({
+            sender: aptosWallet.account.address.toString(),
+            recipient: data.recipientAddress,
+            amountPerPeriodTokenUnits: payoutAmountInUnits.toString(),
+            amountTokenUnits: amountInUnits.toString(),
+            startDate: data.startTime,
+            paymentFrequencyUnit: data.unlockUnit,
+            paymentFrequencyNumber: 1,
+            blockchainTxHash: response.hash,
+            routeObjAddress: routeObjAddress,
+            routeType:
+              routeType === "milestone-routes" ? "milestone" : "simple",
+            tokenId: Number(data.selectedToken.id),
+          });
+        } catch (registrationError) {
+          console.error(
+            "Failed to register route with backend:",
+            registrationError
+          );
+          // Don't fail the entire transaction if backend registration fails
+        }
+      }
 
       // Success! Show success toast
       toast.update(loadingToastId, {
@@ -1834,7 +1828,15 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     // Validate sufficient token balance
     if (totalRequired > tokenBalance) {
       setBuildError(
-        `Insufficient ${data.selectedToken.symbol} balance. You need ${totalRequired.toFixed(6)} ${data.selectedToken.symbol} (${routeAmount.toFixed(6)} route + ${platformFee.toFixed(6)} fee) but only have ${tokenBalance.toFixed(6)} ${data.selectedToken.symbol}.`
+        `Insufficient ${
+          data.selectedToken.symbol
+        } balance. You need ${totalRequired.toFixed(6)} ${
+          data.selectedToken.symbol
+        } (${routeAmount.toFixed(6)} route + ${platformFee.toFixed(
+          6
+        )} fee) but only have ${tokenBalance.toFixed(6)} ${
+          data.selectedToken.symbol
+        }.`
       );
       return;
     }
@@ -2091,15 +2093,24 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         </div>
         <div className="bg-sunset-900 bg-opacity-30 border-2 border-sunset-500 border-opacity-40 rounded-lg p-4">
           <div className="flex items-start space-x-3">
-            <svg className="w-6 h-6 text-sunset-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <svg
+              className="w-6 h-6 text-sunset-400 flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
             </svg>
             <div className="flex-1">
               <h3 className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide mb-1">
                 Route Type Not Found
               </h3>
               <p className="text-xs text-primary-300 font-display">
-                The selected route type configuration could not be found. Please go back and select a different route type.
+                The selected route type configuration could not be found. Please
+                go back and select a different route type.
               </p>
             </div>
           </div>
@@ -2408,8 +2419,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
                 {transactionStatus === "signing"
                   ? "Waiting for Signature..."
                   : transactionStatus === "confirming"
-                    ? "Confirming..."
-                    : "Processing..."}
+                  ? "Confirming..."
+                  : "Processing..."}
               </span>
             </>
           ) : (
@@ -2461,7 +2472,7 @@ export default function RouteCreationWizard({
 }: RouteCreationWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<RouteFormData>({});
-  
+
   // Determine if this is a milestone route
   const isMilestoneRoute = routeType === "milestone-routes";
 
@@ -2510,7 +2521,13 @@ export default function RouteCreationWizard({
           </button>
 
           <h1 className="text-3xl lg:text-4xl font-display font-bold text-forest-800 uppercase tracking-wide mb-2">
-            Create {routeType === "milestone-routes" ? "Milestone" : routeType === "simple-transfer" ? "Simple Transfer" : routeType.replace("-", " ")} Route
+            Create{" "}
+            {routeType === "milestone-routes"
+              ? "Milestone"
+              : routeType === "simple-transfer"
+              ? "Simple Transfer"
+              : routeType.replace("-", " ")}{" "}
+            Route
           </h1>
 
           {/* Progress Indicator */}
@@ -2524,8 +2541,8 @@ export default function RouteCreationWizard({
                     index === currentStep
                       ? "bg-sunset-500 text-primary-100"
                       : index < currentStep
-                        ? "bg-forest-600 text-primary-100"
-                        : "bg-forest-200 text-forest-600"
+                      ? "bg-forest-600 text-primary-100"
+                      : "bg-forest-200 text-forest-600"
                   }
                 `}
                 >

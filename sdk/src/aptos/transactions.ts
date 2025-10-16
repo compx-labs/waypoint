@@ -124,12 +124,7 @@ export class AptosTransactions {
       ],
     };
 
-    const transaction = await this.aptos.transaction.build.simple({
-      sender: params.caller,
-      data: payload,
-    });
-
-    return transaction;
+    return payload;
   }
 
   /**
