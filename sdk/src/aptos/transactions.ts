@@ -1,19 +1,19 @@
-import { Aptos, InputGenerateTransactionPayloadData } from '@aptos-labs/ts-sdk';
+import { Aptos, InputGenerateTransactionPayloadData } from "@aptos-labs/ts-sdk";
 import type {
   Network,
   CreateLinearRouteParams,
   CreateMilestoneRouteParams,
   ClaimParams,
   ApproveMilestoneParams,
-} from '../types';
-import { NETWORKS, ENTRY_FUNCTIONS } from './constants';
+} from "../types";
+import { NETWORKS, ENTRY_FUNCTIONS } from "./constants";
 import {
   validateCreateLinearRouteParams,
   validateCreateMilestoneRouteParams,
   validateRouteAddress,
   validateCallerAddress,
-} from '../utils/validation';
-import { calculateFee } from '../utils/formatting';
+} from "../utils/validation";
+import { calculateFee } from "../utils/formatting";
 
 /**
  * Transaction builder class for creating unsigned transactions
@@ -51,14 +51,16 @@ export class AptosTransactions {
   /**
    * Build transaction to create a linear streaming route
    */
-  async buildCreateLinearRouteTransaction(params: CreateLinearRouteParams) {
+  buildCreateLinearRouteTransaction(params: CreateLinearRouteParams): InputGenerateTransactionPayloadData {
     validateCreateLinearRouteParams(params);
 
     // Calculate the 0.5% protocol fee
     const feeAmount = calculateFee(params.amount);
 
     const payload: InputGenerateTransactionPayloadData = {
-      function: `${this.getLinearModule()}::${ENTRY_FUNCTIONS.LINEAR.CREATE_ROUTE}`,
+      function: `${this.getModuleAddress()}::${"linear_stream_fa"}::${
+        ENTRY_FUNCTIONS.LINEAR.CREATE_ROUTE
+      }`,
       functionArguments: [
         params.tokenMetadata, // fa: Object<Metadata>
         params.amount.toString(), // amount: u64
@@ -71,25 +73,24 @@ export class AptosTransactions {
       ],
     };
 
-    const transaction = await this.aptos.transaction.build.simple({
-      sender: params.sender,
-      data: payload,
-    });
-
-    return transaction;
+    return payload;
   }
 
   /**
    * Build transaction to create a milestone-based route
    */
-  async buildCreateMilestoneRouteTransaction(params: CreateMilestoneRouteParams) {
+  buildCreateMilestoneRouteTransaction(
+    params: CreateMilestoneRouteParams
+  ): InputGenerateTransactionPayloadData {
     validateCreateMilestoneRouteParams(params);
 
     // Calculate the 0.5% protocol fee
     const feeAmount = calculateFee(params.amount);
 
     const payload: InputGenerateTransactionPayloadData = {
-      function: `${this.getMilestoneModule()}::${ENTRY_FUNCTIONS.MILESTONE.CREATE_ROUTE}`,
+      function: `${this.getModuleAddress()}::${"milestone_stream_fa"}::${
+        ENTRY_FUNCTIONS.MILESTONE.CREATE_ROUTE
+      }`,
       functionArguments: [
         params.tokenMetadata, // fa: Object<Metadata>
         params.amount.toString(), // amount: u64
@@ -102,23 +103,20 @@ export class AptosTransactions {
       ],
     };
 
-    const transaction = await this.aptos.transaction.build.simple({
-      sender: params.sender,
-      data: payload,
-    });
-
-    return transaction;
+    return payload;
   }
 
   /**
    * Build transaction to claim from a linear route
    */
-  async buildClaimLinearTransaction(params: ClaimParams) {
+  buildClaimLinearTransaction(params: ClaimParams): InputGenerateTransactionPayloadData {
     validateCallerAddress(params.caller);
     validateRouteAddress(params.routeAddress);
 
     const payload: InputGenerateTransactionPayloadData = {
-      function: `${this.getLinearModule()}::${ENTRY_FUNCTIONS.LINEAR.CLAIM}`,
+      function: `${this.getModuleAddress()}::${"linear_stream_fa"}::${
+        ENTRY_FUNCTIONS.LINEAR.CLAIM
+      }`,
       functionArguments: [
         params.routeAddress, // route_obj: Object<ObjectCore>
       ],
@@ -130,50 +128,45 @@ export class AptosTransactions {
   /**
    * Build transaction to claim from a milestone route
    */
-  async buildClaimMilestoneTransaction(params: ClaimParams) {
+  buildClaimMilestoneTransaction(params: ClaimParams): InputGenerateTransactionPayloadData {
     validateCallerAddress(params.caller);
     validateRouteAddress(params.routeAddress);
 
     const payload: InputGenerateTransactionPayloadData = {
-      function: `${this.getMilestoneModule()}::${ENTRY_FUNCTIONS.MILESTONE.CLAIM}`,
+      function: `${this.getModuleAddress()}::${"milestone_stream_fa"}::${
+        ENTRY_FUNCTIONS.MILESTONE.CLAIM
+      }`,
       functionArguments: [
         params.routeAddress, // route_obj: Object<ObjectCore>
       ],
     };
 
-    const transaction = await this.aptos.transaction.build.simple({
-      sender: params.caller,
-      data: payload,
-    });
-
-    return transaction;
+    return payload;
   }
 
   /**
    * Build transaction to approve a milestone (depositor only)
    */
-  async buildApproveMilestoneTransaction(params: ApproveMilestoneParams) {
+  buildApproveMilestoneTransaction(
+    params: ApproveMilestoneParams
+  ): InputGenerateTransactionPayloadData {
     validateCallerAddress(params.caller);
     validateRouteAddress(params.routeAddress);
 
     if (params.unlockAmount <= 0n) {
-      throw new Error('Unlock amount must be greater than 0');
+      throw new Error("Unlock amount must be greater than 0");
     }
 
     const payload: InputGenerateTransactionPayloadData = {
-      function: `${this.getMilestoneModule()}::${ENTRY_FUNCTIONS.MILESTONE.APPROVE_MILESTONE}`,
+      function: `${this.getModuleAddress()}::${"milestone_stream_fa"}::${
+        ENTRY_FUNCTIONS.MILESTONE.APPROVE_MILESTONE
+      }`,
       functionArguments: [
         params.routeAddress, // route_obj: Object<ObjectCore>
         params.unlockAmount.toString(), // unlock_amount: u64
       ],
     };
 
-    const transaction = await this.aptos.transaction.build.simple({
-      sender: params.caller,
-      data: payload,
-    });
-
-    return transaction;
+    return payload;
   }
 }
-

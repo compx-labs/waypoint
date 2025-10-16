@@ -43,7 +43,7 @@ export class AptosQueries {
   async listLinearRoutes(): Promise<string[]> {
     try {
       const payload: InputViewFunctionData = {
-        function: `${this.getLinearModule()}::${VIEW_FUNCTIONS.LIST_ROUTES}`,
+        function: `${this.getModuleAddress()}::${'linear_stream_fa'}::${VIEW_FUNCTIONS.LIST_ROUTES}`,
         functionArguments: [],
       };
 
@@ -67,7 +67,7 @@ export class AptosQueries {
   async listMilestoneRoutes(): Promise<string[]> {
     try {
       const payload: InputViewFunctionData = {
-        function: `${this.getMilestoneModule()}::${VIEW_FUNCTIONS.LIST_ROUTES}`,
+        function: `${this.getModuleAddress()}::${'milestone_stream_fa'}::${VIEW_FUNCTIONS.LIST_ROUTES}`,
         functionArguments: [],
       };
 
@@ -93,7 +93,7 @@ export class AptosQueries {
 
     try {
       const payload: InputViewFunctionData = {
-        function: `${this.getLinearModule()}::${VIEW_FUNCTIONS.GET_ROUTE_CORE}`,
+        function: `${this.getModuleAddress()}::${'linear_stream_fa'}::${VIEW_FUNCTIONS.GET_ROUTE_CORE}`,
         functionArguments: [routeAddress],
       };
 
@@ -133,7 +133,7 @@ export class AptosQueries {
 
     try {
       const payload: InputViewFunctionData = {
-        function: `${this.getMilestoneModule()}::${VIEW_FUNCTIONS.GET_ROUTE_CORE}`,
+        function: `${this.getModuleAddress()}::${'milestone_stream_fa'}::${VIEW_FUNCTIONS.GET_ROUTE_CORE}`,
         functionArguments: [routeAddress],
       };
 
