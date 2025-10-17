@@ -4,6 +4,15 @@
 
 Waypoint now supports both Aptos and Algorand blockchains with a unified wallet connection experience. Users can select their preferred network and connect their wallet through a single, intuitive modal interface.
 
+## Supported Tokens
+
+Waypoint on Algorand currently supports:
+
+- **USDC** - USD Coin (Circle's regulated stablecoin)
+- **xUSD** - CompX over-collateralized stablecoin
+
+Both tokens are available for creating routes and streaming payments on the Algorand blockchain.
+
 ## Architecture
 
 ### Context Providers

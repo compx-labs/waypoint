@@ -1,8 +1,8 @@
 # Waypoint SDK
 
-> TypeScript SDK for interacting with Waypoint's token routing contracts on Aptos
+> TypeScript SDK for interacting with Waypoint's token routing contracts on Aptos and Algorand
 
-The Waypoint SDK is a lightweight TypeScript library that makes it easy to interact with Waypoint's smart contracts on the Aptos blockchain. It generates unsigned transactions and reads on-chain state - you handle wallet connections and transaction signing in your own application.
+The Waypoint SDK is a lightweight TypeScript library that makes it easy to interact with Waypoint's smart contracts on Aptos and Algorand blockchains. It generates unsigned transactions and reads on-chain state - you handle wallet connections and transaction signing in your own application.
 
 ## Features
 
