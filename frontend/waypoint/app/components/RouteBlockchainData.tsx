@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useAptos, type RouteCore } from "../contexts/AptosContext";
+import { useAlgorand, type AlgorandRouteCore } from "../contexts/AlgorandContext";
 
 interface RouteBlockchainDataProps {
   routeObjAddress: string | null;
   decimals: number;
   symbol: string;
+  network: string; // 'aptos' or 'algorand'
   refreshTrigger?: number;
-  onDataLoaded?: (data: RouteCore | null) => void;
+  onDataLoaded?: (data: RouteCore | AlgorandRouteCore | null) => void;
   onCompletionStatusChange?: (isComplete: boolean) => void;
   onFullyApprovedStatusChange?: (isFullyApproved: boolean) => void;
 }
@@ -19,13 +21,15 @@ export default function RouteBlockchainData({
   routeObjAddress,
   decimals,
   symbol,
+  network,
   refreshTrigger = 0,
   onDataLoaded,
   onCompletionStatusChange,
   onFullyApprovedStatusChange,
 }: RouteBlockchainDataProps) {
-  const { getRouteCore } = useAptos();
-  const [routeData, setRouteData] = useState<RouteCore | null>(null);
+  const { getRouteCore: getAptosRouteCore } = useAptos();
+  const { getRouteCore: getAlgorandRouteCore } = useAlgorand();
+  const [routeData, setRouteData] = useState<RouteCore | AlgorandRouteCore | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +43,8 @@ export default function RouteBlockchainData({
       setLoading(true);
       setError(null);
       try {
+        // Use appropriate getRouteCore based on network
+        const getRouteCore = network === 'algorand' ? getAlgorandRouteCore : getAptosRouteCore;
         const data = await getRouteCore(routeObjAddress!);
         setRouteData(data);
         if (onDataLoaded) {
@@ -47,14 +53,19 @@ export default function RouteBlockchainData({
         
         // Check if route is complete (all tokens claimed)
         if (data && onCompletionStatusChange) {
-          const depositAmount = BigInt(data.deposit_amount);
-          const claimedAmount = BigInt(data.claimed_amount);
+          // Handle both Aptos (snake_case) and Algorand (camelCase) property names
+          const depositAmount = 'deposit_amount' in data 
+            ? BigInt(data.deposit_amount) 
+            : BigInt(data.depositAmount);
+          const claimedAmount = 'claimed_amount' in data
+            ? BigInt(data.claimed_amount)
+            : BigInt(data.claimedAmount);
           const isComplete = claimedAmount >= depositAmount;
           onCompletionStatusChange(isComplete);
         }
         
-        // Check if milestone route is fully approved
-        if (data && onFullyApprovedStatusChange && data.approved_amount !== undefined) {
+        // Check if milestone route is fully approved (Aptos only)
+        if (data && onFullyApprovedStatusChange && 'approved_amount' in data && data.approved_amount !== undefined) {
           const depositAmount = BigInt(data.deposit_amount);
           const approvedAmount = BigInt(data.approved_amount);
           const isFullyApproved = approvedAmount >= depositAmount;
@@ -75,7 +86,7 @@ export default function RouteBlockchainData({
 
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeObjAddress, refreshTrigger]); // Refetch when address or refresh trigger changes
+  }, [routeObjAddress, network, refreshTrigger]); // Refetch when address, network, or refresh trigger changes
 
   if (loading && !routeData) {
     return (
@@ -89,20 +100,25 @@ export default function RouteBlockchainData({
     return null; // Silently fail - show DB data instead
   }
 
-  // Calculate amounts
-  const depositedBigInt = BigInt(routeData.deposit_amount);
-  const claimedBigInt = BigInt(routeData.claimed_amount);
+  // Calculate amounts - handle both Aptos (snake_case) and Algorand (camelCase)
+  const depositedBigInt = 'deposit_amount' in routeData
+    ? BigInt(routeData.deposit_amount)
+    : BigInt(routeData.depositAmount);
+  const claimedBigInt = 'claimed_amount' in routeData
+    ? BigInt(routeData.claimed_amount)
+    : BigInt(routeData.claimedAmount);
   const decimalsNum = BigInt(10 ** decimals);
   
-  // For milestone routes, check if approved_amount exists
-  const isMilestone = routeData.approved_amount !== undefined;
+  // For milestone routes, check if approved_amount exists (Aptos only)
+  const isMilestone = 'approved_amount' in routeData && routeData.approved_amount !== undefined;
   const approvedBigInt = isMilestone ? BigInt(routeData.approved_amount!) : BigInt(0);
   
   console.log('RouteBlockchainData:', {
+    network,
     isMilestone,
-    approved_amount: routeData.approved_amount,
-    deposit_amount: routeData.deposit_amount,
-    claimed_amount: routeData.claimed_amount,
+    approved_amount: 'approved_amount' in routeData ? routeData.approved_amount : 'N/A',
+    deposit_amount: 'deposit_amount' in routeData ? routeData.deposit_amount : routeData.depositAmount,
+    claimed_amount: 'claimed_amount' in routeData ? routeData.claimed_amount : routeData.claimedAmount,
     routeObjAddress
   });
   

@@ -13,6 +13,7 @@ import type {
   RegistryStats,
 } from './types';
 import { ALGORAND_NETWORKS } from './constants';
+import { WaypointRegistryClient } from './waypoint-registryClient';
 
 /**
  * Query class for reading Algorand blockchain state
@@ -195,20 +196,55 @@ export class AlgorandQueries {
    */
   async listAllRoutes(): Promise<string[]> {
     // TODO: Implement registry query to list all routes
-    // This requires querying the registry's box storage which contains all route records
-    console.warn('listAllRoutes not yet implemented - requires registry box storage query');
-    return [];
+    const appClient = new WaypointRegistryClient({
+      algorand: this.algorand,
+      appId: this.registryAppId,
+    });
+    const routeBoxMap = await appClient.state.box.routes.getMap();
+    return Array.from(routeBoxMap.keys()).map((routeId) => routeId.toString());
+  }
+
+  /**
+   * Get the nominated asset ID from the registry
+   * @returns Nominated asset ID
+   */
+  async getNominatedAssetId(): Promise<bigint> {
+    const appClient = new WaypointRegistryClient({
+      algorand: this.algorand,
+      appId: this.registryAppId,
+    });
+    
+    const nominatedAssetId = await appClient.state.global.nominatedAssetId();
+    return nominatedAssetId || 0n;
   }
 
   /**
    * Get registry statistics
-   * Note: This is a placeholder - requires registry client implementation
    * @returns Registry statistics
    */
   async getRegistryStats(): Promise<RegistryStats | null> {
-    // TODO: Implement registry stats query
-    console.warn('getRegistryStats not yet implemented - requires registry client');
-    return null;
+    try {
+      const appClient = new WaypointRegistryClient({
+        algorand: this.algorand,
+        appId: this.registryAppId,
+      });
+
+      const state = await appClient.state.global.getAll();
+      
+      if (!state) return null;
+
+      return {
+        numRoutes: state.numRoutes || 0n,
+        totalRouted: state.totalRouted || 0n,
+        currentActiveTotal: state.currentActiveRouteTotal || 0n,
+        feeBps: state.feeBps || 0n,
+        treasury: state.treasury || '',
+        nominatedAssetId: state.nominatedAssetId || 0n,
+      };
+    } catch (error) {
+      console.error('Error fetching registry stats:', error);
+      return null;
+    }
   }
 }
 

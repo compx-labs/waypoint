@@ -1,6 +1,6 @@
 {
   "name": "@compx/waypoint-sdk",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "TypeScript SDK for Waypoint token routing on Aptos and Algorand",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

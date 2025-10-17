@@ -191,6 +191,22 @@ export class AlgorandWaypointClient {
     return this.queries.listAllRoutes();
   }
 
+  /**
+   * Get the nominated asset ID from the registry
+   * @returns Nominated asset ID
+   */
+  async getNominatedAssetId(): Promise<bigint> {
+    return this.queries.getNominatedAssetId();
+  }
+
+  /**
+   * Get registry statistics
+   * @returns Registry statistics or null if unavailable
+   */
+  async getRegistryStats() {
+    return this.queries.getRegistryStats();
+  }
+
   // ============================================================================
   // TRANSACTION METHODS - Create and submit transactions
   // ============================================================================
@@ -198,9 +214,10 @@ export class AlgorandWaypointClient {
   /**
    * Create a new linear streaming route
    * This performs all necessary steps:
-   * 1. Creates the route app
-   * 2. Initializes it
-   * 3. Transfers tokens and creates the route
+   * 1. Fetches user's FLUX tier and nominated asset ID (if not provided)
+   * 2. Creates the route app
+   * 3. Initializes it
+   * 4. Transfers tokens (including fee) and creates the route
    * 
    * @param params Route creation parameters
    * @returns Result with transaction IDs and route app ID
@@ -208,7 +225,24 @@ export class AlgorandWaypointClient {
   async createLinearRoute(
     params: CreateAlgorandLinearRouteParams
   ): Promise<CreateRouteResult> {
-    return this.transactions.createLinearRoute(params);
+    // Fetch nominated asset ID if not provided
+    const nominatedAssetId = params.nominatedAssetId !== undefined 
+      ? params.nominatedAssetId 
+      : await this.getNominatedAssetId();
+
+    // Fetch user tier if not provided
+    const userTier = params.userTier !== undefined
+      ? params.userTier
+      : await this.getUserFluxTier(params.sender);
+
+    console.log(`Creating route with tier ${userTier}, nominated asset: ${nominatedAssetId}`);
+
+    // Call transaction builder with complete params
+    return this.transactions.createLinearRoute({
+      ...params,
+      nominatedAssetId,
+      userTier,
+    });
   }
 
   /**

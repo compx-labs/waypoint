@@ -101,6 +101,9 @@ describe("orbital-lending Testing - deposit / borrow", async () => {
     });
     await waypointLinearAppClient.send.initApp({ args: { mbrTxn }, sender: managerAccount.addr });
     const balanceAfter = await getAssetBalance(waypointLinearAppClient.appAddress.toString());
+    const algoBalance = await localnet.context.algod.accountInformation(waypointLinearAppClient.appAddress.toString()).do();
+    console.log("algoBalance", algoBalance.amount);
+    expect(algoBalance.amount).toBe(microAlgo(400_000n));
     expect(balanceAfter).toBe(0n);
   });
 

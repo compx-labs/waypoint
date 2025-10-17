@@ -1,6 +1,7 @@
 import { useSearchParams, Link } from "react-router-dom";
 import React, { useState, useMemo, useEffect } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import { useWallet as useAlgorandWallet } from "@txnlab/use-wallet-react";
 import { useQueryClient } from "@tanstack/react-query";
 import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
@@ -10,6 +11,7 @@ import type { RouteData } from "../lib/api";
 import { updateRouteStatus, fetchRouteTypes } from "../lib/api";
 import { useToast } from "../contexts/ToastContext";
 import { useAptos } from "../contexts/AptosContext";
+import { useAlgorand } from "../contexts/AlgorandContext";
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 
 // Types for individual route data
@@ -36,6 +38,7 @@ interface TokenData {
   color: string;
   logoSrc: string;
   routes: TokenRoute[];
+  network: string; // 'aptos' or 'algorand'
 }
 
 // Helper function to format currency
@@ -89,8 +92,15 @@ export default function TokenRoutes() {
   }, []);
   const [searchParams] = useSearchParams();
   const tokenId = searchParams.get('id');
-  const { account, signAndSubmitTransaction } = useWallet();
-  const { network, getRouteCore, waypointClient } = useAptos();
+  
+  // Aptos wallet and context
+  const { account: aptosAccount, signAndSubmitTransaction } = useWallet();
+  const { network: aptosNetwork, getRouteCore: getAptosRouteCore, waypointClient: aptosWaypointClient } = useAptos();
+  
+  // Algorand wallet and context
+  const algorandWallet = useAlgorandWallet();
+  const { network: algorandNetwork, getRouteCore: getAlgorandRouteCore, waypointClient: algorandWaypointClient } = useAlgorand();
+  
   const toast = useToast();
   const queryClient = useQueryClient();
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -107,8 +117,10 @@ export default function TokenRoutes() {
   // Parse tokenId to number
   const tokenIdNum = tokenId ? parseInt(tokenId) : null;
   
-  // Get wallet address for checking if user is recipient
-  const walletAddress = account?.address?.toStringLong();
+  // Get wallet address for checking if user is recipient (depends on token network)
+  // We'll determine this dynamically based on the token's network
+  const aptosWalletAddress = aptosAccount?.address?.toStringLong();
+  const algorandWalletAddress = algorandWallet.activeAccount?.address;
   
   // Fetch data using React Query with automatic refetching
   const { data: allRoutes, isLoading: routesLoading, error: routesError } = useRoutes({
@@ -133,7 +145,8 @@ export default function TokenRoutes() {
       
       setApprovalDataLoading(true);
       try {
-        const routeData = await getRouteCore(currentRoute.route_obj_address);
+        // Note: Approval is Aptos-only for now (milestone routes)
+        const routeData = await getAptosRouteCore(currentRoute.route_obj_address);
         if (routeData && routeData.approved_amount) {
           setCurrentApprovedAmount(routeData.approved_amount);
         } else {
@@ -148,7 +161,7 @@ export default function TokenRoutes() {
     };
     
     fetchApprovedAmount();
-  }, [approveModalRouteId, allRoutes, getRouteCore]);
+  }, [approveModalRouteId, allRoutes, getAptosRouteCore]);
 
   // Calculate token data based on routes
   const tokenData = useMemo((): TokenData | null => {
@@ -162,6 +175,9 @@ export default function TokenRoutes() {
     
     // If we don't have token info, return null
     if (!token) return null;
+    
+    // Determine wallet address based on token network
+    const walletAddress = token.network === 'algorand' ? algorandWalletAddress : aptosWalletAddress;
     
     // Format routes for display
     const formattedRoutes: TokenRoute[] = tokenRoutes.map(route => {
@@ -221,8 +237,9 @@ export default function TokenRoutes() {
       color: getTokenColor(token.symbol),
       logoSrc: token.logo_url || '/logo.svg',
       routes: formattedRoutes,
+      network: token.network, // Add network info
     };
-  }, [tokenIdNum, allRoutes, tokenInfo, walletAddress]);
+  }, [tokenIdNum, allRoutes, tokenInfo, aptosWalletAddress, algorandWalletAddress]);
 
   const loading = routesLoading || tokenLoading;
   const error = routesError || tokenError;
@@ -255,24 +272,7 @@ export default function TokenRoutes() {
   };
 
   const handleClaim = async (routeId: number) => {
-    if (!account || !signAndSubmitTransaction) {
-      toast.error({
-        title: 'Wallet Not Connected',
-        description: 'Please connect your wallet to claim tokens'
-      });
-      return;
-    }
-
-    // Check if SDK is available
-    if (!waypointClient) {
-      toast.error({
-        title: 'SDK Not Initialized',
-        description: 'Please refresh the page and try again'
-      });
-      return;
-    }
-
-    // Find the route to get the route_obj_address
+    // Find the route to get the route_obj_address and network
     const route = allRoutes?.find(r => r.id === routeId);
     if (!route || !route.route_obj_address) {
       toast.error({
@@ -282,13 +282,61 @@ export default function TokenRoutes() {
       return;
     }
 
-    // Check if user is the beneficiary
-    if (route.recipient !== account.address.toStringLong()) {
-      toast.error({
-        title: 'Not Authorized',
-        description: 'Only the beneficiary can claim tokens from this route'
-      });
-      return;
+    const isAlgorand = route.token.network === 'algorand';
+
+    // Check wallet connection based on network
+    if (isAlgorand) {
+      if (!algorandWallet.activeAccount) {
+        toast.error({
+          title: 'Wallet Not Connected',
+          description: 'Please connect your Algorand wallet to claim tokens'
+        });
+        return;
+      }
+
+      // Check if SDK is available
+      if (!algorandWaypointClient) {
+        toast.error({
+          title: 'SDK Not Initialized',
+          description: 'Please refresh the page and try again'
+        });
+        return;
+      }
+
+      // Check if user is the beneficiary
+      if (route.recipient !== algorandWallet.activeAccount.address) {
+        toast.error({
+          title: 'Not Authorized',
+          description: 'Only the beneficiary can claim tokens from this route'
+        });
+        return;
+      }
+    } else {
+      if (!aptosAccount || !signAndSubmitTransaction) {
+        toast.error({
+          title: 'Wallet Not Connected',
+          description: 'Please connect your Aptos wallet to claim tokens'
+        });
+        return;
+      }
+
+      // Check if SDK is available
+      if (!aptosWaypointClient) {
+        toast.error({
+          title: 'SDK Not Initialized',
+          description: 'Please refresh the page and try again'
+        });
+        return;
+      }
+
+      // Check if user is the beneficiary
+      if (route.recipient !== aptosAccount.address.toStringLong()) {
+        toast.error({
+          title: 'Not Authorized',
+          description: 'Only the beneficiary can claim tokens from this route'
+        });
+        return;
+      }
     }
 
     setClaimingRouteId(routeId);
@@ -300,70 +348,112 @@ export default function TokenRoutes() {
     });
 
     try {
-      // Configure Aptos SDK
-      const aptosNetwork = Network.MAINNET;
-      const config = new AptosConfig({ network: aptosNetwork });
-      const aptos = new Aptos(config);
+      if (isAlgorand) {
+        // Handle Algorand claim
+        const result = await algorandWaypointClient!.claimFromRoute({
+          beneficiary: algorandWallet.activeAccount!.address,
+          routeAppId: BigInt(route.route_obj_address),
+          signer: algorandWallet.transactionSigner,
+        });
 
-      // Build claim transaction using SDK based on route type
-      const isMilestone = route.route_type === 'milestone-routes';
-      const transactionPayload = isMilestone
-        ? await waypointClient.buildClaimMilestoneTransaction({
-            caller: account.address.toString(),
-            routeAddress: route.route_obj_address,
-          })
-        : await waypointClient.buildClaimLinearTransaction({
-            caller: account.address.toString(),
-            routeAddress: route.route_obj_address,
-          });
+        // Update toast to success
+        toast.update(loadingToastId, {
+          title: "Tokens Claimed Successfully!",
+          description: `Transaction ID: ${result.txId}`,
+          type: "success",
+        });
 
-      // Sign and submit transaction using wallet adapter
-      const response = await signAndSubmitTransaction({
-        sender: account.address,
-        data: transactionPayload,
-      });
-
-      // Update toast to waiting for confirmation
-      toast.update(loadingToastId, {
-        title: "Transaction Submitted",
-        description: "Waiting for blockchain confirmation...",
-        type: "loading",
-      });
-
-      // Wait for transaction confirmation
-      await aptos.waitForTransaction({ transactionHash: response.hash });
-
-      // Check if route is now complete on blockchain
-      try {
-        const routeCoreData = await getRouteCore(route.route_obj_address);
-        
-        if (routeCoreData) {
-          // Check if all tokens have been claimed
-          const depositAmount = BigInt(routeCoreData.deposit_amount);
-          const claimedAmount = BigInt(routeCoreData.claimed_amount);
+        // Check if route is now complete on blockchain
+        try {
+          const routeCoreData = await getAlgorandRouteCore(route.route_obj_address);
           
-          if (claimedAmount >= depositAmount) {
-            // Route is complete, update database
-            try {
-              await updateRouteStatus(routeId, 'completed');
-              console.log(`Route ${routeId} marked as completed in database`);
-            } catch (dbError) {
-              console.error('Failed to update route status in database:', dbError);
-              // Don't fail the claim if DB update fails
+          if (routeCoreData) {
+            // Check if all tokens have been claimed
+            const depositAmount = BigInt(routeCoreData.depositAmount);
+            const claimedAmount = BigInt(routeCoreData.claimedAmount);
+            
+            if (claimedAmount >= depositAmount) {
+              // Route is complete, update database
+              try {
+                await updateRouteStatus(routeId, 'completed');
+                console.log(`Route ${routeId} marked as completed in database`);
+              } catch (dbError) {
+                console.error('Failed to update route status in database:', dbError);
+                // Don't fail the claim if DB update fails
+              }
             }
           }
+        } catch (checkError) {
+          console.error('Failed to check route completion status:', checkError);
+          // Don't fail the claim if check fails
         }
-      } catch (checkError) {
-        console.error('Failed to check route completion status:', checkError);
-        // Don't fail the claim if check fails
-      }
 
-      // Success!
-      toast.update(loadingToastId, {
-        title: "Tokens Claimed Successfully!",
-        description: `Your tokens have been claimed and deposited to your wallet.`,
-        type: "success",
-      });
+      } else {
+        // Handle Aptos claim
+        // Configure Aptos SDK
+        const config = new AptosConfig({ network: Network.MAINNET });
+        const aptos = new Aptos(config);
+
+        // Build claim transaction using SDK based on route type
+        const isMilestone = route.route_type === 'milestone-routes';
+        const transactionPayload = isMilestone
+          ? await aptosWaypointClient!.buildClaimMilestoneTransaction({
+              caller: aptosAccount!.address.toString(),
+              routeAddress: route.route_obj_address,
+            })
+          : await aptosWaypointClient!.buildClaimLinearTransaction({
+              caller: aptosAccount!.address.toString(),
+              routeAddress: route.route_obj_address,
+            });
+
+        // Sign and submit transaction using wallet adapter
+        const response = await signAndSubmitTransaction({
+          sender: aptosAccount!.address,
+          data: transactionPayload,
+        });
+
+        // Update toast to waiting for confirmation
+        toast.update(loadingToastId, {
+          title: "Transaction Submitted",
+          description: "Waiting for blockchain confirmation...",
+          type: "loading",
+        });
+
+        // Wait for transaction confirmation
+        await aptos.waitForTransaction({ transactionHash: response.hash });
+
+        // Check if route is now complete on blockchain
+        try {
+          const routeCoreData = await getAptosRouteCore(route.route_obj_address);
+          
+          if (routeCoreData) {
+            // Check if all tokens have been claimed
+            const depositAmount = BigInt(routeCoreData.deposit_amount);
+            const claimedAmount = BigInt(routeCoreData.claimed_amount);
+            
+            if (claimedAmount >= depositAmount) {
+              // Route is complete, update database
+              try {
+                await updateRouteStatus(routeId, 'completed');
+                console.log(`Route ${routeId} marked as completed in database`);
+              } catch (dbError) {
+                console.error('Failed to update route status in database:', dbError);
+                // Don't fail the claim if DB update fails
+              }
+            }
+          }
+        } catch (checkError) {
+          console.error('Failed to check route completion status:', checkError);
+          // Don't fail the claim if check fails
+        }
+
+        // Success!
+        toast.update(loadingToastId, {
+          title: "Tokens Claimed Successfully!",
+          description: `Your tokens have been claimed and deposited to your wallet.`,
+          type: "success",
+        });
+      }
 
       // Invalidate queries to trigger refetch
       queryClient.invalidateQueries({ queryKey: queryKeys.routes });
@@ -381,11 +471,11 @@ export default function TokenRoutes() {
       
       let errorMessage = "Failed to claim tokens. Please try again.";
       if (error instanceof Error) {
-        if (error.message.includes("User rejected")) {
+        if (error.message.includes("User rejected") || error.message.includes("cancelled")) {
           errorMessage = "Transaction was rejected.";
-        } else if (error.message.includes("NOTHING_CLAIMABLE")) {
+        } else if (error.message.includes("NOTHING_CLAIMABLE") || error.message.includes("Nothing to claim")) {
           errorMessage = "No tokens are available to claim yet.";
-        } else if (error.message.includes("NOT_BENEFICIARY")) {
+        } else if (error.message.includes("NOT_BENEFICIARY") || error.message.includes("not the beneficiary")) {
           errorMessage = "Only the beneficiary can claim from this route.";
         } else {
           errorMessage = error.message;
@@ -405,16 +495,16 @@ export default function TokenRoutes() {
   };
 
   const handleApprove = async () => {
-    if (!account || !signAndSubmitTransaction) {
+    if (!aptosAccount || !signAndSubmitTransaction) {
       toast.error({
         title: 'Wallet Not Connected',
-        description: 'Please connect your wallet to approve payouts'
+        description: 'Please connect your Aptos wallet to approve payouts'
       });
       return;
     }
 
     // Check if SDK is available
-    if (!waypointClient) {
+    if (!aptosWaypointClient) {
       toast.error({
         title: 'SDK Not Initialized',
         description: 'Please refresh the page and try again'
@@ -441,7 +531,7 @@ export default function TokenRoutes() {
     }
 
     // Check if user is the depositor
-    if (route.sender !== account.address.toStringLong()) {
+    if (route.sender !== aptosAccount.address.toStringLong()) {
       toast.error({
         title: 'Not Authorized',
         description: 'Only the depositor can approve payouts for this route'
@@ -487,15 +577,15 @@ export default function TokenRoutes() {
       const aptos = new Aptos(config);
 
       // Build approve transaction using SDK
-      const transactionPayload = await waypointClient.buildApproveMilestoneTransaction({
-        caller: account.address.toString(),
+      const transactionPayload = await aptosWaypointClient.buildApproveMilestoneTransaction({
+        caller: aptosAccount.address.toString(),
         routeAddress: route.route_obj_address,
         unlockAmount: unlockAmountInUnits,
       });
 
       // Sign and submit transaction using wallet adapter
       const response = await signAndSubmitTransaction({
-        sender: account.address,
+        sender: aptosAccount.address,
         data: transactionPayload,
       });
 
@@ -715,8 +805,12 @@ export default function TokenRoutes() {
   // TypeScript assertion - we've checked tokenData exists above
   const safeTokenData = tokenData;
 
-  // Check if wallet is disconnected
-  const isWalletDisconnected = !account;
+  // Check if wallet is disconnected (need either wallet based on token network)
+  const isWalletDisconnected = !tokenData || 
+    (tokenData.network === 'algorand' ? !algorandWallet.activeAccount : !aptosAccount);
+  
+  // Get the correct wallet address based on token network
+  const currentWalletAddress = safeTokenData.network === 'algorand' ? algorandWalletAddress : aptosWalletAddress;
 
   return (
     <div className="min-h-screen bg-primary-100">
@@ -843,7 +937,7 @@ export default function TokenRoutes() {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-mono text-forest-800" title={route.recipient}>
-                            {displayRecipient(route.recipient, walletAddress)}
+                            {displayRecipient(route.recipient, currentWalletAddress)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -863,6 +957,7 @@ export default function TokenRoutes() {
                                 routeObjAddress={route.routeObjAddress}
                                 decimals={route.decimals}
                                 symbol={route.tokenSymbol}
+                                network={safeTokenData.network}
                                 refreshTrigger={refreshTrigger}
                                 onCompletionStatusChange={(isComplete) => handleCompletionStatusChange(route.id, isComplete)}
                                 onFullyApprovedStatusChange={(isFullyApproved) => handleFullyApprovedStatusChange(route.id, isFullyApproved)}
@@ -916,8 +1011,8 @@ export default function TokenRoutes() {
                             
                             {/* Approve button or status for milestone route depositors */}
                             {route.routeType === 'milestone-routes' && 
-                             walletAddress && 
-                             route.sender === walletAddress && 
+                             currentWalletAddress && 
+                             route.sender === currentWalletAddress && 
                              !routeCompletionStatus.get(route.id) && (
                               routeFullyApprovedStatus.get(route.id) ? (
                                 <span className="text-xs text-green-600 font-display uppercase font-semibold">
@@ -973,7 +1068,7 @@ export default function TokenRoutes() {
                                 Recipient
                               </div>
                               <div className="text-sm font-mono text-forest-800 truncate" title={route.recipient}>
-                                {displayRecipient(route.recipient, walletAddress)}
+                                {displayRecipient(route.recipient, currentWalletAddress)}
                               </div>
                             </div>
                             
@@ -1007,6 +1102,7 @@ export default function TokenRoutes() {
                                       routeObjAddress={route.routeObjAddress}
                                       decimals={route.decimals}
                                       symbol={route.tokenSymbol}
+                                      network={safeTokenData.network}
                                       refreshTrigger={refreshTrigger}
                                       onCompletionStatusChange={(isComplete) => handleCompletionStatusChange(route.id, isComplete)}
                                       onFullyApprovedStatusChange={(isFullyApproved) => handleFullyApprovedStatusChange(route.id, isFullyApproved)}
@@ -1088,8 +1184,8 @@ export default function TokenRoutes() {
                             
                             {/* Approve Button or Status for Mobile - Milestone Routes Only */}
                             {route.routeType === 'milestone-routes' && 
-                             walletAddress && 
-                             route.sender === walletAddress && 
+                             currentWalletAddress && 
+                             route.sender === currentWalletAddress && 
                              !routeCompletionStatus.get(route.id) && (
                               <div>
                                 <div className="text-xs font-display font-semibold text-forest-600 uppercase tracking-wide mb-2">

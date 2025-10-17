@@ -81,6 +81,10 @@ export interface CreateAlgorandLinearRouteParams {
   maxPeriods: bigint;
   /** Transaction signer */
   signer: TransactionSigner;
+  /** Optional: User's FLUX tier (0-4+) for fee calculation. Defaults to 0 (no tier) */
+  userTier?: number;
+  /** Optional: Nominated asset ID for fee calculation. Will be fetched from registry if not provided */
+  nominatedAssetId?: bigint;
 }
 
 /**

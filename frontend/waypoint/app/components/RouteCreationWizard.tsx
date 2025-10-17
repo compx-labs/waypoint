@@ -1862,7 +1862,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     // Show loading toast
     const loadingToastId = toast.loading({
       title: "Creating Route",
-      description: "Building transactions...",
+      description: "Please approve the transactions in your wallet...",
     });
 
     try {
@@ -1894,13 +1894,6 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         beneficiary: data.recipientAddress,
       });
 
-      // Update toast
-      toast.update(loadingToastId, {
-        title: "Creating Route",
-        description: "Please approve the transactions in your wallet...",
-        type: "loading",
-      });
-
       // Use SDK to create the route
       const result = await algorandWaypointClient.createLinearRoute({
         sender: algorandWallet.activeAccount.address,
@@ -1928,7 +1921,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       const routePayload = {
         sender: algorandWallet.activeAccount.address,
         recipient: data.recipientAddress,
-        token_id: Number(data.selectedToken.contract_address),
+        token_id: Number(data.selectedToken.id), // Use database token ID, not contract address
         amount_token_units: amountInUnits.toString(),
         amount_per_period_token_units: payoutAmountInUnits.toString(),
         start_date: data.startTime.toISOString(),
@@ -1936,6 +1929,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         payment_frequency_number: 1, // Always 1 - we unlock every 1 unit (hour, day, etc.)
         blockchain_tx_hash: result.txIds[0],
         route_obj_address: result.routeAppId.toString(), // Store the app ID as the route address
+        route_type: routeType === "milestone-routes" ? "milestone" : "simple", // Explicitly set route type
       };
 
       // Save route to database
@@ -2304,6 +2298,38 @@ const SummaryStep: React.FC<WizardStepProps> = ({
           )}
         </div>
       </div>
+
+      {/* Algorand Multi-Transaction Info */}
+      {selectedNetwork === BlockchainNetwork.ALGORAND && !isBuilding && (
+        <div className="bg-primary-500 bg-opacity-20 border-2 border-primary-400 border-opacity-30 rounded-xl p-6">
+          <div className="flex items-start space-x-3">
+            <svg
+              className="w-6 h-6 text-primary-300 flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-display font-semibold text-primary-200 uppercase tracking-wide">
+                Multiple Transactions Required
+              </p>
+              <p className="text-xs text-primary-300 font-display mt-2">
+                Creating a route on Algorand requires <span className="font-semibold text-primary-200">3 separate transactions</span> to be approved in your wallet:
+              </p>
+              <div className="mt-3 space-y-1 text-xs text-primary-300 font-display">
+                <div>1) Create route application</div>
+                <div>2) Initialize with 0.4 ALGO</div>
+                <div>3) Transfer tokens</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Display */}
       {buildError && (

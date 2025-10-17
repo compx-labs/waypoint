@@ -94,12 +94,6 @@ export class WaypointLinear extends Contract {
     assert(depositAmount > 0, "Deposit amount must be greater than 0");
     assert(tokenId > 0, "Token ID must be greater than 0");
 
-    assertMatch(tokenTransfer, {
-      xferAsset: Asset(tokenId),
-      assetAmount: depositAmount,
-      assetReceiver: Global.currentApplicationAddress,
-    });
-
     this.token_id.value = new UintN64(tokenId);
     this.start_ts.value = new UintN64(startTs); // DEBUG: subtract time to allow immediate claim
     this.period_secs.value = new UintN64(periodSecs);
@@ -157,6 +151,11 @@ export class WaypointLinear extends Contract {
     // Fee tiers
     const calculatedFee = this.computeFees(depositAmount, userTier.native, tokenId);
     if (calculatedFee > 0) {
+      assertMatch(tokenTransfer, {
+        xferAsset: Asset(tokenId),
+        assetAmount: depositAmount + calculatedFee,
+        assetReceiver: Global.currentApplicationAddress,
+      });
       itxn
         .assetTransfer({
           assetReceiver: this.treasury.value,

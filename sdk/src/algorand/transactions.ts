@@ -13,7 +13,14 @@ import type {
   CreateRouteResult,
   ClaimRouteResult,
 } from './types';
-import { ALGORAND_NETWORKS, TRANSACTION_FEES, DEFAULT_VALIDITY_WINDOW } from './constants';
+import { 
+  ALGORAND_NETWORKS, 
+  TRANSACTION_FEES, 
+  DEFAULT_VALIDITY_WINDOW,
+  NOMINATED_ASSET_FEE_TIERS,
+  NON_NOMINATED_ASSET_FEE_TIERS,
+  FEE_DENOMINATOR,
+} from './constants';
 
 /**
  * Transaction builder class for Algorand Waypoint operations
@@ -37,11 +44,53 @@ export class AlgorandTransactions {
   }
 
   /**
+   * Calculate the fee for a route based on user tier and asset type
+   * @param depositAmount Amount being deposited
+   * @param userTier User's FLUX tier (0-4+)
+   * @param tokenId Token asset ID
+   * @param nominatedAssetId Nominated asset ID from registry
+   * @returns Fee amount in token units
+   */
+  private calculateFee(
+    depositAmount: bigint,
+    userTier: number,
+    tokenId: bigint,
+    nominatedAssetId: bigint
+  ): bigint {
+    const isNominated = tokenId === nominatedAssetId;
+    
+    // Get fee basis points based on tier and asset type
+    let feeBps: number;
+    if (isNominated) {
+      switch (userTier) {
+        case 1: feeBps = NOMINATED_ASSET_FEE_TIERS.TIER_1; break;
+        case 2: feeBps = NOMINATED_ASSET_FEE_TIERS.TIER_2; break;
+        case 3: feeBps = NOMINATED_ASSET_FEE_TIERS.TIER_3; break;
+        case 4: 
+        default: 
+          feeBps = userTier >= 4 ? NOMINATED_ASSET_FEE_TIERS.TIER_4 : NOMINATED_ASSET_FEE_TIERS.TIER_0;
+      }
+    } else {
+      switch (userTier) {
+        case 1: feeBps = NON_NOMINATED_ASSET_FEE_TIERS.TIER_1; break;
+        case 2: feeBps = NON_NOMINATED_ASSET_FEE_TIERS.TIER_2; break;
+        case 3: feeBps = NON_NOMINATED_ASSET_FEE_TIERS.TIER_3; break;
+        case 4:
+        default:
+          feeBps = userTier >= 4 ? NON_NOMINATED_ASSET_FEE_TIERS.TIER_4 : NON_NOMINATED_ASSET_FEE_TIERS.TIER_0;
+      }
+    }
+    
+    // Calculate fee: (depositAmount * feeBps) / 10000
+    return (depositAmount * BigInt(feeBps)) / FEE_DENOMINATOR;
+  }
+
+  /**
    * Create a new linear streaming route
    * This will:
    * 1. Create a new WaypointLinear app
    * 2. Initialize it with MBR payment
-   * 3. Create the route with token transfer
+   * 3. Create the route with token transfer (including fee)
    * 
    * @param params Route creation parameters
    * @returns Result with transaction IDs and route app ID
@@ -93,10 +142,18 @@ export class AlgorandTransactions {
 
       console.log('App initialized with MBR');
 
-      // Step 3: Create the asset transfer transaction for the route
+      // Step 3: Calculate the fee and create the asset transfer transaction
+      // The fee is calculated by the smart contract, but we need to include it in the transfer
+      // Get user tier and nominated asset ID from params or default to tier 0
+      const userTier = params.userTier || 0;
+      const nominatedAssetId = params.nominatedAssetId || 0n;
+      const fee = this.calculateFee(params.depositAmount, userTier, params.tokenId, nominatedAssetId);
+      
+      console.log(`Calculated fee: ${fee} (Tier ${userTier}, Deposit: ${params.depositAmount})`);
+      
       const routeCreationAssetTransfer = 
         appClient.algorand.createTransaction.assetTransfer({
-          amount: params.depositAmount,
+          amount: params.depositAmount + fee, // Include fee in transfer amount
           sender: params.sender,
           receiver: appClient.appAddress,
           assetId: params.tokenId,
