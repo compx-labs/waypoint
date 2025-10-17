@@ -403,6 +403,129 @@ export default function AppNavigation() {
               >
                 Docs
               </Link>
+              
+              {/* Wallet Connection for Mobile */}
+              <div className="pt-3 border-t border-forest-700">
+                {!connected ? (
+                  <button
+                    onClick={() => {
+                      setIsWalletModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-sunset-600 hover:bg-sunset-700 text-white font-display font-bold uppercase tracking-wide rounded-lg transition-colors duration-200"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                      />
+                    </svg>
+                    Connect Wallet
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Connected Wallet Info */}
+                    <div className="px-2 py-2 bg-forest-700 rounded-lg border border-forest-600">
+                      <p className="text-xs text-primary-300 uppercase tracking-wide mb-2">
+                        Connected
+                      </p>
+                      <div className="flex items-center gap-2 mb-2">
+                        {selectedNetwork === BlockchainNetwork.APTOS ? (
+                          <img
+                            src="/aptos-logo.svg"
+                            alt="Aptos"
+                            className="w-5 h-5"
+                          />
+                        ) : selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.avatar ? (
+                          <img
+                            src={nfd.avatar}
+                            alt={nfd.name}
+                            className="w-5 h-5 rounded-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = "/algorand-logo.svg";
+                              e.currentTarget.className = "w-5 h-5";
+                            }}
+                          />
+                        ) : (
+                          <img
+                            src="/algorand-logo.svg"
+                            alt="Algorand"
+                            className="w-5 h-5"
+                          />
+                        )}
+                        {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name ? (
+                          <div>
+                            <p className="text-sm text-primary-100 font-display font-bold">
+                              {nfd.name}
+                            </p>
+                            <p className="text-xs text-primary-300 font-mono">
+                              {`${account?.slice(0, 6)}...${account?.slice(-4)}`}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-primary-100 font-mono">
+                            {`${account?.slice(0, 6)}...${account?.slice(-4)}`}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Wallet Actions */}
+                    <button
+                      onClick={() => {
+                        handleCopyAddress();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-primary-100 bg-forest-700 hover:bg-forest-600 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Copy Address
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        handleDisconnect();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-400 bg-forest-700 hover:bg-forest-600 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
+                      </svg>
+                      Disconnect
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
