@@ -538,7 +538,6 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
           (b) => b.symbol === data.selectedToken?.symbol
         )?.amount || 0;
 
-  const DEPOSIT_LIMIT = 100; // Maximum tokens allowed per route during initial launch period
   const totalAmount = parseFloat(data.totalAmount || "0");
 
   // Calculate fee based on network, token, and Flux tier
@@ -556,15 +555,13 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
   const unlockAmount = parseFloat(data.unlockAmount || "0");
   const exceedsBalance = totalWithFee > tokenBalance;
   const unlockExceedsTotal = unlockAmount > totalAmount;
-  const exceedsDepositLimit = totalAmount > DEPOSIT_LIMIT;
 
   const canProceed =
     data.totalAmount &&
     data.unlockUnit &&
     data.unlockAmount &&
     !exceedsBalance &&
-    !unlockExceedsTotal &&
-    !exceedsDepositLimit;
+    !unlockExceedsTotal;
 
   return (
     <div className="space-y-6">
@@ -575,32 +572,6 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
         <p className="text-primary-300 font-display text-sm">
           Configure how much to send and the unlock schedule
         </p>
-      </div>
-
-      {/* Launch Period Info Banner */}
-      <div className="bg-primary-500 bg-opacity-20 border border-primary-400 border-opacity-30 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <svg
-            className="w-5 h-5 text-primary-300 flex-shrink-0 mt-0.5"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <div className="flex-1">
-            <p className="text-sm font-display font-semibold text-primary-200 uppercase tracking-wide">
-              Launch Period Limit
-            </p>
-            <p className="text-xs text-primary-300 font-display mt-1">
-              Routes are currently limited to {DEPOSIT_LIMIT} tokens maximum
-              during our initial launch period.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Total Amount */}
@@ -657,9 +628,7 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
                 selectedNetwork === BlockchainNetwork.ALGORAND ? fluxTier : 0
               );
               const maxAmount = tokenBalance / (1 + tempFeeCalc.feePercentage);
-              // Respect the deposit limit
-              const limitedMaxAmount = Math.min(maxAmount, DEPOSIT_LIMIT);
-              updateData({ totalAmount: limitedMaxAmount.toString() });
+              updateData({ totalAmount: maxAmount.toString() });
             }}
             className="text-sunset-400 hover:text-sunset-300 uppercase tracking-wide font-semibold transition-colors"
           >
@@ -716,33 +685,7 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
           </div>
         )}
 
-        {exceedsDepositLimit && (
-          <div className="mt-2 bg-sunset-900 bg-opacity-30 border border-sunset-500 border-opacity-40 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <svg
-                className="w-5 h-5 text-sunset-400 flex-shrink-0 mt-0.5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <div className="flex-1">
-                <p className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide">
-                  Deposit Limit Exceeded
-                </p>
-                <p className="text-xs text-primary-300 font-display mt-1">
-                  During our initial launch period, routes are limited to{" "}
-                  {DEPOSIT_LIMIT} tokens maximum. Please reduce your amount.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        {exceedsBalance && !exceedsDepositLimit && (
+        {exceedsBalance && (
           <div className="mt-2 flex items-start space-x-2 text-xs text-sunset-400">
             <svg
               className="w-4 h-4 flex-shrink-0 mt-0.5"
