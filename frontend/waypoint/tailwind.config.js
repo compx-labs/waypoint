@@ -65,6 +65,7 @@ export default {
           500: "#035F5A",  // Logo dark teal
           600: "#024E49",
           700: "#023D38",
+          750: "#01342F",  // Between 700 and 800 for subtle gradients
           800: "#012C27",
           900: "#001B16",
           950: "#000A05",

@@ -21,6 +21,7 @@ export default function AppNavigation() {
     currentNetwork: selectedNetwork,
     nfd,
     nfdLoading,
+    walletName,
   } = useUnifiedWallet();
   const toast = useToast();
 
@@ -251,82 +252,142 @@ export default function AppNavigation() {
 
                 {/* Dropdown Menu */}
                 {showWalletDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-forest-800 border border-forest-600 rounded-lg shadow-xl z-50">
+                  <div className="absolute right-0 mt-2 w-64 bg-forest-800 border border-forest-600 rounded-lg shadow-xl z-50">
                     <div className="py-2">
-                      {/* Connected Address */}
-                      <div className="px-4 py-2 border-b border-forest-700">
-                        <p className="text-xs text-primary-300 uppercase tracking-wide mb-1">
-                          Connected
-                        </p>
-                        {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name ? (
-                          <>
-                            <div className="flex items-center gap-2 mb-1">
-                              {nfd.avatar && (
-                                <img
-                                  src={nfd.avatar}
-                                  alt={nfd.name}
-                                  className="w-6 h-6 rounded-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
-                              )}
-                              <p className="text-sm text-primary-100 font-display font-bold">
-                                {nfd.name}
-                              </p>
-                            </div>
-                            <p className="text-xs text-primary-300 font-mono break-all">
-                              {account}
-                            </p>
-                          </>
-                        ) : (
-                          <p className="text-sm text-primary-100 font-mono break-all">
-                            {account}
+                      {/* Wallet Name and Status */}
+                      <div className="px-4 py-3 border-b border-forest-700">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm text-primary-100 font-display font-semibold">
+                            {walletName || (selectedNetwork === BlockchainNetwork.APTOS ? "Aptos Wallet" : "Algorand Wallet")}
                           </p>
-                        )}
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-xs text-primary-300">Connected</span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Copy Address */}
-                      <button
-                        onClick={handleCopyAddress}
-                        className="w-full px-4 py-2 text-left text-sm text-primary-100 hover:bg-forest-700 transition-colors flex items-center gap-2"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      {/* Address Section */}
+                      <div className="px-4 py-3 border-b border-forest-700 bg-forest-750">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name ? (
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  {nfd.avatar && (
+                                    <img
+                                      src={nfd.avatar}
+                                      alt={nfd.name}
+                                      className="w-5 h-5 rounded-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                  <p className="text-sm text-primary-100 font-display font-bold">
+                                    {nfd.name}
+                                  </p>
+                                </div>
+                                <p className="text-xs text-primary-300 font-mono">
+                                  {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-primary-100 font-mono">
+                                {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={handleCopyAddress}
+                            className="ml-2 p-1.5 text-primary-300 hover:text-primary-100 hover:bg-forest-700 rounded transition-colors"
+                            title="Copy Address"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="py-1 border-b border-forest-700">
+                        <a
+                          href="http://app.compx.io/governance"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full px-4 py-2.5 text-left hover:bg-forest-700 transition-colors flex items-center gap-3 group"
+                          onClick={() => setShowWalletDropdown(false)}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          <img
+                            src="/FLUX-LOGO-TRANS.svg"
+                            alt="FLUX"
+                            className="w-5 h-5 flex-shrink-0 bg-gray-200 rounded-full p-0.5"
                           />
-                        </svg>
-                        Copy Address
-                      </button>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-display font-semibold text-primary-100 group-hover:text-sunset-400 transition-colors">
+                              Governance
+                            </div>
+                            <div className="text-xs text-primary-300 leading-tight">
+                              Have your say in Waypoint and other CompX Ecosystem applications
+                            </div>
+                          </div>
+                        </a>
+                        <a
+                          href="https://app.compx.io/compx-rewards"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full px-4 py-2.5 text-left hover:bg-forest-700 transition-colors flex items-center gap-3 group"
+                          onClick={() => setShowWalletDropdown(false)}
+                        >
+                          <img
+                            src="/compx.png"
+                            alt="CompX"
+                            className="w-5 h-5 flex-shrink-0 rounded-full"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-display font-semibold text-primary-100 group-hover:text-sunset-400 transition-colors">
+                              Rewards
+                            </div>
+                            <div className="text-xs text-primary-300 leading-tight">
+                              Earn weekly COMPX rewards
+                            </div>
+                          </div>
+                        </a>
+                      </div>
 
                       {/* Disconnect */}
-                      <button
-                        onClick={handleDisconnect}
-                        className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-forest-700 transition-colors flex items-center gap-2"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      <div className="py-1">
+                        <button
+                          onClick={handleDisconnect}
+                          className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-forest-700 transition-colors flex items-center gap-2"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                          />
-                        </svg>
-                        Disconnect
-                      </button>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                            />
+                          </svg>
+                          Disconnect
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -431,75 +492,119 @@ export default function AppNavigation() {
                   </button>
                 ) : (
                   <div className="space-y-2">
-                    {/* Connected Wallet Info */}
-                    <div className="px-2 py-2 bg-forest-700 rounded-lg border border-forest-600">
-                      <p className="text-xs text-primary-300 uppercase tracking-wide mb-2">
-                        Connected
-                      </p>
-                      <div className="flex items-center gap-2 mb-2">
-                        {selectedNetwork === BlockchainNetwork.APTOS ? (
-                          <img
-                            src="/aptos-logo.svg"
-                            alt="Aptos"
-                            className="w-5 h-5"
-                          />
-                        ) : selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.avatar ? (
-                          <img
-                            src={nfd.avatar}
-                            alt={nfd.name}
-                            className="w-5 h-5 rounded-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = "/algorand-logo.svg";
-                              e.currentTarget.className = "w-5 h-5";
-                            }}
-                          />
-                        ) : (
-                          <img
-                            src="/algorand-logo.svg"
-                            alt="Algorand"
-                            className="w-5 h-5"
-                          />
-                        )}
-                        {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name ? (
-                          <div>
-                            <p className="text-sm text-primary-100 font-display font-bold">
-                              {nfd.name}
-                            </p>
-                            <p className="text-xs text-primary-300 font-mono">
-                              {`${account?.slice(0, 6)}...${account?.slice(-4)}`}
-                            </p>
+                    {/* Wallet Name and Status */}
+                    <div className="px-3 py-2 bg-forest-700 rounded-lg border border-forest-600">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm text-primary-100 font-display font-semibold">
+                          {walletName || (selectedNetwork === BlockchainNetwork.APTOS ? "Aptos Wallet" : "Algorand Wallet")}
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-primary-300">Connected</span>
+                        </div>
+                      </div>
+                      
+                      {/* Address Section */}
+                      <div className="px-2 py-2 bg-forest-800 rounded border border-forest-700">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name ? (
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  {nfd.avatar && (
+                                    <img
+                                      src={nfd.avatar}
+                                      alt={nfd.name}
+                                      className="w-5 h-5 rounded-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                  <p className="text-sm text-primary-100 font-display font-bold">
+                                    {nfd.name}
+                                  </p>
+                                </div>
+                                <p className="text-xs text-primary-300 font-mono">
+                                  {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-primary-100 font-mono">
+                                {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
+                              </p>
+                            )}
                           </div>
-                        ) : (
-                          <span className="text-sm text-primary-100 font-mono">
-                            {`${account?.slice(0, 6)}...${account?.slice(-4)}`}
-                          </span>
-                        )}
+                          <button
+                            onClick={() => {
+                              handleCopyAddress();
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className="ml-2 p-1.5 text-primary-300 hover:text-primary-100 hover:bg-forest-700 rounded transition-colors"
+                            title="Copy Address"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Wallet Actions */}
-                    <button
-                      onClick={() => {
-                        handleCopyAddress();
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-primary-100 bg-forest-700 hover:bg-forest-600 rounded-lg transition-colors flex items-center gap-2"
+                    {/* Action Buttons */}
+                    <a
+                      href="http://app.compx.io/governance"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full px-4 py-2.5 text-left bg-forest-700 hover:bg-forest-600 rounded-lg transition-colors flex items-center gap-3 group"
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                        />
-                      </svg>
-                      Copy Address
-                    </button>
+                      <img
+                        src="/FLUX-LOGO-TRANS.svg"
+                        alt="FLUX"
+                        className="w-5 h-5 flex-shrink-0 bg-gray-200 rounded-full p-0.5"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-display font-semibold text-primary-100 group-hover:text-sunset-400 transition-colors">
+                          Governance
+                        </div>
+                        <div className="text-xs text-primary-300 leading-tight">
+                          Have your say in Waypoint and other CompX Ecosystem applications
+                        </div>
+                      </div>
+                    </a>
+                    
+                    <a
+                      href="https://app.compx.io/compx-rewards"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full px-4 py-2.5 text-left bg-forest-700 hover:bg-forest-600 rounded-lg transition-colors flex items-center gap-3 group"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <img
+                        src="/compx.png"
+                        alt="CompX"
+                        className="w-5 h-5 flex-shrink-0 rounded-full"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-display font-semibold text-primary-100 group-hover:text-sunset-400 transition-colors">
+                          Rewards
+                        </div>
+                        <div className="text-xs text-primary-300 leading-tight">
+                          Earn weekly COMPX rewards
+                        </div>
+                      </div>
+                    </a>
                     
                     <button
                       onClick={() => {
