@@ -107,23 +107,58 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Middle Section - Navigation */}
+          {/* Middle Section - CompX Ecosystem */}
           <div className="lg:col-span-4">
             <h4 className="font-display text-lg font-bold text-sunset-500 uppercase tracking-wider mb-6">
-              Navigation
+              CompX Ecosystem
             </h4>
-            <div className="grid grid-cols-1 gap-3">
-              <Link to="/token-routes" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
-                Routes
-              </Link>
-              <Link to="/analytics" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
-                Analytics
-              </Link>
-              <Link to="/docs" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
-                Documentation
-              </Link>
-              <a href="https://app.compx.io" target="_blank" rel="noopener noreferrer" className="text-primary-200 hover:text-primary-100 transition-colors duration-200 font-display uppercase tracking-wide text-sm hover:translate-x-1 transform">
-                CompX Website ↗
+            <div className="grid grid-cols-1 gap-4">
+              <a 
+                href="https://app.compx.io" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center gap-3 text-primary-200 hover:text-primary-100 transition-all duration-200 group"
+              >
+                <img 
+                  src="/compx-logo-small.png" 
+                  alt="CompX Core" 
+                  className="w-6 h-6 rounded-full"
+                />
+                <span className="font-display text-sm group-hover:translate-x-1 transform transition-transform">
+                  CompX Core ↗
+                </span>
+              </a>
+              
+              <a 
+                href="https://orbital.compx.io" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center gap-3 text-primary-200 hover:text-primary-100 transition-all duration-200 group"
+              >
+                <img 
+                  src="/orbital-logo-small.png" 
+                  alt="Orbital Lending" 
+                  className="w-6 h-6 rounded-full"
+                />
+                <span className="font-display text-sm group-hover:translate-x-1 transform transition-transform">
+                  Orbital Lending ↗
+                </span>
+              </a>
+              
+              <a 
+                href="https://cairn.live" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center gap-3 text-primary-200 hover:text-primary-100 transition-all duration-200 group"
+              >
+                <img 
+                  src="/cairn-logo-small.png" 
+                  alt="Cairn" 
+                  className="w-6 h-6 rounded-full"
+                />
+                <span className="font-display text-sm group-hover:translate-x-1 transform transition-transform">
+                  Cairn ↗
+                </span>
               </a>
             </div>
           </div>

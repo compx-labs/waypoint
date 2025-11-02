@@ -1,0 +1,1877 @@
+#pragma version 11
+#pragma typetrack false
+
+// @algorandfoundation/algorand-typescript/arc4/index.d.ts::Contract.approvalProgram() -> uint64:
+main:
+    intcblock 0 1 4 1000
+    bytecblock 0x0000000000000000 "route_status" "token_id" "start_ts" "claimed_amount" "beneficiary" "depositor" "flux_oracle_app" "period_secs" "payout_amount" "max_periods" "gross_deposit_amount" "deposit_amount" "requester" "registry_app_id" "requested_start_ts" "fee_amount" 0x151f7c75 "fee_bps" "treasury" "nominated_asset_id" 0x8de40c28
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:29-30
+    // @contract({ name: "waypoint-invoice", avmVersion: 11 })
+    // export class WaypointInvoice extends Contract {
+    txn NumAppArgs
+    bz main_after_if_else@12
+    pushbytess 0x917c48b6 0x9b932c59 0x8f47a1bd 0x30e096b5 0x2c76763f 0xf1577726 // method "createApplication(uint64,uint64)void", method "initApp(pay)void", method "createRoute(account,account,uint64,uint64,uint64,uint64,uint64,uint64)void", method "acceptRoute(axfer)void", method "declineRoute()void", method "claim()void"
+    txna ApplicationArgs 0
+    match main_createApplication_route@3 main_initApp_route@4 main_createRoute_route@5 main_acceptRoute_route@6 main_declineRoute_route@7 main_claim_route@8
+
+main_after_if_else@12:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:29-30
+    // @contract({ name: "waypoint-invoice", avmVersion: 11 })
+    // export class WaypointInvoice extends Contract {
+    intc_0 // 0
+    return
+
+main_claim_route@8:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:271
+    // @abimethod({ allowActions: "NoOp" })
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    callsub claim
+    intc_1 // 1
+    return
+
+main_declineRoute_route@7:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:233
+    // @abimethod({ allowActions: "NoOp" })
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    callsub declineRoute
+    intc_1 // 1
+    return
+
+main_acceptRoute_route@6:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:140
+    // @abimethod({ allowActions: "NoOp" })
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:29-30
+    // @contract({ name: "waypoint-invoice", avmVersion: 11 })
+    // export class WaypointInvoice extends Contract {
+    txn GroupIndex
+    intc_1 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_2 // axfer
+    ==
+    assert // transaction type is axfer
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:140
+    // @abimethod({ allowActions: "NoOp" })
+    callsub acceptRoute
+    intc_1 // 1
+    return
+
+main_createRoute_route@5:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:92
+    // @abimethod({ allowActions: "NoOp" })
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:29-30
+    // @contract({ name: "waypoint-invoice", avmVersion: 11 })
+    // export class WaypointInvoice extends Contract {
+    txna ApplicationArgs 1
+    btoi
+    txnas Accounts
+    txna ApplicationArgs 2
+    btoi
+    txnas Accounts
+    txna ApplicationArgs 3
+    btoi
+    txna ApplicationArgs 4
+    btoi
+    txna ApplicationArgs 5
+    btoi
+    txna ApplicationArgs 6
+    btoi
+    txna ApplicationArgs 7
+    btoi
+    txna ApplicationArgs 8
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:92
+    // @abimethod({ allowActions: "NoOp" })
+    callsub createRoute
+    intc_1 // 1
+    return
+
+main_initApp_route@4:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:73
+    // @abimethod({ allowActions: "NoOp" })
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:29-30
+    // @contract({ name: "waypoint-invoice", avmVersion: 11 })
+    // export class WaypointInvoice extends Contract {
+    txn GroupIndex
+    intc_1 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_1 // pay
+    ==
+    assert // transaction type is pay
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:73
+    // @abimethod({ allowActions: "NoOp" })
+    callsub initApp
+    intc_1 // 1
+    return
+
+main_createApplication_route@3:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:55
+    // @abimethod({ allowActions: "NoOp", onCreate: "require" })
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    !
+    assert // can only call when creating
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:29-30
+    // @contract({ name: "waypoint-invoice", avmVersion: 11 })
+    // export class WaypointInvoice extends Contract {
+    txna ApplicationArgs 1
+    btoi
+    txna ApplicationArgs 2
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:55
+    // @abimethod({ allowActions: "NoOp", onCreate: "require" })
+    callsub createApplication
+    intc_1 // 1
+    return
+
+
+// smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.createApplication(registryAppId: uint64, tokenId: uint64) -> void:
+createApplication:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:55-56
+    // @abimethod({ allowActions: "NoOp", onCreate: "require" })
+    // public createApplication(registryAppId: uint64, tokenId: uint64): void {
+    proto 2 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:33
+    // contract_version = GlobalState<UintN64>();
+    pushbytess "contract_version" 0x00000000000003e8 // "contract_version", 0x00000000000003e8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:57
+    // this.contract_version.value = new UintN64(CONTRACT_VERSION);
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:58
+    // this.registry_app_id.value = new UintN64(registryAppId);
+    frame_dig -2
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:36
+    // registry_app_id = GlobalState<UintN64>();
+    bytec 14 // "registry_app_id"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:58
+    // this.registry_app_id.value = new UintN64(registryAppId);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:59
+    // this.token_id.value = new UintN64(tokenId);
+    frame_dig -1
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:37
+    // token_id = GlobalState<UintN64>();
+    bytec_2 // "token_id"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:59
+    // this.token_id.value = new UintN64(tokenId);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:44
+    // start_ts = GlobalState<UintN64>();
+    bytec_3 // "start_ts"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:61
+    // this.start_ts.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:45
+    // requested_start_ts = GlobalState<UintN64>();
+    bytec 15 // "requested_start_ts"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:62
+    // this.requested_start_ts.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:46
+    // period_secs = GlobalState<UintN64>();
+    bytec 8 // "period_secs"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:63
+    // this.period_secs.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:47
+    // payout_amount = GlobalState<UintN64>();
+    bytec 9 // "payout_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:64
+    // this.payout_amount.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:49
+    // max_periods = GlobalState<UintN64>();
+    bytec 10 // "max_periods"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:65
+    // this.max_periods.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:50
+    // gross_deposit_amount = GlobalState<UintN64>();
+    bytec 11 // "gross_deposit_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:66
+    // this.gross_deposit_amount.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:51
+    // deposit_amount = GlobalState<UintN64>(); // net amount available to stream
+    bytec 12 // "deposit_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:67
+    // this.deposit_amount.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:52
+    // fee_amount = GlobalState<UintN64>();
+    bytec 16 // "fee_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:68
+    // this.fee_amount.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:53
+    // claimed_amount = GlobalState<UintN64>();
+    bytec 4 // "claimed_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:69
+    // this.claimed_amount.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:48
+    // route_status = GlobalState<UintN64>();
+    bytec_1 // "route_status"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:70
+    // this.route_status.value = new UintN64(STATUS_UNINITIALIZED);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    retsub
+
+
+// smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.initApp(mbrTxn: uint64) -> void:
+initApp:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:73-74
+    // @abimethod({ allowActions: "NoOp" })
+    // public initApp(mbrTxn: gtxn.PaymentTxn): void {
+    proto 1 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:75-78
+    // assertMatch(mbrTxn, {
+    //   receiver: Global.currentApplicationAddress,
+    //   amount: 400_000,
+    // });
+    frame_dig -1
+    gtxns Receiver
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:76
+    // receiver: Global.currentApplicationAddress,
+    global CurrentApplicationAddress
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:75-78
+    // assertMatch(mbrTxn, {
+    //   receiver: Global.currentApplicationAddress,
+    //   amount: 400_000,
+    // });
+    ==
+    bz initApp_bool_false@3
+    frame_dig -1
+    gtxns Amount
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:77
+    // amount: 400_000,
+    pushint 400000 // 400000
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:75-78
+    // assertMatch(mbrTxn, {
+    //   receiver: Global.currentApplicationAddress,
+    //   amount: 400_000,
+    // });
+    ==
+    bz initApp_bool_false@3
+    intc_1 // 1
+
+initApp_bool_merge@4:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:75-78
+    // assertMatch(mbrTxn, {
+    //   receiver: Global.currentApplicationAddress,
+    //   amount: 400_000,
+    // });
+    assert // assert target is match for conditions
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:80-88
+    // itxn
+    //   .assetTransfer({
+    //     sender: Global.currentApplicationAddress,
+    //     assetReceiver: Global.currentApplicationAddress,
+    //     xferAsset: Asset(this.token_id.value.native),
+    //     assetAmount: 0,
+    //     fee: STANDARD_TXN_FEE,
+    //   })
+    //   .submit();
+    itxn_begin
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:82
+    // sender: Global.currentApplicationAddress,
+    global CurrentApplicationAddress
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:83
+    // assetReceiver: Global.currentApplicationAddress,
+    dup
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:37
+    // token_id = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_2 // "token_id"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:84
+    // xferAsset: Asset(this.token_id.value.native),
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:85
+    // assetAmount: 0,
+    intc_0 // 0
+    itxn_field AssetAmount
+    itxn_field XferAsset
+    itxn_field AssetReceiver
+    itxn_field Sender
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:80-87
+    // itxn
+    //   .assetTransfer({
+    //     sender: Global.currentApplicationAddress,
+    //     assetReceiver: Global.currentApplicationAddress,
+    //     xferAsset: Asset(this.token_id.value.native),
+    //     assetAmount: 0,
+    //     fee: STANDARD_TXN_FEE,
+    //   })
+    intc_2 // 4
+    itxn_field TypeEnum
+    // smart_contracts/waypoint_invoice/config.algo.ts:3
+    // export const STANDARD_TXN_FEE: uint64 = 1000;
+    intc_3 // 1000
+    itxn_field Fee
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:80-88
+    // itxn
+    //   .assetTransfer({
+    //     sender: Global.currentApplicationAddress,
+    //     assetReceiver: Global.currentApplicationAddress,
+    //     xferAsset: Asset(this.token_id.value.native),
+    //     assetAmount: 0,
+    //     fee: STANDARD_TXN_FEE,
+    //   })
+    //   .submit();
+    itxn_submit
+    retsub
+
+initApp_bool_false@3:
+    intc_0 // 0
+    b initApp_bool_merge@4
+
+
+// smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.createRoute(beneficiary: bytes, payer: bytes, startTs: uint64, periodSecs: uint64, payoutAmount: uint64, maxPeriods: uint64, depositAmount: uint64, tokenId: uint64) -> void:
+createRoute:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:92-102
+    // @abimethod({ allowActions: "NoOp" })
+    // public createRoute(
+    //   beneficiary: Account,
+    //   payer: Account,
+    //   startTs: uint64,
+    //   periodSecs: uint64,
+    //   payoutAmount: uint64,
+    //   maxPeriods: uint64,
+    //   depositAmount: uint64,
+    //   tokenId: uint64
+    // ): void {
+    proto 8 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:48
+    // route_status = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_1 // "route_status"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:103
+    // assert(this.route_status.value.native === STATUS_UNINITIALIZED, "Route already created");
+    btoi
+    !
+    assert // Route already created
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:104
+    // assert(periodSecs > 0, "Period seconds must be greater than 0");
+    frame_dig -5
+    assert // Period seconds must be greater than 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:105
+    // assert(maxPeriods > 0, "Max periods must be greater than 0");
+    frame_dig -3
+    assert // Max periods must be greater than 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:106
+    // assert(payoutAmount > 0, "Payout amount must be greater than 0");
+    frame_dig -4
+    assert // Payout amount must be greater than 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:107
+    // assert(depositAmount > 0, "Deposit amount must be greater than 0");
+    frame_dig -2
+    assert // Deposit amount must be greater than 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:108
+    // assert(tokenId > 0, "Token ID must be greater than 0");
+    frame_dig -1
+    assert // Token ID must be greater than 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:110
+    // this.token_id.value = new UintN64(tokenId);
+    frame_dig -1
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:37
+    // token_id = GlobalState<UintN64>();
+    bytec_2 // "token_id"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:110
+    // this.token_id.value = new UintN64(tokenId);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:44
+    // start_ts = GlobalState<UintN64>();
+    bytec_3 // "start_ts"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:111
+    // this.start_ts.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:112
+    // this.requested_start_ts.value = new UintN64(startTs);
+    frame_dig -6
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:45
+    // requested_start_ts = GlobalState<UintN64>();
+    bytec 15 // "requested_start_ts"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:112
+    // this.requested_start_ts.value = new UintN64(startTs);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:113
+    // this.period_secs.value = new UintN64(periodSecs);
+    frame_dig -5
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:46
+    // period_secs = GlobalState<UintN64>();
+    bytec 8 // "period_secs"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:113
+    // this.period_secs.value = new UintN64(periodSecs);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:114
+    // this.payout_amount.value = new UintN64(payoutAmount);
+    frame_dig -4
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:47
+    // payout_amount = GlobalState<UintN64>();
+    bytec 9 // "payout_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:114
+    // this.payout_amount.value = new UintN64(payoutAmount);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:115
+    // this.max_periods.value = new UintN64(maxPeriods);
+    frame_dig -3
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:49
+    // max_periods = GlobalState<UintN64>();
+    bytec 10 // "max_periods"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:115
+    // this.max_periods.value = new UintN64(maxPeriods);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:116
+    // this.gross_deposit_amount.value = new UintN64(depositAmount);
+    frame_dig -2
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:50
+    // gross_deposit_amount = GlobalState<UintN64>();
+    bytec 11 // "gross_deposit_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:116
+    // this.gross_deposit_amount.value = new UintN64(depositAmount);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:51
+    // deposit_amount = GlobalState<UintN64>(); // net amount available to stream
+    bytec 12 // "deposit_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:117
+    // this.deposit_amount.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:52
+    // fee_amount = GlobalState<UintN64>();
+    bytec 16 // "fee_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:118
+    // this.fee_amount.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:42
+    // beneficiary = GlobalState<Address>();
+    bytec 5 // "beneficiary"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:119
+    // this.beneficiary.value = new Address(beneficiary);
+    frame_dig -8
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:41
+    // depositor = GlobalState<Address>();
+    bytec 6 // "depositor"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:120
+    // this.depositor.value = new Address(payer);
+    frame_dig -7
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:43
+    // requester = GlobalState<Address>();
+    bytec 13 // "requester"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:121
+    // this.requester.value = new Address(op.Txn.sender);
+    txn Sender
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:53
+    // claimed_amount = GlobalState<UintN64>();
+    bytec 4 // "claimed_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:122
+    // this.claimed_amount.value = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:48
+    // route_status = GlobalState<UintN64>();
+    bytec_1 // "route_status"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:123
+    // this.route_status.value = new UintN64(STATUS_PENDING);
+    pushbytes 0x0000000000000001
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:36
+    // registry_app_id = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 14 // "registry_app_id"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:125
+    // const registryApp: Application = Application(this.registry_app_id.value.native);
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:126-132
+    // const params = abiCall(WaypointRegistryStub.prototype.getParams, {
+    //   appId: registryApp.id,
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [registryApp],
+    //   accounts: [op.Txn.sender, beneficiary, payer],
+    // }).returnValue;
+    itxn_begin
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:128
+    // sender: Global.currentApplicationAddress,
+    global CurrentApplicationAddress
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:131
+    // accounts: [op.Txn.sender, beneficiary, payer],
+    txn Sender
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:126-132
+    // const params = abiCall(WaypointRegistryStub.prototype.getParams, {
+    //   appId: registryApp.id,
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [registryApp],
+    //   accounts: [op.Txn.sender, beneficiary, payer],
+    // }).returnValue;
+    bytec 21 // method "getParams()(uint64,address,uint64,uint64)"
+    itxn_field ApplicationArgs
+    itxn_field Accounts
+    frame_dig -8
+    itxn_field Accounts
+    frame_dig -7
+    itxn_field Accounts
+    dig 1
+    itxn_field Applications
+    itxn_field Sender
+    itxn_field ApplicationID
+    pushint 6 // appl
+    itxn_field TypeEnum
+    // smart_contracts/waypoint_invoice/config.algo.ts:3
+    // export const STANDARD_TXN_FEE: uint64 = 1000;
+    intc_3 // 1000
+    itxn_field Fee
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:126-132
+    // const params = abiCall(WaypointRegistryStub.prototype.getParams, {
+    //   appId: registryApp.id,
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [registryApp],
+    //   accounts: [op.Txn.sender, beneficiary, payer],
+    // }).returnValue;
+    itxn_submit
+    itxn LastLog
+    dup
+    extract 0 4
+    bytec 17 // 0x151f7c75
+    ==
+    assert // Bytes has valid prefix
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:134
+    // this.fee_bps.value = params.fee_bps;
+    dup
+    extract 4 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:34
+    // fee_bps = GlobalState<UintN64>();
+    bytec 18 // "fee_bps"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:134
+    // this.fee_bps.value = params.fee_bps;
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:135
+    // this.treasury.value = params.treasury.native;
+    dup
+    extract 12 32
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:35
+    // treasury = GlobalState<Account>();
+    bytec 19 // "treasury"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:135
+    // this.treasury.value = params.treasury.native;
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:136
+    // this.flux_oracle_app.value = Application(params.flux_oracle_app_id.native);
+    dup
+    pushint 44 // 44
+    extract_uint64
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:32
+    // flux_oracle_app = GlobalState<Application>();
+    bytec 7 // "flux_oracle_app"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:136
+    // this.flux_oracle_app.value = Application(params.flux_oracle_app_id.native);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:137
+    // this.nominated_asset_id.value = params.nominated_asset_id;
+    extract 52 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:38
+    // nominated_asset_id = GlobalState<UintN64>();
+    bytec 20 // "nominated_asset_id"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:137
+    // this.nominated_asset_id.value = params.nominated_asset_id;
+    swap
+    app_global_put
+    retsub
+
+
+// smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.acceptRoute(tokenTransfer: uint64) -> void:
+acceptRoute:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:140-141
+    // @abimethod({ allowActions: "NoOp" })
+    // public acceptRoute(tokenTransfer: gtxn.AssetTransferTxn): void {
+    proto 1 0
+    intc_0 // 0
+    dup
+    pushbytes ""
+    dupn 6
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:48
+    // route_status = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_1 // "route_status"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:142
+    // assert(this.route_status.value.native === STATUS_PENDING, "Route not pending");
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:25
+    // const STATUS_PENDING: uint64 = 1;
+    intc_1 // 1
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:142
+    // assert(this.route_status.value.native === STATUS_PENDING, "Route not pending");
+    ==
+    assert // Route not pending
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:143
+    // assert(op.Txn.sender === this.depositor.value.native, "Only designated payer can accept");
+    txn Sender
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:41
+    // depositor = GlobalState<Address>();
+    intc_0 // 0
+    bytec 6 // "depositor"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:143
+    // assert(op.Txn.sender === this.depositor.value.native, "Only designated payer can accept");
+    ==
+    assert // Only designated payer can accept
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:37
+    // token_id = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_2 // "token_id"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:145
+    // const tokenId = this.token_id.value.native;
+    btoi
+    dupn 2
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:146
+    // assert(tokenId > 0, "Token ID not set");
+    assert // Token ID not set
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:50
+    // gross_deposit_amount = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 11 // "gross_deposit_amount"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:148
+    // const grossDeposit: uint64 = this.gross_deposit_amount.value.native;
+    btoi
+    dup
+    cover 2
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:149
+    // assert(grossDeposit > 0, "No deposit requested");
+    assert // No deposit requested
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:151-156
+    // assertMatch(tokenTransfer, {
+    //   xferAsset: Asset(tokenId),
+    //   assetAmount: grossDeposit,
+    //   assetReceiver: Global.currentApplicationAddress,
+    //   sender: this.depositor.value.native,
+    // });
+    frame_dig -1
+    gtxns XferAsset
+    ==
+    bz acceptRoute_bool_false@5
+    frame_dig -1
+    gtxns AssetAmount
+    frame_dig 10
+    ==
+    bz acceptRoute_bool_false@5
+    frame_dig -1
+    gtxns AssetReceiver
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:154
+    // assetReceiver: Global.currentApplicationAddress,
+    global CurrentApplicationAddress
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:151-156
+    // assertMatch(tokenTransfer, {
+    //   xferAsset: Asset(tokenId),
+    //   assetAmount: grossDeposit,
+    //   assetReceiver: Global.currentApplicationAddress,
+    //   sender: this.depositor.value.native,
+    // });
+    ==
+    bz acceptRoute_bool_false@5
+    frame_dig -1
+    gtxns Sender
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:41
+    // depositor = GlobalState<Address>();
+    intc_0 // 0
+    bytec 6 // "depositor"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:151-156
+    // assertMatch(tokenTransfer, {
+    //   xferAsset: Asset(tokenId),
+    //   assetAmount: grossDeposit,
+    //   assetReceiver: Global.currentApplicationAddress,
+    //   sender: this.depositor.value.native,
+    // });
+    ==
+    bz acceptRoute_bool_false@5
+    intc_1 // 1
+
+acceptRoute_bool_merge@6:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:151-156
+    // assertMatch(tokenTransfer, {
+    //   xferAsset: Asset(tokenId),
+    //   assetAmount: grossDeposit,
+    //   assetReceiver: Global.currentApplicationAddress,
+    //   sender: this.depositor.value.native,
+    // });
+    assert // assert target is match for conditions
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:36
+    // registry_app_id = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 14 // "registry_app_id"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:158
+    // const registryApp: Application = Application(this.registry_app_id.value.native);
+    btoi
+    dup
+    frame_bury 7
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:159-165
+    // const params = abiCall(WaypointRegistryStub.prototype.getParams, {
+    //   appId: registryApp.id,
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [registryApp],
+    //   accounts: [this.requester.value.native, this.beneficiary.value.native, op.Txn.sender],
+    // }).returnValue;
+    itxn_begin
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:161
+    // sender: Global.currentApplicationAddress,
+    global CurrentApplicationAddress
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:43
+    // requester = GlobalState<Address>();
+    intc_0 // 0
+    bytec 13 // "requester"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:42
+    // beneficiary = GlobalState<Address>();
+    intc_0 // 0
+    bytec 5 // "beneficiary"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:164
+    // accounts: [this.requester.value.native, this.beneficiary.value.native, op.Txn.sender],
+    txn Sender
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:159-165
+    // const params = abiCall(WaypointRegistryStub.prototype.getParams, {
+    //   appId: registryApp.id,
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [registryApp],
+    //   accounts: [this.requester.value.native, this.beneficiary.value.native, op.Txn.sender],
+    // }).returnValue;
+    bytec 21 // method "getParams()(uint64,address,uint64,uint64)"
+    itxn_field ApplicationArgs
+    uncover 2
+    itxn_field Accounts
+    swap
+    itxn_field Accounts
+    itxn_field Accounts
+    dig 1
+    itxn_field Applications
+    itxn_field Sender
+    itxn_field ApplicationID
+    pushint 6 // appl
+    itxn_field TypeEnum
+    // smart_contracts/waypoint_invoice/config.algo.ts:3
+    // export const STANDARD_TXN_FEE: uint64 = 1000;
+    intc_3 // 1000
+    itxn_field Fee
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:159-165
+    // const params = abiCall(WaypointRegistryStub.prototype.getParams, {
+    //   appId: registryApp.id,
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [registryApp],
+    //   accounts: [this.requester.value.native, this.beneficiary.value.native, op.Txn.sender],
+    // }).returnValue;
+    itxn_submit
+    itxn LastLog
+    dup
+    extract 0 4
+    bytec 17 // 0x151f7c75
+    ==
+    assert // Bytes has valid prefix
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:167
+    // this.fee_bps.value = params.fee_bps;
+    dup
+    extract 4 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:34
+    // fee_bps = GlobalState<UintN64>();
+    bytec 18 // "fee_bps"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:167
+    // this.fee_bps.value = params.fee_bps;
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:168
+    // this.treasury.value = params.treasury.native;
+    dup
+    extract 12 32
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:35
+    // treasury = GlobalState<Account>();
+    bytec 19 // "treasury"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:168
+    // this.treasury.value = params.treasury.native;
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:169
+    // this.flux_oracle_app.value = Application(params.flux_oracle_app_id.native);
+    dup
+    pushint 44 // 44
+    extract_uint64
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:32
+    // flux_oracle_app = GlobalState<Application>();
+    bytec 7 // "flux_oracle_app"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:169
+    // this.flux_oracle_app.value = Application(params.flux_oracle_app_id.native);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:170
+    // this.nominated_asset_id.value = params.nominated_asset_id;
+    extract 52 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:38
+    // nominated_asset_id = GlobalState<UintN64>();
+    bytec 20 // "nominated_asset_id"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:170
+    // this.nominated_asset_id.value = params.nominated_asset_id;
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:172
+    // let userTier: UintN64 = new UintN64(0);
+    bytec_0 // 0x0000000000000000
+    frame_bury 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:32
+    // flux_oracle_app = GlobalState<Application>();
+    intc_0 // 0
+    bytec 7 // "flux_oracle_app"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:173
+    // if (this.flux_oracle_app.value.id !== 0) {
+    bz acceptRoute_after_if_else@10
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:174-181
+    // userTier = abiCall(FluxGateStub.prototype.getUserTier, {
+    //   appId: this.flux_oracle_app.value.id,
+    //   args: [new arc4.Address(this.requester.value.native)],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [this.flux_oracle_app.value],
+    //   accounts: [this.requester.value.native],
+    // }).returnValue;
+    itxn_begin
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:32
+    // flux_oracle_app = GlobalState<Application>();
+    intc_0 // 0
+    bytec 7 // "flux_oracle_app"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:177
+    // sender: Global.currentApplicationAddress,
+    global CurrentApplicationAddress
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:32
+    // flux_oracle_app = GlobalState<Application>();
+    intc_0 // 0
+    bytec 7 // "flux_oracle_app"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:43
+    // requester = GlobalState<Address>();
+    intc_0 // 0
+    bytec 13 // "requester"
+    app_global_get_ex
+    assert // check GlobalState exists
+    intc_0 // 0
+    bytec 13 // "requester"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:174-181
+    // userTier = abiCall(FluxGateStub.prototype.getUserTier, {
+    //   appId: this.flux_oracle_app.value.id,
+    //   args: [new arc4.Address(this.requester.value.native)],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [this.flux_oracle_app.value],
+    //   accounts: [this.requester.value.native],
+    // }).returnValue;
+    pushbytes 0xd4d7aa5c // method "getUserTier(address)uint64"
+    itxn_field ApplicationArgs
+    itxn_field ApplicationArgs
+    itxn_field Accounts
+    itxn_field Applications
+    itxn_field Sender
+    itxn_field ApplicationID
+    pushint 6 // appl
+    itxn_field TypeEnum
+    // smart_contracts/waypoint_invoice/config.algo.ts:3
+    // export const STANDARD_TXN_FEE: uint64 = 1000;
+    intc_3 // 1000
+    itxn_field Fee
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:174-181
+    // userTier = abiCall(FluxGateStub.prototype.getUserTier, {
+    //   appId: this.flux_oracle_app.value.id,
+    //   args: [new arc4.Address(this.requester.value.native)],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [this.flux_oracle_app.value],
+    //   accounts: [this.requester.value.native],
+    // }).returnValue;
+    itxn_submit
+    itxn LastLog
+    dup
+    extract 4 0
+    frame_bury 0
+    extract 0 4
+    bytec 17 // 0x151f7c75
+    ==
+    assert // Bytes has valid prefix
+
+acceptRoute_after_if_else@10:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:184
+    // const calculatedFee = this.computeFees(grossDeposit, userTier.native, tokenId);
+    frame_dig 0
+    btoi
+    frame_bury 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:34
+    // fee_bps = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 18 // "fee_bps"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:241
+    // const initialFee: uint64 = this.fee_bps.value.native;
+    btoi
+    frame_bury 4
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:38
+    // nominated_asset_id = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 20 // "nominated_asset_id"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:244
+    // if (tokenId === this.nominated_asset_id.value.native) {
+    btoi
+    frame_dig 9
+    ==
+    bz acceptRoute_else_body@34
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:245
+    // if (userTier === 1) {
+    frame_dig 8
+    intc_1 // 1
+    ==
+    bz acceptRoute_else_body@24
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:246
+    // effectiveFeeBps = 20;
+    pushint 20 // 20
+    frame_bury 2
+
+acceptRoute_after_if_else@46:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:266
+    // const [feeHi, feeLo] = mulw(depositAmount, effectiveFeeBps);
+    frame_dig 10
+    dup
+    frame_dig 2
+    mulw
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:267
+    // const fee: uint64 = divw(feeHi, feeLo, 10_000);
+    pushint 10000 // 10000
+    divw
+    dup
+    frame_bury 3
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:185
+    // assert(calculatedFee < grossDeposit, "Fee cannot exceed deposit");
+    dup
+    uncover 2
+    <
+    assert // Fee cannot exceed deposit
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:187
+    // if (calculatedFee > 0) {
+    bz acceptRoute_after_if_else@13
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:188-195
+    // itxn
+    //   .assetTransfer({
+    //     assetReceiver: this.treasury.value,
+    //     assetAmount: calculatedFee,
+    //     xferAsset: Asset(tokenId),
+    //     fee: STANDARD_TXN_FEE,
+    //   })
+    //   .submit();
+    itxn_begin
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:35
+    // treasury = GlobalState<Account>();
+    intc_0 // 0
+    bytec 19 // "treasury"
+    app_global_get_ex
+    assert // check GlobalState exists
+    frame_dig 9
+    itxn_field XferAsset
+    frame_dig 3
+    itxn_field AssetAmount
+    itxn_field AssetReceiver
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:188-194
+    // itxn
+    //   .assetTransfer({
+    //     assetReceiver: this.treasury.value,
+    //     assetAmount: calculatedFee,
+    //     xferAsset: Asset(tokenId),
+    //     fee: STANDARD_TXN_FEE,
+    //   })
+    intc_2 // 4
+    itxn_field TypeEnum
+    // smart_contracts/waypoint_invoice/config.algo.ts:3
+    // export const STANDARD_TXN_FEE: uint64 = 1000;
+    intc_3 // 1000
+    itxn_field Fee
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:188-195
+    // itxn
+    //   .assetTransfer({
+    //     assetReceiver: this.treasury.value,
+    //     assetAmount: calculatedFee,
+    //     xferAsset: Asset(tokenId),
+    //     fee: STANDARD_TXN_FEE,
+    //   })
+    //   .submit();
+    itxn_submit
+
+acceptRoute_after_if_else@13:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:198
+    // const netDeposit: uint64 = grossDeposit - calculatedFee;
+    frame_dig 10
+    dup
+    frame_dig 3
+    dup
+    cover 2
+    -
+    dup
+    frame_bury 5
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:199
+    // assert(netDeposit > 0, "Net deposit must be greater than 0");
+    dup
+    assert // Net deposit must be greater than 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:201
+    // this.deposit_amount.value = new UintN64(netDeposit);
+    itob
+    dup
+    frame_bury 1
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:51
+    // deposit_amount = GlobalState<UintN64>(); // net amount available to stream
+    bytec 12 // "deposit_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:201
+    // this.deposit_amount.value = new UintN64(netDeposit);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:202
+    // this.fee_amount.value = new UintN64(calculatedFee);
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:52
+    // fee_amount = GlobalState<UintN64>();
+    bytec 16 // "fee_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:202
+    // this.fee_amount.value = new UintN64(calculatedFee);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:204
+    // const now = Global.latestTimestamp;
+    global LatestTimestamp
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:45
+    // requested_start_ts = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 15 // "requested_start_ts"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:205
+    // const requestedStart: uint64 = this.requested_start_ts.value.native;
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:206
+    // const effectiveStart: uint64 = now > requestedStart ? now : requestedStart;
+    dup2
+    >
+    swap
+    cover 2
+    select
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:207
+    // this.start_ts.value = new UintN64(effectiveStart);
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:44
+    // start_ts = GlobalState<UintN64>();
+    bytec_3 // "start_ts"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:207
+    // this.start_ts.value = new UintN64(effectiveStart);
+    swap
+    app_global_put
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:296
+    // if (grossDeposit === 0) {
+    bnz acceptRoute_after_if_else@17
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:297
+    // return 0;
+    intc_0 // 0
+
+acceptRoute_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.deriveNetPayoutPerPeriod@20:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:211-228
+    // abiCall(WaypointRegistryStub.prototype.registerRoute, {
+    //   appId: registryApp.id,
+    //   args: [
+    //     Global.currentApplicationId.id,
+    //     this.token_id.value.native,
+    //     this.depositor.value.native,
+    //     this.beneficiary.value.native,
+    //     this.start_ts.value.native,
+    //     this.period_secs.value.native,
+    //     netPayoutPerPeriod,
+    //     this.max_periods.value.native,
+    //     netDeposit,
+    //   ],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: REGISTRY_FEE,
+    //   apps: [registryApp],
+    //   accounts: [this.depositor.value.native, this.beneficiary.value.native, this.requester.value.native],
+    // });
+    itxn_begin
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:224
+    // sender: Global.currentApplicationAddress,
+    global CurrentApplicationAddress
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:41
+    // depositor = GlobalState<Address>();
+    intc_0 // 0
+    bytec 6 // "depositor"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:42
+    // beneficiary = GlobalState<Address>();
+    intc_0 // 0
+    bytec 5 // "beneficiary"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:214
+    // Global.currentApplicationId.id,
+    global CurrentApplicationID
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:37
+    // token_id = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_2 // "token_id"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:215
+    // this.token_id.value.native,
+    btoi
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:44
+    // start_ts = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_3 // "start_ts"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:218
+    // this.start_ts.value.native,
+    btoi
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:46
+    // period_secs = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 8 // "period_secs"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:219
+    // this.period_secs.value.native,
+    btoi
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:220
+    // netPayoutPerPeriod,
+    uncover 7
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:49
+    // max_periods = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 10 // "max_periods"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:221
+    // this.max_periods.value.native,
+    btoi
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:211-228
+    // abiCall(WaypointRegistryStub.prototype.registerRoute, {
+    //   appId: registryApp.id,
+    //   args: [
+    //     Global.currentApplicationId.id,
+    //     this.token_id.value.native,
+    //     this.depositor.value.native,
+    //     this.beneficiary.value.native,
+    //     this.start_ts.value.native,
+    //     this.period_secs.value.native,
+    //     netPayoutPerPeriod,
+    //     this.max_periods.value.native,
+    //     netDeposit,
+    //   ],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: REGISTRY_FEE,
+    //   apps: [registryApp],
+    //   accounts: [this.depositor.value.native, this.beneficiary.value.native, this.requester.value.native],
+    // });
+    pushbytes 0xf7199eeb // method "registerRoute(uint64,uint64,account,account,uint64,uint64,uint64,uint64,uint64)void"
+    itxn_field ApplicationArgs
+    uncover 5
+    itxn_field ApplicationArgs
+    uncover 4
+    itxn_field ApplicationArgs
+    pushbytes 0x01
+    itxn_field ApplicationArgs
+    pushbytes 0x02
+    itxn_field ApplicationArgs
+    uncover 3
+    itxn_field ApplicationArgs
+    uncover 2
+    itxn_field ApplicationArgs
+    swap
+    itxn_field ApplicationArgs
+    itxn_field ApplicationArgs
+    frame_dig 1
+    itxn_field ApplicationArgs
+    swap
+    itxn_field Accounts
+    itxn_field Accounts
+    frame_dig 7
+    dup
+    itxn_field Applications
+    itxn_field ApplicationID
+    itxn_field Sender
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:211-228
+    // abiCall(WaypointRegistryStub.prototype.registerRoute, {
+    //   appId: registryApp.id,
+    //   args: [
+    //     Global.currentApplicationId.id,
+    //     this.token_id.value.native,
+    //     this.depositor.value.native,
+    //     this.beneficiary.value.native,
+    //     this.start_ts.value.native,
+    //     this.period_secs.value.native,
+    //     netPayoutPerPeriod,
+    //     this.max_periods.value.native,
+    //     netDeposit,
+    //   ],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: REGISTRY_FEE,
+    //   apps: [registryApp],
+    //   accounts: [this.depositor.value.native, this.beneficiary.value.native, this.requester.value.native],
+    // });
+    pushint 6 // appl
+    itxn_field TypeEnum
+    // smart_contracts/waypoint_invoice/config.algo.ts:4
+    // export const REGISTRY_FEE : uint64 = 20_000;
+    pushint 20000 // 20000
+    itxn_field Fee
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:211-228
+    // abiCall(WaypointRegistryStub.prototype.registerRoute, {
+    //   appId: registryApp.id,
+    //   args: [
+    //     Global.currentApplicationId.id,
+    //     this.token_id.value.native,
+    //     this.depositor.value.native,
+    //     this.beneficiary.value.native,
+    //     this.start_ts.value.native,
+    //     this.period_secs.value.native,
+    //     netPayoutPerPeriod,
+    //     this.max_periods.value.native,
+    //     netDeposit,
+    //   ],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: REGISTRY_FEE,
+    //   apps: [registryApp],
+    //   accounts: [this.depositor.value.native, this.beneficiary.value.native, this.requester.value.native],
+    // });
+    itxn_submit
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:48
+    // route_status = GlobalState<UintN64>();
+    bytec_1 // "route_status"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:230
+    // this.route_status.value = new UintN64(STATUS_FUNDED);
+    pushbytes 0x0000000000000002
+    app_global_put
+    retsub
+
+acceptRoute_after_if_else@17:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:47
+    // payout_amount = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 9 // "payout_amount"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:300
+    // const perPeriod: uint64 = this.payout_amount.value.native;
+    btoi
+    dup
+    frame_bury 6
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:301
+    // if (perPeriod === 0) {
+    bnz acceptRoute_after_if_else@19
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:302
+    // return 0;
+    intc_0 // 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:209
+    // const netPayoutPerPeriod: uint64 = this.deriveNetPayoutPerPeriod(netDeposit, grossDeposit);
+    b acceptRoute_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.deriveNetPayoutPerPeriod@20
+
+acceptRoute_after_if_else@19:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:305
+    // const [scaledHi, scaledLo] = mulw(perPeriod, netDeposit);
+    frame_dig 6
+    frame_dig 5
+    mulw
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:306
+    // return divw(scaledHi, scaledLo, grossDeposit);
+    frame_dig 10
+    divw
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:209
+    // const netPayoutPerPeriod: uint64 = this.deriveNetPayoutPerPeriod(netDeposit, grossDeposit);
+    b acceptRoute_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.deriveNetPayoutPerPeriod@20
+
+acceptRoute_else_body@24:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:247
+    // } else if (userTier === 2) {
+    frame_dig 8
+    pushint 2 // 2
+    ==
+    bz acceptRoute_else_body@26
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:248
+    // effectiveFeeBps = 15;
+    pushint 15 // 15
+    frame_bury 2
+    b acceptRoute_after_if_else@46
+
+acceptRoute_else_body@26:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:249
+    // } else if (userTier === 3) {
+    frame_dig 8
+    pushint 3 // 3
+    ==
+    bz acceptRoute_else_body@28
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:250
+    // effectiveFeeBps = 12;
+    pushint 12 // 12
+    frame_bury 2
+    b acceptRoute_after_if_else@46
+
+acceptRoute_else_body@28:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:251
+    // } else if (userTier >= 4) {
+    frame_dig 8
+    intc_2 // 4
+    >=
+    frame_dig 4
+    frame_bury 2
+    bz acceptRoute_after_if_else@46
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:252
+    // effectiveFeeBps = 10;
+    pushint 10 // 10
+    frame_bury 2
+    b acceptRoute_after_if_else@46
+
+acceptRoute_else_body@34:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:255
+    // if (userTier === 1) {
+    frame_dig 8
+    intc_1 // 1
+    ==
+    bz acceptRoute_else_body@36
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:256
+    // effectiveFeeBps = 45;
+    pushint 45 // 45
+    frame_bury 2
+    b acceptRoute_after_if_else@46
+
+acceptRoute_else_body@36:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:257
+    // } else if (userTier === 2) {
+    frame_dig 8
+    pushint 2 // 2
+    ==
+    bz acceptRoute_else_body@38
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:258
+    // effectiveFeeBps = 38;
+    pushint 38 // 38
+    frame_bury 2
+    b acceptRoute_after_if_else@46
+
+acceptRoute_else_body@38:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:259
+    // } else if (userTier === 3) {
+    frame_dig 8
+    pushint 3 // 3
+    ==
+    bz acceptRoute_else_body@40
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:260
+    // effectiveFeeBps = 30;
+    pushint 30 // 30
+    frame_bury 2
+    b acceptRoute_after_if_else@46
+
+acceptRoute_else_body@40:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:261
+    // } else if (userTier >= 4) {
+    frame_dig 8
+    intc_2 // 4
+    >=
+    frame_dig 4
+    frame_bury 2
+    bz acceptRoute_after_if_else@46
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:262
+    // effectiveFeeBps = 20;
+    pushint 20 // 20
+    frame_bury 2
+    b acceptRoute_after_if_else@46
+
+acceptRoute_bool_false@5:
+    intc_0 // 0
+    b acceptRoute_bool_merge@6
+
+
+// smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.declineRoute() -> void:
+declineRoute:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:48
+    // route_status = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_1 // "route_status"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:235
+    // assert(this.route_status.value.native === STATUS_PENDING, "Route not pending");
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:25
+    // const STATUS_PENDING: uint64 = 1;
+    intc_1 // 1
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:235
+    // assert(this.route_status.value.native === STATUS_PENDING, "Route not pending");
+    ==
+    assert // Route not pending
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:236
+    // assert(op.Txn.sender === this.depositor.value.native, "Only designated payer can decline");
+    txn Sender
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:41
+    // depositor = GlobalState<Address>();
+    intc_0 // 0
+    bytec 6 // "depositor"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:236
+    // assert(op.Txn.sender === this.depositor.value.native, "Only designated payer can decline");
+    ==
+    assert // Only designated payer can decline
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:48
+    // route_status = GlobalState<UintN64>();
+    bytec_1 // "route_status"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:237
+    // this.route_status.value = new UintN64(STATUS_DECLINED);
+    pushbytes 0x0000000000000003
+    app_global_put
+    retsub
+
+
+// smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.claim() -> void:
+claim:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:271-272
+    // @abimethod({ allowActions: "NoOp" })
+    // public claim(): void {
+    proto 0 0
+    pushbytes ""
+    dupn 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:273
+    // assert(op.Txn.sender === this.beneficiary.value.native, "Only beneficiary can claim");
+    txn Sender
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:42
+    // beneficiary = GlobalState<Address>();
+    intc_0 // 0
+    bytec 5 // "beneficiary"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:273
+    // assert(op.Txn.sender === this.beneficiary.value.native, "Only beneficiary can claim");
+    ==
+    assert // Only beneficiary can claim
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:48
+    // route_status = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_1 // "route_status"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:274
+    // assert(this.route_status.value.native === STATUS_FUNDED, "Route not funded");
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:26
+    // const STATUS_FUNDED: uint64 = 2;
+    pushint 2 // 2
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:274
+    // assert(this.route_status.value.native === STATUS_FUNDED, "Route not funded");
+    ==
+    assert // Route not funded
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:37
+    // token_id = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_2 // "token_id"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:275
+    // const tokenId = this.token_id.value.native;
+    btoi
+    dup
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:276
+    // assert(tokenId > 0, "Route not initialized");
+    assert // Route not initialized
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:278
+    // const now = Global.latestTimestamp;
+    global LatestTimestamp
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:48
+    // route_status = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_1 // "route_status"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:310
+    // if (this.route_status.value.native !== STATUS_FUNDED) {
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:26
+    // const STATUS_FUNDED: uint64 = 2;
+    pushint 2 // 2
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:310
+    // if (this.route_status.value.native !== STATUS_FUNDED) {
+    !=
+    bz claim_after_if_else@8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:311
+    // return 0;
+    intc_0 // 0
+    frame_bury 8
+
+claim_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.vestedBySchedule@19:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:53
+    // claimed_amount = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 4 // "claimed_amount"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:352
+    // const alreadyClaimed: uint64 = this.claimed_amount.value.native;
+    btoi
+    dup
+    frame_bury 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:353
+    // if (vested > alreadyClaimed) {
+    frame_dig 8
+    <
+    bz claim_after_if_else@4
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:354
+    // return vested - alreadyClaimed;
+    frame_dig 8
+    frame_dig 0
+    -
+
+claim_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.computeClaimable@5:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:280
+    // assert(claimableAmount > 0, "Nothing claimable yet");
+    dup
+    assert // Nothing claimable yet
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:282-289
+    // itxn
+    //   .assetTransfer({
+    //     xferAsset: Asset(tokenId),
+    //     assetAmount: claimableAmount,
+    //     assetReceiver: this.beneficiary.value.native,
+    //     fee: STANDARD_TXN_FEE,
+    //   })
+    //   .submit();
+    itxn_begin
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:42
+    // beneficiary = GlobalState<Address>();
+    intc_0 // 0
+    bytec 5 // "beneficiary"
+    app_global_get_ex
+    assert // check GlobalState exists
+    itxn_field AssetReceiver
+    dup
+    itxn_field AssetAmount
+    frame_dig 9
+    itxn_field XferAsset
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:282-288
+    // itxn
+    //   .assetTransfer({
+    //     xferAsset: Asset(tokenId),
+    //     assetAmount: claimableAmount,
+    //     assetReceiver: this.beneficiary.value.native,
+    //     fee: STANDARD_TXN_FEE,
+    //   })
+    intc_2 // 4
+    itxn_field TypeEnum
+    // smart_contracts/waypoint_invoice/config.algo.ts:3
+    // export const STANDARD_TXN_FEE: uint64 = 1000;
+    intc_3 // 1000
+    itxn_field Fee
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:282-289
+    // itxn
+    //   .assetTransfer({
+    //     xferAsset: Asset(tokenId),
+    //     assetAmount: claimableAmount,
+    //     assetReceiver: this.beneficiary.value.native,
+    //     fee: STANDARD_TXN_FEE,
+    //   })
+    //   .submit();
+    itxn_submit
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:53
+    // claimed_amount = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 4 // "claimed_amount"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:291
+    // const updatedClaimed: uint64 = this.claimed_amount.value.native + claimableAmount;
+    btoi
+    +
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:292
+    // this.claimed_amount.value = new UintN64(updatedClaimed);
+    itob
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:53
+    // claimed_amount = GlobalState<UintN64>();
+    bytec 4 // "claimed_amount"
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:292
+    // this.claimed_amount.value = new UintN64(updatedClaimed);
+    swap
+    app_global_put
+    retsub
+
+claim_after_if_else@4:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:357
+    // return 0;
+    intc_0 // 0
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:279
+    // const claimableAmount = this.computeClaimable(now);
+    b claim_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.computeClaimable@5
+
+claim_after_if_else@8:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:44
+    // start_ts = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec_3 // "start_ts"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:314
+    // const startTs: uint64 = this.start_ts.value.native;
+    btoi
+    dup
+    frame_bury 7
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:315
+    // if (now <= startTs) {
+    frame_dig 10
+    >=
+    bz claim_after_if_else@10
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:316
+    // return 0;
+    intc_0 // 0
+    frame_bury 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:351
+    // const vested = this.vestedBySchedule(now);
+    b claim_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.vestedBySchedule@19
+
+claim_after_if_else@10:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:46
+    // period_secs = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 8 // "period_secs"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:319
+    // const periodSecs: uint64 = this.period_secs.value.native;
+    btoi
+    dup
+    frame_bury 6
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:320
+    // if (periodSecs === 0) {
+    bnz claim_after_if_else@12
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:321
+    // return 0;
+    intc_0 // 0
+    frame_bury 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:351
+    // const vested = this.vestedBySchedule(now);
+    b claim_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.vestedBySchedule@19
+
+claim_after_if_else@12:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:324
+    // const elapsed: uint64 = now - startTs;
+    frame_dig 10
+    frame_dig 7
+    -
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:325
+    // const periodsElapsed: uint64 = divw(0, elapsed, periodSecs);
+    intc_0 // 0
+    swap
+    frame_dig 6
+    divw
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:49
+    // max_periods = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 10 // "max_periods"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:327
+    // const maxPeriods: uint64 = this.max_periods.value.native;
+    btoi
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:328
+    // const cappedPeriods: uint64 = periodsElapsed > maxPeriods ? maxPeriods : periodsElapsed;
+    dup2
+    >
+    select
+    frame_bury 2
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:47
+    // payout_amount = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 9 // "payout_amount"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:330
+    // const payoutAmount: uint64 = this.payout_amount.value.native;
+    btoi
+    frame_bury 5
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:50
+    // gross_deposit_amount = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 11 // "gross_deposit_amount"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:331
+    // const grossDeposit: uint64 = this.gross_deposit_amount.value.native;
+    btoi
+    dup
+    frame_bury 3
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:51
+    // deposit_amount = GlobalState<UintN64>(); // net amount available to stream
+    intc_0 // 0
+    bytec 12 // "deposit_amount"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:332
+    // const netDeposit: uint64 = this.deposit_amount.value.native;
+    btoi
+    frame_bury 4
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:334
+    // if (grossDeposit === 0 || netDeposit === 0 || payoutAmount === 0) {
+    bz claim_if_body@15
+    frame_dig 4
+    bz claim_if_body@15
+    frame_dig 5
+    bnz claim_after_if_else@16
+
+claim_if_body@15:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:335
+    // return 0;
+    intc_0 // 0
+    frame_bury 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:351
+    // const vested = this.vestedBySchedule(now);
+    b claim_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.vestedBySchedule@19
+
+claim_after_if_else@16:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:338
+    // const [candidateHi, candidateLo] = mulw(payoutAmount, cappedPeriods);
+    frame_dig 5
+    frame_dig 2
+    mulw
+    frame_bury 1
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:340
+    // if (candidateHi > 0) {
+    bz claim_after_if_else@18
+    frame_dig 4
+    frame_bury 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:351
+    // const vested = this.vestedBySchedule(now);
+    b claim_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.vestedBySchedule@19
+
+claim_after_if_else@18:
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:344
+    // const grossVestedCandidate: uint64 = candidateLo > grossDeposit ? grossDeposit : candidateLo;
+    frame_dig 1
+    dup
+    frame_dig 3
+    dup
+    cover 3
+    >
+    dig 2
+    swap
+    select
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:345
+    // const [netHi, netLo] = mulw(grossVestedCandidate, netDeposit);
+    frame_dig 4
+    dup
+    cover 2
+    mulw
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:346
+    // const netVested: uint64 = divw(netHi, netLo, grossDeposit);
+    uncover 3
+    divw
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:347
+    // return netVested > netDeposit ? netDeposit : netVested;
+    dup
+    dig 2
+    >
+    swap
+    cover 2
+    select
+    frame_bury 8
+    // smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts:351
+    // const vested = this.vestedBySchedule(now);
+    b claim_after_inlined_smart_contracts/waypoint_invoice/waypoint-invoice.algo.ts::WaypointInvoice.vestedBySchedule@19
