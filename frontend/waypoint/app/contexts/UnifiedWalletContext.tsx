@@ -90,6 +90,7 @@ interface UnifiedWalletContextType {
   connected: boolean;
   connecting: boolean;
   account: string | null;
+  walletName: string | null;
   
   // Wallet actions
   connect: () => Promise<void>;
@@ -153,6 +154,7 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
         connected: aptosWallet.connected,
         connecting: aptosWallet.isLoading,
         account: aptosWallet.account?.address ? aptosWallet.account.address.toString() : null,
+        walletName: aptosWallet.wallet?.name || null,
         connect: async () => {
           // Aptos wallets connect via the WalletSelector modal
           console.log('Use Aptos WalletSelector to connect');
@@ -173,6 +175,7 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
         connected: !!algorandWallet.activeAccount,
         connecting: algorandWallet.isReady && !algorandWallet.activeAccount,
         account: algorandWallet.activeAccount?.address || null,
+        walletName: algorandWallet.activeWallet?.metadata.name || null,
         connect: async () => {
           await algorandWallet.activeWallet?.connect();
         },
@@ -195,6 +198,7 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
         connected: false,
         connecting: false,
         account: null,
+        walletName: null,
         connect: async () => {},
         disconnect: async () => {},
         signAndSubmitTransaction: async () => {
