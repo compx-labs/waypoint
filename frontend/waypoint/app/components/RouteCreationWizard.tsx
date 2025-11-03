@@ -16,6 +16,7 @@ import { useNetwork, BlockchainNetwork } from "../contexts/NetworkContext";
 import { useToast } from "../contexts/ToastContext";
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 import { ALGORAND_REGISTRY_APP } from "../lib/constants";
+import { BuyOnCompxButton } from "./BuyOnCompxButton";
 
 // Fee calculation utility
 interface FeeCalculation {
@@ -361,25 +362,24 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
             const balance = getTokenBalance(token.symbol);
             const hasBalance = balance !== null && balance > 0;
             return (
-              <button
+              <div
                 key={token.id}
+                className={`
+                  flex items-center p-4 rounded-xl border-2 transition-all duration-200
+                  ${
+                    !hasBalance
+                      ? "bg-forest-800 border-forest-600"
+                      : data.selectedToken?.id === token.id
+                      ? "bg-gradient-to-r from-forest-600 to-forest-500 border-sunset-500 border-opacity-60 cursor-pointer"
+                      : "bg-gradient-to-r from-forest-700 to-forest-600 border-forest-500 border-opacity-30 hover:border-opacity-60 hover:border-sunset-500 cursor-pointer"
+                  }
+                `}
                 onClick={() => {
                   if (hasBalance) {
                     updateData({ selectedToken: token });
                     setTimeout(() => onNext(), 150);
                   }
                 }}
-                disabled={!hasBalance}
-                className={`
-              flex items-center p-4 rounded-xl border-2 transition-all duration-200 text-left
-              ${
-                !hasBalance
-                  ? "bg-forest-800 border-forest-600 opacity-50 cursor-not-allowed"
-                  : data.selectedToken?.id === token.id
-                  ? "bg-gradient-to-r from-forest-600 to-forest-500 border-sunset-500 border-opacity-60"
-                  : "bg-gradient-to-r from-forest-700 to-forest-600 border-forest-500 border-opacity-30 hover:border-opacity-60 hover:border-sunset-500"
-              }
-            `}
               >
                 <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white flex items-center justify-center mr-4 p-2">
                   {token.logo_url ? (
@@ -401,7 +401,7 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                   <p className="text-primary-300 text-xs font-display">
                     {token.name}
                   </p>
-                  {balance !== null && (
+                  {balance !== null && hasBalance && (
                     <p className="text-sunset-400 text-xs font-display font-semibold mt-1">
                       Balance:{" "}
                       {balance.toLocaleString(undefined, {
@@ -410,7 +410,7 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                       })}
                     </p>
                   )}
-                  {token.symbol === "xUSD" && (
+                  {token.symbol === "xUSD" && hasBalance && (
                     <p className="text-green-400 text-xs font-display font-semibold mt-1 flex items-center gap-1">
                       <svg
                         className="w-3 h-3"
@@ -427,7 +427,17 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                     </p>
                   )}
                 </div>
-                {data.selectedToken?.id === token.id && (
+
+                {/* Buy on Compx button for tokens without balance - aligned right */}
+                <BuyOnCompxButton
+                  tokenSymbol={token.symbol}
+                  tokenContractAddress={token.contract_address}
+                  network={selectedNetwork}
+                  hasBalance={hasBalance}
+                />
+
+                {/* Checkmark for selected token */}
+                {data.selectedToken?.id === token.id && hasBalance && (
                   <div className="flex-shrink-0 ml-4">
                     <svg
                       className="w-5 h-5 text-sunset-500"
@@ -442,7 +452,7 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                     </svg>
                   </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
