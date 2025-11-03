@@ -296,7 +296,7 @@ export function useAptosAccount(
     enabled: !!address,
     staleTime: 1000 * 60 * 2, // Consider data fresh for 2 minutes
     gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
-    // Removed refetchInterval - only refetch when needed, not on a timer
+    refetchInterval: 30000, // Automatically refetch every 30 seconds
     ...options,
   });
 }
@@ -377,6 +377,7 @@ export function useAlgorandAccount(
     enabled: !!address,
     staleTime: 1000 * 60 * 2, // Consider data fresh for 2 minutes
     gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+    refetchInterval: 30000, // Automatically refetch every 30 seconds
     ...options,
   });
 }
