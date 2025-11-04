@@ -9,12 +9,16 @@ import { deploy } from "./linear-deploy";
 import { deploy as deployRegistry } from "../waypoint_registry/registry-deploy";
 import { WaypointRegistryClient } from "../artifacts/waypoint_registry/waypoint-registryClient";
 import { exp } from "@algorandfoundation/algorand-typescript/op";
+import { FluxGateClient } from "../fluxOracle/flux-gateClient";
+import { deploy as deployFluxOracle } from "../fluxOracle/deploy";
 
 let waypointLinearAppClient: WaypointLinearClient;
 let registryAppClient: WaypointRegistryClient;
+let fluxOracleAppClient: FluxGateClient;
 let managerAccount: Account;
 let beneficiaryAccount: Account;
 let stableAsset: bigint;
+let USER_TIER = 1;
 
 let depositAmount: bigint;
 let payoutAmount: bigint;
@@ -41,11 +45,81 @@ describe("orbital-lending Testing - deposit / borrow", async () => {
     beneficiaryAccount = await generateAccount({ initialFunds: microAlgo(5_000_000) });
     stableAsset = await createToken(managerAccount, "XUSD", 6);
 
-    console.log('deploying registry App')
+    fluxOracleAppClient = await deployFluxOracle({
+      deployer: managerAccount,
+    });
+    console.log("fluxOracleAppClient.appAddress", fluxOracleAppClient.appAddress);
+    const mbrTxn = await localnet.algorand.createTransaction.payment({
+      sender: managerAccount.addr,
+      receiver: fluxOracleAppClient.appAddress,
+      amount: microAlgo(400_000),
+    });
+
+    fluxOracleAppClient.algorand.setSignerFromAccount(managerAccount);
+
+    await fluxOracleAppClient.send.initApplication({
+      sender: managerAccount.addr,
+      args: {
+        mbrTxn,
+      },
+      populateAppCallResources: true,
+    });
+
+    await fluxOracleAppClient.send.addFluxTier({
+      sender: managerAccount.addr,
+      args: {
+        minRequired: 0n,
+        tierNumber: 0,
+      },
+      populateAppCallResources: true,
+    });
+
+    await fluxOracleAppClient.send.addFluxTier({
+      sender: managerAccount.addr,
+      args: {
+        minRequired: 1000n,
+        tierNumber: 1,
+      },
+      populateAppCallResources: true,
+    });
+    await fluxOracleAppClient.send.addFluxTier({
+      sender: managerAccount.addr,
+      args: {
+        minRequired: 10000n,
+        tierNumber: 2,
+      },
+      populateAppCallResources: true,
+    });
+    await fluxOracleAppClient.send.addFluxTier({
+      sender: managerAccount.addr,
+      args: {
+        minRequired: 100000n,
+        tierNumber: 3,
+      },
+      populateAppCallResources: true,
+    });
+    await fluxOracleAppClient.send.addFluxTier({
+      sender: managerAccount.addr,
+      args: {
+        minRequired: 1000000n,
+        tierNumber: 4,
+      },
+      populateAppCallResources: true,
+    });
+    await fluxOracleAppClient.send.setUserTier({
+      sender: managerAccount.addr,
+      args: {
+        user: beneficiaryAccount.addr.toString(),
+        tier: USER_TIER,
+      },
+      populateAppCallResources: true,
+    });
+
+    console.log("deploying registry App");
     registryAppClient = await deployRegistry({
       deployer: managerAccount,
       tokenId: stableAsset,
-      fluxOracleAppId: 0n,
+      fluxOracleAppId: fluxOracleAppClient.appId,
       treasury: managerAccount,
       feeBps: FEE_BPS,
     });
@@ -56,11 +130,11 @@ describe("orbital-lending Testing - deposit / borrow", async () => {
       amount: microAlgo(200_000),
       suppressLog: true,
     });
-    console.log('deploying linear App')
+    console.log("deploying linear App");
     waypointLinearAppClient = await deploy({
       deployer: managerAccount,
       tokenId: stableAsset,
-      fluxOracleAppId: 1n,
+      fluxOracleAppId: fluxOracleAppClient.appId,
       treasury: managerAccount,
       feeBps: FEE_BPS,
       registryAppId: registryAppClient.appId,
@@ -103,24 +177,42 @@ describe("orbital-lending Testing - deposit / borrow", async () => {
     const balanceAfter = await getAssetBalance(waypointLinearAppClient.appAddress.toString());
     const algoBalance = await localnet.context.algod.accountInformation(waypointLinearAppClient.appAddress.toString()).do();
     console.log("algoBalance", algoBalance.amount);
-    expect(algoBalance.amount).toBe(microAlgo(400_000n));
+    expect(algoBalance.amount).toBe(400_000n - 1_000n);
     expect(balanceAfter).toBe(0n);
   });
+
+  const calculateFee = (depositAmount: bigint, userTier: number) => {
+    if (userTier === 0) {
+      return (depositAmount * 25n) / 10000n;
+    } else if (userTier === 1) {
+      return (depositAmount * 20n) / 10000n;
+    } else if (userTier === 2) {
+      return (depositAmount * 15n) / 10000n;
+    } else if (userTier === 3) {
+      return (depositAmount * 12n) / 10000n;
+    } else {
+      return (depositAmount * 10n) / 10000n;
+    }
+  };
 
   test("create route stores schedule and locks funds", async () => {
     periodSecs = 10n;
     maxPeriods = 5n;
     payoutAmount = 200n;
     depositAmount = payoutAmount * maxPeriods;
+    let localFeeAmount = calculateFee(depositAmount, USER_TIER);
     const now = BigInt(Math.floor(Date.now() / 1000));
     startTs = 100_000n; //now - periodSecs * maxPeriods;
     console.log("startTs", startTs, "now", now);
+    console.log("localFeeAmount", localFeeAmount);
+    console.log("depositAmount", depositAmount);
+    console.log("depositAmount + localFeeAmount", depositAmount + localFeeAmount);
 
     const tokenTransfer = await localnet.context.algorand.createTransaction.assetTransfer({
       sender: managerAccount.addr,
       receiver: waypointLinearAppClient.appAddress,
       assetId: stableAsset,
-      amount: depositAmount,
+      amount: depositAmount + localFeeAmount,
     });
 
     await waypointLinearAppClient
@@ -155,7 +247,6 @@ describe("orbital-lending Testing - deposit / borrow", async () => {
     const appHolding = await getAssetBalance(waypointLinearAppClient.appAddress.toString());
     expect(appHolding).toBe(depositAmount);
   });
-
 
   test("claim releases vested amount to beneficiary", async () => {
     waypointLinearAppClient.algorand.setSignerFromAccount(beneficiaryAccount);

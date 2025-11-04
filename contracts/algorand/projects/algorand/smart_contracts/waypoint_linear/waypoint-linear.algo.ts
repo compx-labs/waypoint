@@ -172,7 +172,9 @@ export class WaypointLinear extends Contract {
     let effectiveFeeBps: uint64 = initialFee;
 
     if (tokenId === this.nominated_asset_id.value.native) {
-      if (userTier === 1) {
+      if (userTier === 0) {
+        effectiveFeeBps = 25;
+      } else if (userTier === 1) {
         effectiveFeeBps = 20;
       } else if (userTier === 2) {
         effectiveFeeBps = 15;

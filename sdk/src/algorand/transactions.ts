@@ -63,21 +63,23 @@ export class AlgorandTransactions {
     let feeBps: number;
     if (isNominated) {
       switch (userTier) {
+        case 0: feeBps = NOMINATED_ASSET_FEE_TIERS.TIER_0; break;
         case 1: feeBps = NOMINATED_ASSET_FEE_TIERS.TIER_1; break;
         case 2: feeBps = NOMINATED_ASSET_FEE_TIERS.TIER_2; break;
         case 3: feeBps = NOMINATED_ASSET_FEE_TIERS.TIER_3; break;
         case 4: 
         default: 
-          feeBps = userTier >= 4 ? NOMINATED_ASSET_FEE_TIERS.TIER_4 : NOMINATED_ASSET_FEE_TIERS.TIER_0;
+          feeBps = NOMINATED_ASSET_FEE_TIERS.TIER_4
       }
     } else {
       switch (userTier) {
+        case 0: feeBps = NON_NOMINATED_ASSET_FEE_TIERS.TIER_0; break;
         case 1: feeBps = NON_NOMINATED_ASSET_FEE_TIERS.TIER_1; break;
         case 2: feeBps = NON_NOMINATED_ASSET_FEE_TIERS.TIER_2; break;
         case 3: feeBps = NON_NOMINATED_ASSET_FEE_TIERS.TIER_3; break;
         case 4:
         default:
-          feeBps = userTier >= 4 ? NON_NOMINATED_ASSET_FEE_TIERS.TIER_4 : NON_NOMINATED_ASSET_FEE_TIERS.TIER_0;
+          feeBps = NON_NOMINATED_ASSET_FEE_TIERS.TIER_4;
       }
     }
     
