@@ -17,6 +17,7 @@ import { useToast } from "../contexts/ToastContext";
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 import { ALGORAND_REGISTRY_APP } from "../lib/constants";
 import { BuyOnCompxButton } from "./BuyOnCompxButton";
+import { GetOnOrbitalButton } from "./GetOnOrbitalButton";
 
 // Fee calculation utility
 interface FeeCalculation {
@@ -428,13 +429,22 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                   )}
                 </div>
 
-                {/* Buy on Compx button for tokens without balance - aligned right */}
-                <BuyOnCompxButton
-                  tokenSymbol={token.symbol}
-                  tokenContractAddress={token.contract_address}
-                  network={selectedNetwork}
-                  hasBalance={hasBalance}
-                />
+                {/* Get token buttons for tokens without balance - aligned right */}
+                {token.symbol === "cxUSD" || token.symbol === "cUSDC" ? (
+                  <GetOnOrbitalButton
+                    tokenSymbol={token.symbol}
+                    tokenContractAddress={token.contract_address}
+                    network={selectedNetwork}
+                    hasBalance={hasBalance}
+                  />
+                ) : (
+                  <BuyOnCompxButton
+                    tokenSymbol={token.symbol}
+                    tokenContractAddress={token.contract_address}
+                    network={selectedNetwork}
+                    hasBalance={hasBalance}
+                  />
+                )}
 
                 {/* Checkmark for selected token */}
                 {data.selectedToken?.id === token.id && hasBalance && (
