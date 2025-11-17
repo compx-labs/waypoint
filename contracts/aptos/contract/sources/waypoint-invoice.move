@@ -874,4 +874,208 @@ module waypoint::invoice_stream_fa {
         // Deposit exceeds schedule_total (2 periods * 400 = 800 < 1_000) so creation must abort.
         create_invoice(sender, fa, 1_000, 0, 3, 400, 2, 5, sender_addr);
     }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    #[expected_failure(abort_code = E_NOT_FUNDED)]
+    fun test_claim_before_funding_fails(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Routes, Route, Config {
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        timestamp::update_global_time_for_test(1_000_000);
+
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0,
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+
+        let payer = account::create_account_for_test(@0xcafe);
+        let payer_addr = signer::address_of(&payer);
+        primary_fungible_store::mint(&mint_ref, payer_addr, 1_005);
+        let beneficiary = account::create_account_for_test(@0xbeef);
+
+        create_invoice(
+            &beneficiary,
+            fa,
+            1_000,
+            0,
+            3,
+            400,
+            3,
+            5,
+            payer_addr
+        );
+
+        let routes = list_routes();
+        let route_addr = routes[routes.length() - 1];
+        let route_obj =
+            aptos_framework::object::address_to_object<aptos_framework::object::ObjectCore>(
+                route_addr
+            );
+
+        claim(&beneficiary, route_obj);
+    }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    #[expected_failure(abort_code = E_NOT_PAYER)]
+    fun test_fund_invoice_wrong_payer_fails(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Routes, Route, Config {
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        timestamp::update_global_time_for_test(1_000_000);
+
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0,
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+
+        let intended_payer = account::create_account_for_test(@0xcafe);
+        let wrong_payer = account::create_account_for_test(@0xface);
+        let beneficiary = account::create_account_for_test(@0xbeef);
+        let intended_addr = signer::address_of(&intended_payer);
+        let wrong_addr = signer::address_of(&wrong_payer);
+
+        primary_fungible_store::mint(&mint_ref, intended_addr, 1_005);
+        primary_fungible_store::mint(&mint_ref, wrong_addr, 1_005);
+
+        create_invoice(
+            &beneficiary,
+            fa,
+            1_000,
+            0,
+            3,
+            400,
+            3,
+            5,
+            intended_addr
+        );
+
+        let routes = list_routes();
+        let route_addr = routes[routes.length() - 1];
+        let route_obj =
+            aptos_framework::object::address_to_object<aptos_framework::object::ObjectCore>(
+                route_addr
+            );
+
+        fund_invoice(&wrong_payer, route_obj);
+    }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    #[expected_failure(abort_code = E_ALREADY_FUNDED)]
+    fun test_fund_invoice_twice_fails(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Routes, Route, Config {
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        timestamp::update_global_time_for_test(1_000_000);
+
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0,
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+
+        let payer = account::create_account_for_test(@0xcafe);
+        let beneficiary = account::create_account_for_test(@0xbeef);
+        let payer_addr = signer::address_of(&payer);
+        primary_fungible_store::mint(&mint_ref, payer_addr, 1_005);
+
+        let route_obj = create_and_fund_invoice_for_test(
+            &beneficiary,
+            &payer,
+            fa,
+            1_000,
+            0,
+            3,
+            400,
+            3,
+            5
+        );
+
+        fund_invoice(&payer, route_obj);
+    }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    fun test_get_route_core_reflects_funding_state(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Routes, Route, Config {
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        timestamp::update_global_time_for_test(1_000_000);
+
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0,
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+
+        let payer = account::create_account_for_test(@0xcafe);
+        let beneficiary = account::create_account_for_test(@0xbeef);
+        let payer_addr = signer::address_of(&payer);
+        primary_fungible_store::mint(&mint_ref, payer_addr, 1_005);
+
+        create_invoice(
+            &beneficiary,
+            fa,
+            1_000,
+            0,
+            3,
+            400,
+            3,
+            5,
+            payer_addr
+        );
+        let routes = list_routes();
+        let route_addr = routes[routes.length() - 1];
+        let route_obj =
+            aptos_framework::object::address_to_object<aptos_framework::object::ObjectCore>(
+                route_addr
+            );
+
+        let (_, stored_payer, stored_beneficiary, _, _, _, _, deposit, claimed, requested, fee, funded) =
+            get_route_core(route_obj);
+        assert!(stored_payer == payer_addr, 900);
+        assert!(stored_beneficiary == signer::address_of(&beneficiary), 901);
+        assert!(deposit == 1_000u128, 902);
+        assert!(claimed == 0u128, 903);
+        assert!(requested == 1_005u128, 904);
+        assert!(fee == 5u128, 905);
+        assert!(!funded, 906);
+
+        fund_invoice(&payer, route_obj);
+
+        let (_, _, _, _, _, _, _, _, _, _, _, funded_after) = get_route_core(route_obj);
+        assert!(funded_after, 907);
+    }
 }
