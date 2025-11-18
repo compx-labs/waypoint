@@ -4,10 +4,13 @@ import AppNavigation from "../components/AppNavigation";
 import Footer from "../components/Footer";
 import RouteCreationModal from "../components/RouteCreationModal";
 import RoutesList, { type TokenRoute } from "../components/RoutesList";
+import InvoiceCard from "../components/InvoiceCard";
 import { useToast } from "../contexts/ToastContext";
 import { useUnifiedWallet } from "../contexts/UnifiedWalletContext";
+import { useAlgorand } from "../contexts/AlgorandContext";
 import { useRoutes } from "../hooks/useQueries";
 import type { RouteData } from "../lib/api";
+import { useWallet as useAlgorandWallet } from "@txnlab/use-wallet-react";
 
 // Helper function to format currency
 function formatCurrency(amount: number): string {
@@ -39,8 +42,11 @@ export default function AppDashboard() {
   
   const navigate = useNavigate();
   const { account, connected } = useUnifiedWallet();
+  const { algorandWaypointClient } = useAlgorand();
+  const { signer: algorandSigner } = useAlgorandWallet();
   const toast = useToast();
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'routes' | 'invoices'>('routes');
   
   // Fetch routes using React Query with automatic refetching
   const { data: allRoutes, isLoading: loading, error: fetchError, refetch } = useRoutes({
@@ -172,6 +178,21 @@ export default function AppDashboard() {
 
   const error = fetchError ? (fetchError instanceof Error ? fetchError.message : 'Failed to fetch routes') : null;
 
+  // Filter invoices (sent and received)
+  const sentInvoices = useMemo(() => {
+    if (!account || !allRoutes) return [];
+    return allRoutes.filter(
+      route => route.route_type === 'invoice-routes' && route.sender === account
+    );
+  }, [account, allRoutes]);
+
+  const receivedInvoices = useMemo(() => {
+    if (!account || !allRoutes) return [];
+    return allRoutes.filter(
+      route => route.route_type === 'invoice-routes' && route.payer_address === account
+    );
+  }, [account, allRoutes]);
+
   const handleCreateRoute = () => {
     setIsRouteModalOpen(true);
   };
@@ -186,6 +207,48 @@ export default function AppDashboard() {
     console.log("Selected route type:", routeTypeId);
     // Navigate to route creation wizard with the selected type
     navigate(`/create-route?type=${routeTypeId}`);
+  };
+
+  const handleAcceptInvoice = async (routeAppId: bigint) => {
+    if (!algorandWaypointClient || !account || !algorandSigner) {
+      toast.showToast("Algorand wallet not connected", "error");
+      return;
+    }
+
+    try {
+      await algorandWaypointClient.acceptInvoiceRoute({
+        routeAppId,
+        payer: account,
+        signer: algorandSigner,
+      });
+
+      toast.showToast("Invoice accepted successfully!", "success");
+      refetch();
+    } catch (error: any) {
+      console.error("Error accepting invoice:", error);
+      throw error;
+    }
+  };
+
+  const handleDeclineInvoice = async (routeAppId: bigint) => {
+    if (!algorandWaypointClient || !account || !algorandSigner) {
+      toast.showToast("Algorand wallet not connected", "error");
+      return;
+    }
+
+    try {
+      await algorandWaypointClient.declineInvoiceRoute({
+        routeAppId,
+        payer: account,
+        signer: algorandSigner,
+      });
+
+      toast.showToast("Invoice declined", "info");
+      refetch();
+    } catch (error: any) {
+      console.error("Error declining invoice:", error);
+      throw error;
+    }
   };
 
   return (
@@ -218,6 +281,37 @@ export default function AppDashboard() {
               </button>
             </div>
           </div>
+
+          {/* Tabs */}
+          {account && (
+            <div className="flex space-x-2 border-b-2 border-forest-300 mb-6">
+              <button
+                onClick={() => setActiveTab('routes')}
+                className={`px-6 py-3 font-display font-bold text-sm uppercase tracking-wider transition-all ${
+                  activeTab === 'routes'
+                    ? 'text-forest-800 border-b-4 border-forest-600 -mb-0.5'
+                    : 'text-forest-600 hover:text-forest-800'
+                }`}
+              >
+                Routes
+              </button>
+              <button
+                onClick={() => setActiveTab('invoices')}
+                className={`px-6 py-3 font-display font-bold text-sm uppercase tracking-wider transition-all relative ${
+                  activeTab === 'invoices'
+                    ? 'text-forest-800 border-b-4 border-forest-600 -mb-0.5'
+                    : 'text-forest-600 hover:text-forest-800'
+                }`}
+              >
+                Invoices
+                {receivedInvoices.filter(inv => inv.status === 'pending').length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-sunset-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {receivedInvoices.filter(inv => inv.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Loading State */}
@@ -311,9 +405,75 @@ export default function AppDashboard() {
           </div>
         )}
 
-        {/* Token Route Cards */}
-        {!loading && !error && tokenRoutes.length > 0 && (
+        {/* Routes Tab Content */}
+        {activeTab === 'routes' && !loading && !error && tokenRoutes.length > 0 && (
           <RoutesList tokenRoutes={tokenRoutes} />
+        )}
+
+        {/* Invoices Tab Content */}
+        {activeTab === 'invoices' && !loading && !error && account && (
+          <div className="space-y-8">
+            {/* Received Invoices (To Pay) */}
+            <div>
+              <h2 className="text-2xl font-display font-bold text-forest-800 uppercase tracking-wide mb-4 flex items-center">
+                <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M8.707 7.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l2-2a1 1 0 00-1.414-1.414L11 7.586V3a1 1 0 10-2 0v4.586l-.293-.293z" />
+                  <path d="M3 5a2 2 0 012-2h1a1 1 0 010 2H5v7h2l1 2h4l1-2h2V5h-1a1 1 0 110-2h1a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" />
+                </svg>
+                Received Invoices
+                {receivedInvoices.filter(inv => inv.status === 'pending').length > 0 && (
+                  <span className="ml-2 text-sm text-sunset-600 font-normal">
+                    ({receivedInvoices.filter(inv => inv.status === 'pending').length} pending)
+                  </span>
+                )}
+              </h2>
+              
+              {receivedInvoices.length === 0 ? (
+                <div className="bg-forest-100 border-2 border-forest-300 rounded-lg p-6 text-center">
+                  <p className="text-forest-700 font-display">No invoices received</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {receivedInvoices.map((invoice) => (
+                    <InvoiceCard
+                      key={invoice.id}
+                      invoice={invoice}
+                      onAccept={handleAcceptInvoice}
+                      onDecline={handleDeclineInvoice}
+                      onStatusChange={refetch}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sent Invoices */}
+            <div>
+              <h2 className="text-2xl font-display font-bold text-forest-800 uppercase tracking-wide mb-4 flex items-center">
+                <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                </svg>
+                Sent Invoices
+              </h2>
+              
+              {sentInvoices.length === 0 ? (
+                <div className="bg-forest-100 border-2 border-forest-300 rounded-lg p-6 text-center">
+                  <p className="text-forest-700 font-display">No invoices sent</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {sentInvoices.map((invoice) => (
+                    <InvoiceCard
+                      key={invoice.id}
+                      invoice={invoice}
+                      onStatusChange={refetch}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
       

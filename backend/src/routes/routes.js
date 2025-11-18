@@ -8,12 +8,15 @@ const router = express.Router();
 // GET /api/routes - Get all routes (with optional filters)
 router.get('/', async (req, res, next) => {
   try {
-    const { sender, token_id, status } = req.query;
+    const { sender, recipient, payer_address, token_id, status, route_type } = req.query;
     
     const where = {};
     if (sender) where.sender = sender;
+    if (recipient) where.recipient = recipient;
+    if (payer_address) where.payer_address = payer_address;
     if (token_id) where.token_id = token_id;
     if (status) where.status = status;
+    if (route_type) where.route_type = route_type;
     
     const routes = await Route.findAll({
       where,
@@ -64,6 +67,9 @@ router.post('/', async (req, res, next) => {
       payment_frequency_number,
       blockchain_tx_hash,
       route_obj_address,
+      route_type,
+      payer_address,
+      status,
     } = req.body;
     
     // Validation
@@ -88,6 +94,9 @@ router.post('/', async (req, res, next) => {
       payment_frequency_number,
       blockchain_tx_hash,
       route_obj_address,
+      route_type: route_type || 'simple',
+      payer_address,
+      status: status || (route_type === 'invoice-routes' ? 'pending' : 'active'),
     });
     
     // Fetch with token info

@@ -65,8 +65,9 @@ export const Route = sequelize.define('Route', {
     comment: 'The wallet address that will fund the route (for invoice routes)',
   },
   status: {
-    type: DataTypes.ENUM('active', 'completed', 'cancelled'),
+    type: DataTypes.ENUM('pending', 'active', 'completed', 'cancelled', 'declined'),
     defaultValue: 'active',
+    comment: 'Status: pending (invoice awaiting payer), active (funded), completed, cancelled, declined (invoice rejected)',
   },
 }, {
   tableName: 'routes',

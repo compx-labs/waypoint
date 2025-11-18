@@ -2333,7 +2333,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         payment_frequency_number: 1, // Always 1 - we unlock every 1 unit (hour, day, etc.)
         blockchain_tx_hash: result.txIds[0],
         route_obj_address: result.routeAppId.toString(), // Store the app ID as the route address
-        route_type: isInvoiceRoute ? "invoice" : (routeType === "milestone-routes" ? "milestone" : "simple"), // Set route type
+        route_type: routeType, // Use the full route type ID (e.g., "invoice-routes")
+        status: (isInvoiceRoute ? "pending" : "active") as "pending" | "active", // Invoice routes start as pending
         ...(isInvoiceRoute && { payer_address: data.payerAddress }), // Include payer for invoice routes
       };
 
@@ -2803,11 +2804,12 @@ const SummaryStep: React.FC<WizardStepProps> = ({
                 Multiple Transactions Required
               </p>
               <p className="text-xs text-primary-300 font-display mt-2">
-                Creating an invoice on Algorand requires <span className="font-semibold text-primary-200">2 separate transactions</span> to be approved in your wallet:
+                Creating an invoice on Algorand requires <span className="font-semibold text-primary-200">3 separate transactions</span> to be approved in your wallet:
               </p>
               <div className="mt-3 space-y-1 text-xs text-primary-300 font-display">
                 <div>1) Create route application</div>
                 <div>2) Initialize with 0.4 ALGO</div>
+                <div>3) Initialize invoice and send to payer</div>
               </div>
             </div>
           </div>
