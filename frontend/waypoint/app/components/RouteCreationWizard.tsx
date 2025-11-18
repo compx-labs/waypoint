@@ -2616,15 +2616,40 @@ const SummaryStep: React.FC<WizardStepProps> = ({
             </div>
             
             {routeType === "invoice-routes" ? (
-              // For invoice routes, show that payer will pay the fee
-              <div className="flex justify-between items-center">
-                <span className="text-primary-300 font-display">
-                  Platform Fee
-                </span>
-                <span className="text-primary-400 font-display text-xs">
-                  Payer will pay fee when accepting
-                </span>
-              </div>
+              // For invoice routes, show the fee deducted from invoice amount
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-primary-300 font-display">
+                    Platform Fee ({(feeCalc.feePercentage * 100).toFixed(2)}%)
+                    {selectedNetwork === BlockchainNetwork.ALGORAND &&
+                      fluxTier > 0 && (
+                        <span className="text-green-400 ml-1 text-xs">
+                          (Flux Tier {fluxTier})
+                        </span>
+                      )}
+                  </span>
+                  <span className="text-sunset-400 font-display font-semibold">
+                    -{" "}
+                    {feeCalc.feeAmount.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 6,
+                    })}{" "}
+                    {data.selectedToken?.symbol}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-forest-600 flex justify-between items-center">
+                  <span className="text-primary-100 font-display font-semibold uppercase tracking-wide">
+                    You Will Receive
+                  </span>
+                  <span className="text-green-400 font-display font-bold">
+                    {(totalAmountValue - feeCalc.feeAmount).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 6,
+                    })}{" "}
+                    {data.selectedToken?.symbol}
+                  </span>
+                </div>
+              </>
             ) : (
               // For regular routes, show the fee calculation
               <div className="flex justify-between items-center">
@@ -2778,12 +2803,11 @@ const SummaryStep: React.FC<WizardStepProps> = ({
                 Multiple Transactions Required
               </p>
               <p className="text-xs text-primary-300 font-display mt-2">
-                Creating a route on Algorand requires <span className="font-semibold text-primary-200">3 separate transactions</span> to be approved in your wallet:
+                Creating an invoice on Algorand requires <span className="font-semibold text-primary-200">2 separate transactions</span> to be approved in your wallet:
               </p>
               <div className="mt-3 space-y-1 text-xs text-primary-300 font-display">
                 <div>1) Create route application</div>
                 <div>2) Initialize with 0.4 ALGO</div>
-                <div>3) Transfer tokens</div>
               </div>
             </div>
           </div>
