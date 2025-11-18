@@ -182,9 +182,13 @@ export interface RouteFormData {
   // Step 3: Timing
   startTime?: Date;
 
-  // Step 4: Recipient
+  // Step 4: Recipient (or Payer for invoices)
   recipientAddress?: string; // The final resolved address (or direct address)
   recipientNFD?: string; // The NFD name if one was used (e.g., "alice.algo")
+  
+  // Step 4b: Payer (for invoice routes only)
+  payerAddress?: string; // The payer's resolved address
+  payerNFD?: string; // The payer's NFD name if one was used
 }
 
 interface RouteCreationWizardProps {
@@ -200,8 +204,12 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
   onNext,
   isFirstStep,
   isLastStep,
+  routeType,
 }) => {
   const { selectedNetwork } = useNetwork();
+  
+  // Check if this is an invoice route
+  const isInvoiceRoute = routeType === "invoice-routes";
 
   // Aptos wallet and context
   const aptosWallet = useWallet();
@@ -253,6 +261,9 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
 
   // Helper function to get balance for a token
   const getTokenBalance = (tokenSymbol: string): number | null => {
+    // Skip balance checks for invoice routes
+    if (isInvoiceRoute) return null;
+    
     if (selectedNetwork === BlockchainNetwork.APTOS) {
       if (!aptosAccountData?.balances) return null;
       const balance = aptosAccountData.balances.find(
@@ -268,8 +279,8 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
     }
   };
 
-  // Check if user has any token balances
-  const hasAnyBalance = availableTokens.some((token) => {
+  // Check if user has any token balances (skip for invoice routes)
+  const hasAnyBalance = isInvoiceRoute || availableTokens.some((token) => {
     const balance = getTokenBalance(token.symbol);
     return balance !== null && balance > 0;
   });
@@ -281,7 +292,9 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
           Select Token
         </h2>
         <p className="text-primary-300 font-display text-sm">
-          Choose which stablecoin you want to route
+          {isInvoiceRoute 
+            ? "Choose which stablecoin you want to request payment in"
+            : "Choose which stablecoin you want to route"}
         </p>
       </div>
 
@@ -361,7 +374,7 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
         <div className="grid grid-cols-1 gap-3">
           {availableTokens.map((token) => {
             const balance = getTokenBalance(token.symbol);
-            const hasBalance = balance !== null && balance > 0;
+            const hasBalance = isInvoiceRoute || (balance !== null && balance > 0);
             return (
               <div
                 key={token.id}
@@ -376,7 +389,7 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                   }
                 `}
                 onClick={() => {
-                  if (hasBalance) {
+                  if (hasBalance || isInvoiceRoute) {
                     updateData({ selectedToken: token });
                     setTimeout(() => onNext(), 150);
                   }
@@ -402,7 +415,7 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                   <p className="text-primary-300 text-xs font-display">
                     {token.name}
                   </p>
-                  {balance !== null && hasBalance && (
+                  {!isInvoiceRoute && balance !== null && hasBalance && (
                     <p className="text-sunset-400 text-xs font-display font-semibold mt-1">
                       Balance:{" "}
                       {balance.toLocaleString(undefined, {
@@ -411,7 +424,7 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                       })}
                     </p>
                   )}
-                  {token.symbol === "xUSD" && hasBalance && (
+                  {!isInvoiceRoute && token.symbol === "xUSD" && hasBalance && (
                     <p className="text-green-400 text-xs font-display font-semibold mt-1 flex items-center gap-1">
                       <svg
                         className="w-3 h-3"
@@ -427,23 +440,33 @@ const TokenSelectionStep: React.FC<WizardStepProps> = ({
                       50% Fee Reduction
                     </p>
                   )}
+                  {isInvoiceRoute && (
+                    <p className="text-primary-400 text-xs font-display mt-1">
+                      Request payment in {token.symbol}
+                    </p>
+                  )}
                 </div>
 
                 {/* Get token buttons for tokens without balance - aligned right */}
-                {token.symbol === "cxUSD" || token.symbol === "cUSDC" ? (
-                  <GetOnOrbitalButton
-                    tokenSymbol={token.symbol}
-                    tokenContractAddress={token.contract_address}
-                    network={selectedNetwork}
-                    hasBalance={hasBalance}
-                  />
-                ) : (
-                  <BuyOnCompxButton
-                    tokenSymbol={token.symbol}
-                    tokenContractAddress={token.contract_address}
-                    network={selectedNetwork}
-                    hasBalance={hasBalance}
-                  />
+                {/* Don't show buy/get buttons for invoice routes since requester doesn't need tokens */}
+                {!isInvoiceRoute && (
+                  <>
+                    {token.symbol === "cxUSD" || token.symbol === "cUSDC" ? (
+                      <GetOnOrbitalButton
+                        tokenSymbol={token.symbol}
+                        tokenContractAddress={token.contract_address}
+                        network={selectedNetwork}
+                        hasBalance={hasBalance}
+                      />
+                    ) : (
+                      <BuyOnCompxButton
+                        tokenSymbol={token.symbol}
+                        tokenContractAddress={token.contract_address}
+                        network={selectedNetwork}
+                        hasBalance={hasBalance}
+                      />
+                    )}
+                  </>
                 )}
 
                 {/* Checkmark for selected token */}
@@ -478,8 +501,12 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
   onPrevious,
   isFirstStep,
   isLastStep,
+  routeType,
 }) => {
   const { selectedNetwork } = useNetwork();
+  
+  // Check if this is an invoice route
+  const isInvoiceRoute = routeType === "invoice-routes";
 
   // Aptos wallet and context
   const aptosWallet = useWallet();
@@ -548,32 +575,35 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
     { value: "months" as const, label: "Months", description: "Every month" },
   ];
 
-  // Get user's balance for the selected token
-  const tokenBalance =
-    selectedNetwork === BlockchainNetwork.APTOS
-      ? aptosAccountData?.balances.find(
-          (b) => b.symbol === data.selectedToken?.symbol
-        )?.amount || 0
-      : algorandAccountData?.balances.find(
-          (b) => b.symbol === data.selectedToken?.symbol
-        )?.amount || 0;
+  // Get user's balance for the selected token (skip for invoice routes)
+  const tokenBalance = isInvoiceRoute
+    ? 0
+    : selectedNetwork === BlockchainNetwork.APTOS
+    ? aptosAccountData?.balances.find(
+        (b) => b.symbol === data.selectedToken?.symbol
+      )?.amount || 0
+    : algorandAccountData?.balances.find(
+        (b) => b.symbol === data.selectedToken?.symbol
+      )?.amount || 0;
 
   const totalAmount = parseFloat(data.totalAmount || "0");
 
-  // Calculate fee based on network, token, and Flux tier
-  const feeCalc = calculateFee(
-    totalAmount,
-    selectedNetwork,
-    data.selectedToken?.symbol || "",
-    selectedNetwork === BlockchainNetwork.ALGORAND ? fluxTier : 0
-  );
+  // Calculate fee based on network, token, and Flux tier (skip for invoice routes)
+  const feeCalc = isInvoiceRoute
+    ? { feeAmount: 0, feePercentage: 0, feeBps: 0 }
+    : calculateFee(
+        totalAmount,
+        selectedNetwork,
+        data.selectedToken?.symbol || "",
+        selectedNetwork === BlockchainNetwork.ALGORAND ? fluxTier : 0
+      );
   const feeAmount = feeCalc.feeAmount;
   const feePercentage = feeCalc.feePercentage;
   const feeBps = feeCalc.feeBps;
 
   const totalWithFee = totalAmount + feeAmount;
   const unlockAmount = parseFloat(data.unlockAmount || "0");
-  const exceedsBalance = totalWithFee > tokenBalance;
+  const exceedsBalance = !isInvoiceRoute && totalWithFee > tokenBalance;
   const unlockExceedsTotal = unlockAmount > totalAmount;
 
   const canProceed =
@@ -590,7 +620,9 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
           Amount & Schedule
         </h2>
         <p className="text-primary-300 font-display text-sm">
-          Configure how much to send and the unlock schedule
+          {isInvoiceRoute
+            ? "Configure the invoice amount and payment schedule"
+            : "Configure how much to send and the unlock schedule"}
         </p>
       </div>
 
@@ -627,37 +659,39 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
             </span>
           </div>
         </div>
-        <div className="mt-2 flex items-center justify-between text-xs font-display">
-          <span className="text-primary-400">
-            Available:{" "}
-            {tokenBalance.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 6,
-            })}{" "}
-            {data.selectedToken?.symbol}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              // Calculate max amount considering fee (solve: amount + fee = balance)
-              // For fee calculation, use current flux tier and token
-              const tempFeeCalc = calculateFee(
-                100, // Use a reference amount to get fee percentage
-                selectedNetwork,
-                data.selectedToken?.symbol || "",
-                selectedNetwork === BlockchainNetwork.ALGORAND ? fluxTier : 0
-              );
-              const maxAmount = tokenBalance / (1 + tempFeeCalc.feePercentage);
-              updateData({ totalAmount: maxAmount.toString() });
-            }}
-            className="text-sunset-400 hover:text-sunset-300 uppercase tracking-wide font-semibold transition-colors"
-          >
-            Max
-          </button>
-        </div>
+        {!isInvoiceRoute && (
+          <div className="mt-2 flex items-center justify-between text-xs font-display">
+            <span className="text-primary-400">
+              Available:{" "}
+              {tokenBalance.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 6,
+              })}{" "}
+              {data.selectedToken?.symbol}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                // Calculate max amount considering fee (solve: amount + fee = balance)
+                // For fee calculation, use current flux tier and token
+                const tempFeeCalc = calculateFee(
+                  100, // Use a reference amount to get fee percentage
+                  selectedNetwork,
+                  data.selectedToken?.symbol || "",
+                  selectedNetwork === BlockchainNetwork.ALGORAND ? fluxTier : 0
+                );
+                const maxAmount = tokenBalance / (1 + tempFeeCalc.feePercentage);
+                updateData({ totalAmount: maxAmount.toString() });
+              }}
+              className="text-sunset-400 hover:text-sunset-300 uppercase tracking-wide font-semibold transition-colors"
+            >
+              Max
+            </button>
+          </div>
+        )}
 
-        {/* Fee Display */}
-        {totalAmount > 0 && (
+        {/* Fee Display - Only show for non-invoice routes */}
+        {!isInvoiceRoute && totalAmount > 0 && (
           <div className="mt-3 p-3 bg-forest-800 rounded-lg border border-forest-600">
             <div className="flex justify-between items-center text-xs font-display mb-1">
               <span className="text-primary-400">Route Amount</span>
@@ -701,6 +735,28 @@ const AmountScheduleStep: React.FC<WizardStepProps> = ({
                   {data.selectedToken?.symbol}
                 </span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Info message for invoice routes */}
+        {isInvoiceRoute && totalAmount > 0 && (
+          <div className="mt-3 p-3 bg-primary-500 bg-opacity-20 border border-primary-400 border-opacity-30 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <svg
+                className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary-300"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="text-xs text-primary-300 font-display">
+                The payer will pay the invoice amount plus platform fee when they accept this invoice request.
+              </span>
             </div>
           </div>
         )}
@@ -976,10 +1032,14 @@ const RecipientStep: React.FC<WizardStepProps> = ({
   onPrevious,
   isFirstStep,
   isLastStep,
+  routeType,
 }) => {
   const { selectedNetwork } = useNetwork();
   const aptosWallet = useWallet();
   const algorandWallet = useAlgorandWallet();
+  
+  // Check if this is an invoice route
+  const isInvoiceRoute = routeType === "invoice-routes";
 
   // Address validation function
   const validateAddress = (
@@ -1145,10 +1205,12 @@ const RecipientStep: React.FC<WizardStepProps> = ({
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-display font-bold text-primary-100 uppercase tracking-wider mb-2">
-          Recipient
+          {isInvoiceRoute ? "Beneficiary" : "Recipient"}
         </h2>
         <p className="text-primary-300 font-display text-sm">
-          Who will receive this token route?
+          {isInvoiceRoute 
+            ? "Who will receive the payments? (You can specify yourself or someone else)"
+            : "Who will receive this token route?"}
         </p>
       </div>
 
@@ -1191,6 +1253,365 @@ const RecipientStep: React.FC<WizardStepProps> = ({
           {selectedNetwork === BlockchainNetwork.ALGORAND
             ? "Enter the wallet address or NFD (e.g., alice.algo) that will receive the token route"
             : "Enter the wallet address that will receive the token route"}
+        </div>
+
+        {/* NFD Resolution Status */}
+        {selectedNetwork === BlockchainNetwork.ALGORAND &&
+          inputValue &&
+          inputValue.endsWith(".algo") && (
+            <div className="mt-3">
+              {isResolvingNFD && (
+                <div className="bg-primary-500 bg-opacity-20 border border-primary-400 border-opacity-30 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-300"></div>
+                    <span className="text-sm text-primary-300 font-display">
+                      Resolving NFD...
+                    </span>
+                  </div>
+                </div>
+              )}
+              {!isResolvingNFD && nfdResolved && resolvedAddress && (
+                <div className="bg-green-900 bg-opacity-30 border border-green-500 border-opacity-40 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <svg
+                      className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-display font-semibold text-green-300 uppercase tracking-wide">
+                        NFD Resolved
+                      </p>
+                      <p className="text-xs text-primary-300 font-mono mt-1 break-all">
+                        {resolvedAddress}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {!isResolvingNFD && nfdNotFound && (
+                <div className="bg-sunset-900 bg-opacity-30 border border-sunset-500 border-opacity-40 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <svg
+                      className="w-5 h-5 text-sunset-400 flex-shrink-0 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide">
+                        NFD Not Found
+                      </p>
+                      <p className="text-xs text-primary-300 font-display mt-1">
+                        Please check the NFD name or enter a wallet address
+                        directly.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+        {/* Address Book Dropdown */}
+        {showAddressBook && addressBookEntries.length > 0 && (
+          <div className="mt-3 bg-forest-700 border-2 border-sunset-500 border-opacity-30 rounded-lg p-3 max-h-64 overflow-y-auto">
+            <h4 className="text-xs font-display font-semibold text-primary-100 uppercase tracking-wide mb-2">
+              Select from Address Book
+            </h4>
+            <div className="space-y-2">
+              {addressBookEntries.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => selectFromAddressBook(entry.wallet_address)}
+                  className="w-full text-left p-3 bg-forest-600 hover:bg-forest-500 rounded-lg transition-all duration-200 border border-forest-500 hover:border-sunset-500"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-display font-semibold text-primary-100">
+                        {entry.name}
+                      </p>
+                      <p className="text-xs text-primary-300 font-mono truncate mt-1">
+                        {entry.wallet_address}
+                      </p>
+                    </div>
+                    <svg
+                      className="w-5 h-5 text-sunset-500 flex-shrink-0 ml-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between pt-4">
+        <button
+          onClick={onPrevious}
+          className="px-6 py-3 bg-forest-600 hover:bg-forest-500 text-primary-100 font-display text-sm uppercase tracking-wider rounded-lg transition-all duration-200 border-2 border-forest-400"
+        >
+          ← Back
+        </button>
+        <button
+          onClick={onNext}
+          disabled={!canProceed}
+          className={`px-6 py-3 font-display text-sm uppercase tracking-wider rounded-lg transition-all duration-200 border-2 ${
+            canProceed
+              ? "bg-sunset-500 hover:bg-sunset-600 text-primary-100 border-sunset-400"
+              : "bg-forest-600 text-primary-400 border-forest-500 cursor-not-allowed opacity-50"
+          }`}
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const PayerStep: React.FC<WizardStepProps> = ({
+  data,
+  updateData,
+  onNext,
+  onPrevious,
+  isFirstStep,
+  isLastStep,
+}) => {
+  const { selectedNetwork } = useNetwork();
+  const aptosWallet = useWallet();
+  const algorandWallet = useAlgorandWallet();
+
+  // Address validation function
+  const validateAddress = (
+    address: string,
+    network: BlockchainNetwork
+  ): boolean => {
+    if (!address || address.trim() === "") return false;
+
+    if (network === BlockchainNetwork.ALGORAND) {
+      // Algorand addresses: 58 chars, base32 encoded (A-Z, 2-7)
+      const algorandRegex = /^[A-Z2-7]{58}$/;
+      return algorandRegex.test(address);
+    } else if (network === BlockchainNetwork.APTOS) {
+      // Aptos addresses: hex with 0x prefix
+      const aptosRegex = /^0x[a-fA-F0-9]{1,64}$/;
+      return aptosRegex.test(address);
+    }
+
+    return false;
+  };
+
+  // State declarations
+  const [showAddressBook, setShowAddressBook] = useState(false);
+  const [inputValue, setInputValue] = useState(
+    data.payerNFD || data.payerAddress || ""
+  );
+  const [isResolvingNFD, setIsResolvingNFD] = useState(false);
+  const [nfdResolved, setNfdResolved] = useState(
+    !!data.payerNFD &&
+      !!data.payerAddress &&
+      data.payerNFD !== data.payerAddress
+  );
+  const [nfdNotFound, setNfdNotFound] = useState(false);
+  const [resolvedAddress, setResolvedAddress] = useState(
+    data.payerNFD &&
+      data.payerAddress &&
+      data.payerNFD !== data.payerAddress
+      ? data.payerAddress
+      : ""
+  );
+  const [isAddressValid, setIsAddressValid] = useState(() => {
+    // Initialize validation state based on existing data
+    if (!data.payerAddress) return false;
+    if (data.payerNFD && data.payerAddress !== data.payerNFD)
+      return true; // Already resolved
+    return validateAddress(data.payerAddress, selectedNetwork);
+  });
+
+  // NFD resolution function
+  const resolveNFD = async (nfdName: string): Promise<string | null> => {
+    if (!nfdName || !nfdName.endsWith(".algo")) {
+      return null;
+    }
+
+    try {
+      setIsResolvingNFD(true);
+      const response = await fetch(
+        `https://api.nf.domains/nfd/${encodeURIComponent(
+          nfdName
+        )}?view=tiny&poll=false&nocache=false`
+      );
+      const data = await response.json();
+
+      // Check if NFD was found (error response has name: "notFound")
+      if (data && data.name !== "notFound" && data.depositAccount) {
+        return data.depositAccount;
+      }
+
+      // NFD not found or invalid
+      console.warn(`NFD not found: ${nfdName}`);
+      return null;
+    } catch (error) {
+      console.error("Failed to resolve NFD:", error);
+      return null;
+    } finally {
+      setIsResolvingNFD(false);
+    }
+  };
+
+  // Auto-resolve NFD when input changes (if on Algorand and it's a .algo domain)
+  useEffect(() => {
+    const resolveIfNFD = async () => {
+      if (!inputValue) {
+        setResolvedAddress("");
+        setNfdResolved(false);
+        setNfdNotFound(false);
+        setIsAddressValid(false);
+        updateData({ payerAddress: undefined, payerNFD: undefined });
+        return;
+      }
+
+      if (
+        selectedNetwork === BlockchainNetwork.ALGORAND &&
+        inputValue.endsWith(".algo")
+      ) {
+        // This is an NFD - try to resolve it
+        const address = await resolveNFD(inputValue);
+        if (address) {
+          setResolvedAddress(address);
+          setNfdResolved(true);
+          setNfdNotFound(false);
+          // Validate the resolved address
+          const isValid = validateAddress(address, selectedNetwork);
+          setIsAddressValid(isValid);
+          // Update form data: payerAddress gets the resolved address, payerNFD gets the NFD name
+          if (isValid) {
+            updateData({
+              payerAddress: address, // Store the resolved address
+              payerNFD: inputValue, // Store the NFD name
+            });
+          }
+        } else {
+          setResolvedAddress("");
+          setNfdResolved(false);
+          setNfdNotFound(true);
+          setIsAddressValid(false);
+          updateData({ payerAddress: undefined, payerNFD: undefined });
+        }
+      } else {
+        // Not an NFD, treat as direct address - validate it
+        setResolvedAddress("");
+        setNfdResolved(false);
+        setNfdNotFound(false);
+        const isValid = validateAddress(inputValue, selectedNetwork);
+        setIsAddressValid(isValid);
+        // For direct address, only store in payerAddress
+        if (isValid) {
+          updateData({
+            payerAddress: inputValue,
+            payerNFD: undefined,
+          });
+        } else {
+          updateData({ payerAddress: undefined, payerNFD: undefined });
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(resolveIfNFD, 500); // Debounce by 500ms
+    return () => clearTimeout(timeoutId);
+  }, [inputValue, selectedNetwork]);
+
+  const canProceed =
+    inputValue.length > 0 && !isResolvingNFD && (isAddressValid || nfdResolved);
+
+  // Get owner wallet address based on network
+  const ownerWallet =
+    selectedNetwork === BlockchainNetwork.APTOS
+      ? aptosWallet.account?.address?.toString() || null
+      : algorandWallet.activeAccount?.address || null;
+
+  // Use React Query to fetch address book entries
+  const { data: addressBookEntries = [], isLoading: loadingAddressBook } =
+    useAddressBook(ownerWallet, {
+      enabled: !!ownerWallet,
+    });
+
+  const selectFromAddressBook = (address: string) => {
+    setInputValue(address);
+    setShowAddressBook(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-display font-bold text-primary-100 uppercase tracking-wider mb-2">
+          Payer
+        </h2>
+        <p className="text-primary-300 font-display text-sm">
+          Who should receive this invoice and pay for it?
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-display font-semibold text-primary-100 uppercase tracking-wide mb-2">
+          Payer Wallet Address
+        </label>
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            placeholder="Wallet address or short name..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            className="flex-1 bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 focus:border-sunset-500 focus:outline-none transition-colors"
+          />
+          {addressBookEntries.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAddressBook(!showAddressBook)}
+              className="px-4 py-3 bg-sunset-500 hover:bg-sunset-600 text-primary-100 rounded-lg transition-all duration-200 border-2 border-sunset-400 flex items-center space-x-2"
+              title="Select from Address Book"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+        <div className="mt-2 text-xs text-primary-400 font-display">
+          {selectedNetwork === BlockchainNetwork.ALGORAND
+            ? "Enter the wallet address or NFD of the person/entity who will pay this invoice"
+            : "Enter the wallet address of the person/entity who will pay this invoice"}
         </div>
 
         {/* NFD Resolution Status */}
@@ -1771,6 +2192,9 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   };
 
   const handleCreateAlgorandRoute = async () => {
+    // Check if this is an invoice route
+    const isInvoiceRoute = routeType === "invoice-routes";
+    
     // Validate required data
     if (
       !algorandWallet.activeAccount ||
@@ -1779,7 +2203,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       !data.unlockAmount ||
       !data.unlockUnit ||
       !data.startTime ||
-      !data.recipientAddress
+      !data.recipientAddress ||
+      (isInvoiceRoute && !data.payerAddress) // Payer is required for invoice routes
     ) {
       setBuildError("Missing required form data");
       return;
@@ -1791,19 +2216,21 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       return;
     }
 
-    // Calculate fee dynamically for Algorand
+    // Calculate fee dynamically for Algorand (but NOT for invoice routes - payer pays fee)
     const routeAmount = parseFloat(data.totalAmount);
-    const routeFeeCalc = calculateFee(
-      routeAmount,
-      BlockchainNetwork.ALGORAND,
-      data.selectedToken.symbol,
-      fluxTier
-    );
+    const routeFeeCalc = isInvoiceRoute 
+      ? { feeAmount: 0, feePercentage: 0, feeBps: 0 } // No fee for invoice routes (requester doesn't pay)
+      : calculateFee(
+          routeAmount,
+          BlockchainNetwork.ALGORAND,
+          data.selectedToken.symbol,
+          fluxTier
+        );
     const platformFee = routeFeeCalc.feeAmount;
     const totalRequired = routeAmount + platformFee;
 
-    // Validate sufficient token balance
-    if (totalRequired > tokenBalance) {
+    // Validate sufficient token balance (only for non-invoice routes)
+    if (!isInvoiceRoute && totalRequired > tokenBalance) {
       setBuildError(
         `Insufficient ${
           data.selectedToken.symbol
@@ -1824,7 +2251,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
     // Show loading toast
     const loadingToastId = toast.loading({
-      title: "Creating Route",
+      title: isInvoiceRoute ? "Creating Invoice Request" : "Creating Route",
       description: "Please approve the transactions in your wallet...",
     });
 
@@ -1847,7 +2274,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       // Convert unlock period to seconds
       const periodInSeconds = BigInt(timeUnitToSeconds(data.unlockUnit));
 
-      console.log("Creating Algorand route with SDK:", {
+      console.log(isInvoiceRoute ? "Creating Algorand invoice request with SDK:" : "Creating Algorand route with SDK:", {
         tokenId: data.selectedToken.contract_address,
         depositAmount: amountInUnits.toString(),
         startTimestamp: startTimestamp.toString(),
@@ -1855,28 +2282,42 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         payoutAmount: payoutAmountInUnits.toString(),
         maxPeriods: maxPeriods.toString(),
         beneficiary: data.recipientAddress,
+        ...(isInvoiceRoute && { payer: data.payerAddress }),
       });
 
-      // Use SDK to create the route
-      const result = await algorandWaypointClient.createLinearRoute({
-        sender: algorandWallet.activeAccount.address,
-        beneficiary: data.recipientAddress,
-        tokenId: BigInt(Number(data.selectedToken.contract_address)),
-        depositAmount: amountInUnits,
-        payoutAmount: payoutAmountInUnits,
-        startTimestamp: startTimestamp,
-        periodSeconds: periodInSeconds,
-        maxPeriods: maxPeriods,
-        signer: algorandWallet.transactionSigner,
-      });
+      // Use SDK to create the route or invoice
+      const result = isInvoiceRoute
+        ? await algorandWaypointClient.createInvoiceRequest({
+            requester: algorandWallet.activeAccount.address,
+            beneficiary: data.recipientAddress,
+            payer: data.payerAddress!,
+            tokenId: BigInt(Number(data.selectedToken.contract_address)),
+            grossInvoiceAmount: amountInUnits,
+            payoutAmount: payoutAmountInUnits,
+            startTimestamp: startTimestamp,
+            periodSeconds: periodInSeconds,
+            maxPeriods: maxPeriods,
+            signer: algorandWallet.transactionSigner,
+          })
+        : await algorandWaypointClient.createLinearRoute({
+            sender: algorandWallet.activeAccount.address,
+            beneficiary: data.recipientAddress,
+            tokenId: BigInt(Number(data.selectedToken.contract_address)),
+            depositAmount: amountInUnits,
+            payoutAmount: payoutAmountInUnits,
+            startTimestamp: startTimestamp,
+            periodSeconds: periodInSeconds,
+            maxPeriods: maxPeriods,
+            signer: algorandWallet.transactionSigner,
+          });
 
-      console.log("Route created successfully!", result);
+      console.log(isInvoiceRoute ? "Invoice request created successfully!" : "Route created successfully!", result);
 
       // Transaction confirmed! Now save to database
       setTransactionStatus("confirming");
       toast.update(loadingToastId, {
         title: "Transaction Confirmed",
-        description: "Saving route to database...",
+        description: isInvoiceRoute ? "Saving invoice request to database..." : "Saving route to database...",
         type: "loading",
       });
 
@@ -1892,7 +2333,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         payment_frequency_number: 1, // Always 1 - we unlock every 1 unit (hour, day, etc.)
         blockchain_tx_hash: result.txIds[0],
         route_obj_address: result.routeAppId.toString(), // Store the app ID as the route address
-        route_type: routeType === "milestone-routes" ? "milestone" : "simple", // Explicitly set route type
+        route_type: isInvoiceRoute ? "invoice" : (routeType === "milestone-routes" ? "milestone" : "simple"), // Set route type
+        ...(isInvoiceRoute && { payer_address: data.payerAddress }), // Include payer for invoice routes
       };
 
       // Save route to database
@@ -1900,8 +2342,10 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
       // Success! Show success toast
       toast.update(loadingToastId, {
-        title: "Route Created Successfully!",
-        description: `Your ${data.selectedToken.symbol} route has been created and is now active.`,
+        title: isInvoiceRoute ? "Invoice Request Created Successfully!" : "Route Created Successfully!",
+        description: isInvoiceRoute 
+          ? `Your invoice request has been sent to ${data.payerNFD || data.payerAddress}. They must accept it before tokens will be routed.`
+          : `Your ${data.selectedToken.symbol} route has been created and is now active.`,
         type: "success",
       });
 
@@ -2097,10 +2541,10 @@ const SummaryStep: React.FC<WizardStepProps> = ({
           </div>
         </div>
 
-        {/* Recipient */}
+        {/* Recipient / Beneficiary */}
         <div>
           <div className="text-sm font-display text-primary-400 uppercase tracking-wide mb-1">
-            Recipient
+            {routeType === "invoice-routes" ? "Beneficiary (You)" : "Recipient"}
           </div>
           {data.recipientNFD ? (
             <>
@@ -2119,7 +2563,38 @@ const SummaryStep: React.FC<WizardStepProps> = ({
               {data.recipientAddress}
             </div>
           )}
+          {routeType === "invoice-routes" && (
+            <div className="text-xs text-primary-400 font-display mt-1">
+              You will receive the payments
+            </div>
+          )}
         </div>
+
+        {/* Payer (for invoice routes only) */}
+        {routeType === "invoice-routes" && data.payerAddress && (
+          <div>
+            <div className="text-sm font-display text-primary-400 uppercase tracking-wide mb-1">
+              Payer (Invoice To)
+            </div>
+            {data.payerNFD ? (
+              <>
+                <div className="text-sunset-400 font-display text-sm mb-1">
+                  {data.payerNFD}
+                </div>
+                {/* Only show resolved address if it's different from the NFD */}
+                {data.payerAddress !== data.payerNFD && (
+                  <div className="text-primary-100 font-mono text-sm break-all">
+                    {data.payerAddress}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-primary-100 font-mono text-sm break-all">
+                {data.payerAddress}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Token Balance & Fee Breakdown */}
         <div className="pt-4 border-t border-forest-600">
@@ -2129,7 +2604,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between items-center">
               <span className="text-primary-300 font-display">
-                Route Amount
+                {routeType === "invoice-routes" ? "Invoice Amount" : "Route Amount"}
               </span>
               <span className="text-primary-100 font-display font-semibold">
                 {parseFloat(data.totalAmount || "0").toLocaleString(undefined, {
@@ -2139,61 +2614,81 @@ const SummaryStep: React.FC<WizardStepProps> = ({
                 {data.selectedToken?.symbol}
               </span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-primary-300 font-display">
-                Platform Fee ({(feeCalc.feePercentage * 100).toFixed(2)}%)
-                {selectedNetwork === BlockchainNetwork.ALGORAND &&
-                  fluxTier > 0 && (
-                    <span className="text-green-400 ml-1 text-xs">
-                      (Flux Tier {fluxTier})
-                    </span>
-                  )}
-              </span>
-              <span className="text-sunset-400 font-display font-semibold">
-                +{" "}
-                {feeCalc.feeAmount.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 6,
-                })}{" "}
-                {data.selectedToken?.symbol}
-              </span>
-            </div>
-            <div className="pt-2 border-t border-forest-600 flex justify-between items-center">
-              <span className="text-primary-100 font-display font-semibold uppercase tracking-wide">
-                Total Required
-              </span>
-              <span className="text-primary-100 font-display font-bold">
-                {totalRequiredWithFee.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 6,
-                })}{" "}
-                {data.selectedToken?.symbol}
-              </span>
-            </div>
-            <div className="pt-2 border-t border-forest-600 flex justify-between items-center">
-              <span className="text-primary-300 font-display">
-                Your Balance
-              </span>
-              <span
-                className={`font-display font-semibold ${
-                  tokenBalance >= totalRequiredWithFee
-                    ? "text-green-400"
-                    : "text-sunset-400"
-                }`}
-              >
-                {tokenBalance.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 6,
-                })}{" "}
-                {data.selectedToken?.symbol}
-              </span>
-            </div>
+            
+            {routeType === "invoice-routes" ? (
+              // For invoice routes, show that payer will pay the fee
+              <div className="flex justify-between items-center">
+                <span className="text-primary-300 font-display">
+                  Platform Fee
+                </span>
+                <span className="text-primary-400 font-display text-xs">
+                  Payer will pay fee when accepting
+                </span>
+              </div>
+            ) : (
+              // For regular routes, show the fee calculation
+              <div className="flex justify-between items-center">
+                <span className="text-primary-300 font-display">
+                  Platform Fee ({(feeCalc.feePercentage * 100).toFixed(2)}%)
+                  {selectedNetwork === BlockchainNetwork.ALGORAND &&
+                    fluxTier > 0 && (
+                      <span className="text-green-400 ml-1 text-xs">
+                        (Flux Tier {fluxTier})
+                      </span>
+                    )}
+                </span>
+                <span className="text-sunset-400 font-display font-semibold">
+                  +{" "}
+                  {feeCalc.feeAmount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 6,
+                  })}{" "}
+                  {data.selectedToken?.symbol}
+                </span>
+              </div>
+            )}
+            
+            {routeType !== "invoice-routes" && (
+              <>
+                <div className="pt-2 border-t border-forest-600 flex justify-between items-center">
+                  <span className="text-primary-100 font-display font-semibold uppercase tracking-wide">
+                    Total Required
+                  </span>
+                  <span className="text-primary-100 font-display font-bold">
+                    {totalRequiredWithFee.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 6,
+                    })}{" "}
+                    {data.selectedToken?.symbol}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-forest-600 flex justify-between items-center">
+                  <span className="text-primary-300 font-display">
+                    Your Balance
+                  </span>
+                  <span
+                    className={`font-display font-semibold ${
+                      tokenBalance >= totalRequiredWithFee
+                        ? "text-green-400"
+                        : "text-sunset-400"
+                    }`}
+                  >
+                    {tokenBalance.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 6,
+                    })}{" "}
+                    {data.selectedToken?.symbol}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Warnings */}
         <div className="pt-4 border-t border-forest-600">
-          {hasInsufficientGas && (
+          {/* Only show gas warning for non-invoice routes or if on Algorand */}
+          {hasInsufficientGas && routeType !== "invoice-routes" && (
             <div className="bg-sunset-900 bg-opacity-30 border border-sunset-500 border-opacity-40 rounded-lg p-3 mb-3">
               <div className="flex items-start space-x-2">
                 <svg
@@ -2230,7 +2725,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
               </div>
             </div>
           )}
-          {hasInsufficientTokenBalance && (
+          {/* Only show token balance warning for non-invoice routes */}
+          {hasInsufficientTokenBalance && routeType !== "invoice-routes" && (
             <div className="mt-3 bg-sunset-900 bg-opacity-30 border border-sunset-500 border-opacity-40 rounded-lg p-3">
               <div className="flex items-start space-x-2">
                 <svg
@@ -2333,10 +2829,11 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         <button
           onClick={handleCreateRoute}
           disabled={
-            hasInsufficientGas || hasInsufficientTokenBalance || isBuilding
+            isBuilding || 
+            (routeType !== "invoice-routes" && (hasInsufficientGas || hasInsufficientTokenBalance))
           }
           className={`px-8 py-3 font-display text-sm uppercase tracking-wider rounded-lg transition-all duration-200 border-2 flex items-center space-x-2 ${
-            hasInsufficientGas || hasInsufficientTokenBalance || isBuilding
+            isBuilding || (routeType !== "invoice-routes" && (hasInsufficientGas || hasInsufficientTokenBalance))
               ? "bg-forest-600 text-primary-400 border-forest-500 cursor-not-allowed opacity-50"
               : "bg-gradient-to-r from-sunset-500 to-sunset-600 hover:from-sunset-600 hover:to-sunset-700 text-primary-100 border-sunset-400 transform hover:scale-105 shadow-lg"
           }`}
@@ -2353,7 +2850,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
               </span>
             </>
           ) : (
-            <span>Sign & Create</span>
+            <span>{routeType === "invoice-routes" ? "Sign & Create Invoice" : "Sign & Create"}</span>
           )}
         </button>
       </div>
@@ -2361,38 +2858,50 @@ const SummaryStep: React.FC<WizardStepProps> = ({
   );
 };
 
-const wizardSteps: WizardStep[] = [
-  {
-    id: 1,
-    title: "Token",
-    description: "Choose your stablecoin",
-    component: TokenSelectionStep,
-  },
-  {
-    id: 2,
-    title: "Amount",
-    description: "Set amount & schedule",
-    component: AmountScheduleStep,
-  },
-  {
-    id: 3,
-    title: "Timing",
-    description: "When to start",
-    component: TimingStep,
-  },
-  {
-    id: 4,
-    title: "Recipient",
-    description: "Who receives it",
-    component: RecipientStep,
-  },
-  {
-    id: 5,
-    title: "Review",
-    description: "Confirm details",
-    component: SummaryStep,
-  },
-];
+// Common wizard steps
+const tokenStep: WizardStep = {
+  id: 1,
+  title: "Token",
+  description: "Choose your stablecoin",
+  component: TokenSelectionStep,
+};
+
+const amountStep: WizardStep = {
+  id: 2,
+  title: "Amount",
+  description: "Set amount & schedule",
+  component: AmountScheduleStep,
+};
+
+const timingStep: WizardStep = {
+  id: 3,
+  title: "Timing",
+  description: "When to start",
+  component: TimingStep,
+};
+
+const recipientStep: WizardStep = {
+  id: 4,
+  title: "Recipient",
+  description: "Who receives it",
+  component: RecipientStep,
+};
+
+// Payer step (only for invoice routes)
+const payerStep: WizardStep = {
+  id: 5,
+  title: "Payer",
+  description: "Who will pay",
+  component: PayerStep,
+};
+
+// Review step (always last)
+const reviewStep: WizardStep = {
+  id: 6,
+  title: "Review",
+  description: "Confirm details",
+  component: SummaryStep,
+};
 
 export default function RouteCreationWizard({
   routeType,
@@ -2402,8 +2911,44 @@ export default function RouteCreationWizard({
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<RouteFormData>({});
 
-  // Determine if this is a milestone route
+  // Get wallet contexts
+  const { selectedNetwork } = useNetwork();
+  const aptosWallet = useWallet();
+  const algorandWallet = useAlgorandWallet();
+
+  // Determine route type flags
   const isMilestoneRoute = routeType === "milestone-routes";
+  const isInvoiceRoute = routeType === "invoice-routes";
+  
+  // Build wizard steps based on route type
+  const wizardSteps = React.useMemo(() => {
+    if (isInvoiceRoute) {
+      // For invoice routes, skip recipient step (beneficiary is always the creator)
+      // Flow: Token → Amount → Timing → Payer → Review
+      return [tokenStep, amountStep, timingStep, payerStep, reviewStep];
+    } else {
+      // For regular routes, include recipient step
+      // Flow: Token → Amount → Timing → Recipient → Review
+      return [tokenStep, amountStep, timingStep, recipientStep, reviewStep];
+    }
+  }, [isInvoiceRoute]);
+
+  // Auto-set recipient address to current user for invoice routes
+  React.useEffect(() => {
+    if (isInvoiceRoute && !formData.recipientAddress) {
+      const currentUserAddress =
+        selectedNetwork === BlockchainNetwork.APTOS
+          ? aptosWallet.account?.address?.toStringLong() || null
+          : algorandWallet.activeAccount?.address || null;
+      
+      if (currentUserAddress) {
+        setFormData((prev) => ({
+          ...prev,
+          recipientAddress: currentUserAddress,
+        }));
+      }
+    }
+  }, [isInvoiceRoute, selectedNetwork, aptosWallet.account, algorandWallet.activeAccount, formData.recipientAddress]);
 
   const updateFormData = (updates: Partial<RouteFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
@@ -2452,11 +2997,12 @@ export default function RouteCreationWizard({
           <h1 className="text-3xl lg:text-4xl font-display font-bold text-forest-800 uppercase tracking-wide mb-2">
             Create{" "}
             {routeType === "milestone-routes"
-              ? "Milestone"
+              ? "Milestone Route"
               : routeType === "simple-transfer"
-              ? "Simple Transfer"
+              ? "Simple Transfer Route"
+              : routeType === "invoice-routes"
+              ? "Invoice Request"
               : routeType.replace("-", " ")}{" "}
-            Route
           </h1>
 
           {/* Progress Indicator */}

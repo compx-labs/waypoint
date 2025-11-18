@@ -5,13 +5,16 @@
 
 import * as algokit from '@algorandfoundation/algokit-utils';
 import { WaypointLinearClient } from './waypoint-linearClient';
+import { WaypointInvoiceClient } from './waypoint-invoiceClient';
 import { FluxGateClient } from './flux-gateClient';
 import type {
   AlgorandNetwork,
   AlgorandRouteDetails,
+  AlgorandInvoiceRouteDetails,
   FluxTierInfo,
   RegistryStats,
 } from './types';
+import { InvoiceRouteStatus } from './types';
 import { ALGORAND_NETWORKS } from './constants';
 import { WaypointRegistryClient } from './waypoint-registryClient';
 
@@ -244,6 +247,124 @@ export class AlgorandQueries {
     } catch (error) {
       console.error('Error fetching registry stats:', error);
       return null;
+    }
+  }
+
+  /**
+   * Get invoice route details from an invoice route app
+   * @param routeAppId Invoice route application ID
+   * @returns Invoice route details or null if not found
+   */
+  async getInvoiceRouteDetails(routeAppId: bigint): Promise<AlgorandInvoiceRouteDetails | null> {
+    try {
+      const appClient = new WaypointInvoiceClient({
+        algorand: this.algorand,
+        appId: routeAppId,
+      });
+
+      // Fetch global state
+      const globalState = await appClient.state.global.getAll();
+
+      if (!globalState) {
+        return null;
+      }
+
+      return {
+        routeId: routeAppId.toString(),
+        tokenId: globalState.tokenId || 0n,
+        depositor: globalState.depositor || '',
+        beneficiary: globalState.beneficiary || '',
+        requester: globalState.requester || '',
+        startTimestamp: globalState.startTs || 0n,
+        requestedStartTimestamp: globalState.requestedStartTs || 0n,
+        periodSeconds: globalState.periodSecs || 0n,
+        payoutAmount: globalState.payoutAmount || 0n,
+        maxPeriods: globalState.maxPeriods || 0n,
+        grossDepositAmount: globalState.grossDepositAmount || 0n,
+        depositAmount: globalState.depositAmount || 0n,
+        feeAmount: globalState.feeAmount || 0n,
+        claimedAmount: globalState.claimedAmount || 0n,
+        routeStatus: Number(globalState.routeStatus || 0n) as InvoiceRouteStatus,
+        feeBps: globalState.feeBps,
+        treasury: globalState.treasury,
+      };
+    } catch (error) {
+      console.error(`Error fetching invoice route ${routeAppId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if invoice is pending approval
+   * @param routeAppId Route application ID
+   * @returns True if invoice is pending
+   */
+  async isInvoicePending(routeAppId: bigint): Promise<boolean> {
+    const details = await this.getInvoiceRouteDetails(routeAppId);
+    return details?.routeStatus === 1; // STATUS_PENDING
+  }
+
+  /**
+   * Check if invoice is funded and active
+   * @param routeAppId Route application ID
+   * @returns True if invoice is funded
+   */
+  async isInvoiceFunded(routeAppId: bigint): Promise<boolean> {
+    const details = await this.getInvoiceRouteDetails(routeAppId);
+    return details?.routeStatus === 2; // STATUS_FUNDED
+  }
+
+  /**
+   * Check if invoice was declined
+   * @param routeAppId Route application ID
+   * @returns True if invoice was declined
+   */
+  async isInvoiceDeclined(routeAppId: bigint): Promise<boolean> {
+    const details = await this.getInvoiceRouteDetails(routeAppId);
+    return details?.routeStatus === 3; // STATUS_DECLINED
+  }
+
+  /**
+   * Calculate claimable amount for an invoice route at current time
+   * @param routeAppId Invoice route application ID
+   * @returns Claimable amount in token base units
+   */
+  async calculateInvoiceClaimableAmount(routeAppId: bigint): Promise<bigint> {
+    try {
+      const route = await this.getInvoiceRouteDetails(routeAppId);
+      if (!route || route.routeStatus !== 2) { // Not FUNDED
+        return 0n;
+      }
+
+      const now = BigInt(Math.floor(Date.now() / 1000));
+      
+      // If not started yet
+      if (now <= route.startTimestamp) {
+        return 0n;
+      }
+
+      // Calculate periods elapsed
+      const elapsed = now - route.startTimestamp;
+      const periodsElapsed = elapsed / route.periodSeconds;
+      
+      // Cap at max periods
+      const cappedPeriods = periodsElapsed > route.maxPeriods 
+        ? route.maxPeriods 
+        : periodsElapsed;
+
+      // Calculate vested amount
+      const vested = route.payoutAmount * cappedPeriods;
+      const vestedCapped = vested > route.depositAmount ? route.depositAmount : vested;
+
+      // Calculate claimable (vested - claimed)
+      const claimable = vestedCapped > route.claimedAmount 
+        ? vestedCapped - route.claimedAmount 
+        : 0n;
+
+      return claimable;
+    } catch (error) {
+      console.error(`Error calculating invoice claimable amount:`, error);
+      return 0n;
     }
   }
 }

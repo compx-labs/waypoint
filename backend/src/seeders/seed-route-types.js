@@ -44,16 +44,26 @@ const routeTypes = [
     sort_order: 4,
   },
   
-  // Algorand Route Types (all disabled for now)
+  // Algorand Route Types
   {
     route_type_id: 'simple-transfer',
     display_name: 'Simple Transfer Over Time',
     description: 'Route tokens to recipients with flexible schedules',
     network: 'algorand',
-    module_name: null,
-    contract_address: null,
-    enabled: false,
+    module_name: 'waypoint',
+    contract_address: null, // Set when deployed
+    enabled: true,
     sort_order: 1,
+  },
+  {
+    route_type_id: 'invoice-routes',
+    display_name: 'Invoice Routes',
+    description: 'Request payment from a third party with flexible payment schedules',
+    network: 'algorand',
+    module_name: 'waypoint-invoice',
+    contract_address: null, // Set when deployed
+    enabled: true,
+    sort_order: 2,
   },
   {
     route_type_id: 'milestone-routes',
@@ -63,7 +73,7 @@ const routeTypes = [
     module_name: null,
     contract_address: null,
     enabled: false,
-    sort_order: 2,
+    sort_order: 3,
   },
   {
     route_type_id: 'cliff-vesting',
@@ -73,7 +83,7 @@ const routeTypes = [
     module_name: null,
     contract_address: null,
     enabled: false,
-    sort_order: 3,
+    sort_order: 4,
   },
   {
     route_type_id: 'advanced-routes',
@@ -83,7 +93,7 @@ const routeTypes = [
     module_name: null,
     contract_address: null,
     enabled: false,
-    sort_order: 4,
+    sort_order: 5,
   },
 ];
 

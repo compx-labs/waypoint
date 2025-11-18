@@ -1,6 +1,6 @@
 {
   "name": "@compx/waypoint-sdk",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "TypeScript SDK for Waypoint token routing on Aptos and Algorand",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -18,7 +18,10 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "example:aptos": "tsx examples/aptos-node.ts",
+    "example:algo-linear": "tsx examples/algorand-linear-node.ts",
+    "example:algo-invoice": "tsx examples/algorand-invoice-node.ts"
   },
   "keywords": [
     "waypoint",
