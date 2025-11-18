@@ -10,6 +10,7 @@ import { useUnifiedWallet } from "../contexts/UnifiedWalletContext";
 import { useAlgorand } from "../contexts/AlgorandContext";
 import { useRoutes } from "../hooks/useQueries";
 import type { RouteData } from "../lib/api";
+import { API_BASE_URL } from "../lib/constants";
 import { useWallet as useAlgorandWallet } from "@txnlab/use-wallet-react";
 
 // Helper function to format currency
@@ -42,8 +43,8 @@ export default function AppDashboard() {
   
   const navigate = useNavigate();
   const { account, connected } = useUnifiedWallet();
-  const { algorandWaypointClient } = useAlgorand();
-  const { signer: algorandSigner } = useAlgorandWallet();
+  const { waypointClient } = useAlgorand();
+  const { transactionSigner } = useAlgorandWallet();
   const toast = useToast();
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'routes' | 'invoices'>('routes');
@@ -210,43 +211,131 @@ export default function AppDashboard() {
   };
 
   const handleAcceptInvoice = async (routeAppId: bigint) => {
-    if (!algorandWaypointClient || !account || !algorandSigner) {
-      toast.showToast("Algorand wallet not connected", "error");
+    console.log("handleAcceptInvoice called with routeAppId:", routeAppId.toString());
+    console.log("waypointClient:", waypointClient);
+    console.log("account:", account);
+    console.log("transactionSigner:", transactionSigner);
+    
+    if (!waypointClient || !account || !transactionSigner) {
+      toast.error({ title: "Algorand wallet not connected" });
       return;
     }
 
+    // Find the invoice in the current data
+    const invoice = allRoutes?.find(r => r.route_obj_address === routeAppId.toString());
+    if (!invoice) {
+      toast.error({ title: "Invoice not found" });
+      return;
+    }
+
+    // Show loading toast
+    const loadingToastId = toast.loading({ title: "Accepting invoice..." });
+
     try {
-      await algorandWaypointClient.acceptInvoiceRoute({
+      // Step 1: Accept on blockchain via SDK
+      console.log("Calling waypointClient.acceptInvoiceRoute...");
+      await waypointClient.acceptInvoiceRoute({
         routeAppId,
         payer: account,
-        signer: algorandSigner,
+        signer: transactionSigner,
       });
 
-      toast.showToast("Invoice accepted successfully!", "success");
+      console.log("Blockchain transaction successful, updating database...");
+
+      // Step 2: Update database status
+      const response = await fetch(`${API_BASE_URL}/api/routes/${invoice.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'active' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update database');
+      }
+
+      console.log("Database updated successfully");
+      
+      // Step 3: Update toast and refetch
+      toast.update(loadingToastId, {
+        title: "Invoice accepted successfully!",
+        type: "success",
+      });
+      
+      // Refetch to get updated data
       refetch();
     } catch (error: any) {
       console.error("Error accepting invoice:", error);
+      toast.update(loadingToastId, {
+        title: error?.message || "Failed to accept invoice",
+        type: "error",
+      });
       throw error;
     }
   };
 
   const handleDeclineInvoice = async (routeAppId: bigint) => {
-    if (!algorandWaypointClient || !account || !algorandSigner) {
-      toast.showToast("Algorand wallet not connected", "error");
+    console.log("handleDeclineInvoice called with routeAppId:", routeAppId.toString());
+    console.log("waypointClient:", waypointClient);
+    console.log("account:", account);
+    console.log("transactionSigner:", transactionSigner);
+    
+    if (!waypointClient || !account || !transactionSigner) {
+      toast.error({ title: "Algorand wallet not connected" });
       return;
     }
 
+    // Find the invoice in the current data
+    const invoice = allRoutes?.find(r => r.route_obj_address === routeAppId.toString());
+    if (!invoice) {
+      toast.error({ title: "Invoice not found" });
+      return;
+    }
+
+    // Show loading toast
+    const loadingToastId = toast.loading({ title: "Declining invoice..." });
+
     try {
-      await algorandWaypointClient.declineInvoiceRoute({
+      // Step 1: Decline on blockchain via SDK
+      console.log("Calling waypointClient.declineInvoiceRoute...");
+      await waypointClient.declineInvoiceRoute({
         routeAppId,
         payer: account,
-        signer: algorandSigner,
+        signer: transactionSigner,
       });
 
-      toast.showToast("Invoice declined", "info");
+      console.log("Blockchain transaction successful, updating database...");
+
+      // Step 2: Update database status
+      const response = await fetch(`${API_BASE_URL}/api/routes/${invoice.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'declined' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update database');
+      }
+
+      console.log("Database updated successfully");
+      
+      // Step 3: Update toast and refetch
+      toast.update(loadingToastId, {
+        title: "Invoice declined",
+        type: "info",
+      });
+      
+      // Refetch to get updated data
       refetch();
     } catch (error: any) {
       console.error("Error declining invoice:", error);
+      toast.update(loadingToastId, {
+        title: error?.message || "Failed to decline invoice",
+        type: "error",
+      });
       throw error;
     }
   };
@@ -438,6 +527,7 @@ export default function AppDashboard() {
                     <InvoiceCard
                       key={invoice.id}
                       invoice={invoice}
+                      currentUserAddress={account}
                       onAccept={handleAcceptInvoice}
                       onDecline={handleDeclineInvoice}
                       onStatusChange={refetch}
@@ -463,10 +553,12 @@ export default function AppDashboard() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {/* Don't pass onAccept/onDecline for sent invoices - requestor can't approve their own invoices */}
                   {sentInvoices.map((invoice) => (
                     <InvoiceCard
                       key={invoice.id}
                       invoice={invoice}
+                      currentUserAddress={account}
                       onStatusChange={refetch}
                     />
                   ))}

@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAlgorand } from "../contexts/AlgorandContext";
 import { useToast } from "../contexts/ToastContext";
 import type { RouteData } from "../lib/api";
+import algosdk from "algosdk";
 
 interface InvoiceCardProps {
   invoice: RouteData;
   onAccept?: (routeAppId: bigint) => Promise<void>;
   onDecline?: (routeAppId: bigint) => Promise<void>;
   onStatusChange?: () => void;
+  currentUserAddress?: string; // To determine if user is sender or receiver
 }
 
 // Helper function to format token amount
@@ -62,16 +64,24 @@ const truncateAddress = (address: string): string => {
   return `${address.slice(0, 8)}...${address.slice(-8)}`;
 };
 
-export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChange }: InvoiceCardProps) {
-  const { algorandWaypointClient } = useAlgorand();
+export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChange, currentUserAddress }: InvoiceCardProps) {
+  const { waypointClient, network } = useAlgorand();
   const toast = useToast();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [payerBalance, setPayerBalance] = useState<bigint | null>(null);
+  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
 
   const isPending = invoice.status === 'pending';
   const isDeclined = invoice.status === 'declined';
   const isActive = invoice.status === 'active';
+  
+  // Determine if current user is the sender/requester
+  const isSentByUser = currentUserAddress && invoice.sender.toLowerCase() === currentUserAddress.toLowerCase();
+  const isReceivedByUser = currentUserAddress && invoice.payer_address?.toLowerCase() === currentUserAddress.toLowerCase();
+  
+  const invoiceAmount = BigInt(invoice.amount_token_units);
+  const hasInsufficientBalance = payerBalance !== null && payerBalance < invoiceAmount;
   
   const totalAmount = formatTokenAmount(invoice.amount_token_units, invoice.token.decimals);
   const schedule = formatSchedule(
@@ -82,9 +92,51 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
     invoice.token.decimals
   );
 
+  // Check payer's token balance if they're viewing a pending invoice they need to pay
+  useEffect(() => {
+    const checkPayerBalance = async () => {
+      if (!isReceivedByUser || !currentUserAddress || !isPending) {
+        return;
+      }
+
+      setIsCheckingBalance(true);
+      try {
+        // Get algod client based on current network
+        const algodServer = network === 'mainnet' 
+          ? 'https://mainnet-api.algonode.cloud'
+          : 'https://testnet-api.algonode.cloud';
+        const algodClient = new algosdk.Algodv2('', algodServer, '');
+
+        // Get account info
+        const accountInfo = await algodClient.accountInformation(currentUserAddress).do();
+        
+        // Find the asset balance
+        const assetId = parseInt(invoice.token.contract_address);
+        const assetHolding = accountInfo.assets?.find((asset: any) => asset['asset-id'] === assetId);
+        
+        if (assetHolding) {
+          setPayerBalance(BigInt(assetHolding.amount));
+        } else {
+          // User doesn't have this asset (balance = 0)
+          setPayerBalance(0n);
+        }
+      } catch (error) {
+        console.error('Error checking payer balance:', error);
+        setPayerBalance(null);
+      } finally {
+        setIsCheckingBalance(false);
+      }
+    };
+
+    checkPayerBalance();
+  }, [isReceivedByUser, currentUserAddress, isPending, invoice.token.contract_address, network]);
+
   const handleAccept = async () => {
-    if (!algorandWaypointClient || !invoice.route_obj_address) {
-      toast.showToast("Wallet not connected or invalid route", "error");
+    console.log("Accept button clicked");
+    
+    if (!waypointClient || !invoice.route_obj_address) {
+      console.error("Missing waypointClient or route_obj_address");
+      toast.error({ title: "Wallet not connected or invalid route" });
       return;
     }
 
@@ -94,12 +146,13 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
       // Parse the route app ID from blockchain_tx_hash or route_obj_address
       // For Algorand, route_obj_address should contain the app ID
       const routeAppId = BigInt(invoice.route_obj_address);
+      console.log("Accepting invoice with routeAppId:", routeAppId.toString());
       
       if (onAccept) {
         await onAccept(routeAppId);
       }
       
-      toast.showToast("Invoice accepted successfully!", "success");
+      toast.success({ title: "Invoice accepted successfully!" });
       
       // Trigger status update
       if (onStatusChange) {
@@ -107,18 +160,20 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
       }
     } catch (error: any) {
       console.error("Error accepting invoice:", error);
-      toast.showToast(
-        error?.message || "Failed to accept invoice",
-        "error"
-      );
+      toast.error({
+        title: error?.message || "Failed to accept invoice"
+      });
     } finally {
       setIsAccepting(false);
     }
   };
 
   const handleDecline = async () => {
-    if (!algorandWaypointClient || !invoice.route_obj_address) {
-      toast.showToast("Wallet not connected or invalid route", "error");
+    console.log("Decline button clicked");
+    
+    if (!waypointClient || !invoice.route_obj_address) {
+      console.error("Missing waypointClient or route_obj_address");
+      toast.error({ title: "Wallet not connected or invalid route" });
       return;
     }
 
@@ -126,12 +181,13 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
       setIsDeclining(true);
       
       const routeAppId = BigInt(invoice.route_obj_address);
+      console.log("Declining invoice with routeAppId:", routeAppId.toString());
       
       if (onDecline) {
         await onDecline(routeAppId);
       }
       
-      toast.showToast("Invoice declined", "info");
+      toast.info({ title: "Invoice declined" });
       
       // Trigger status update
       if (onStatusChange) {
@@ -139,10 +195,9 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
       }
     } catch (error: any) {
       console.error("Error declining invoice:", error);
-      toast.showToast(
-        error?.message || "Failed to decline invoice",
-        "error"
-      );
+      toast.error({
+        title: error?.message || "Failed to decline invoice"
+      });
     } finally {
       setIsDeclining(false);
     }
@@ -189,18 +244,24 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
       {/* Invoice Details */}
       <div className="space-y-3 mb-4">
         <div className="flex justify-between items-center text-sm">
-          <span className="text-forest-300">From (Requester):</span>
-          <span className="text-primary-100 font-mono">{truncateAddress(invoice.sender)}</span>
+          <span className="text-forest-300">From:</span>
+          <span className="text-primary-100 font-mono">
+            {isSentByUser ? 'You' : truncateAddress(invoice.sender)}
+          </span>
         </div>
         
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-forest-300">To (Beneficiary):</span>
-          <span className="text-primary-100 font-mono">{truncateAddress(invoice.recipient)}</span>
-        </div>
+        {invoice.payer_address && (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-forest-300">Payer:</span>
+            <span className="text-primary-100 font-mono">
+              {isReceivedByUser ? 'You' : truncateAddress(invoice.payer_address)}
+            </span>
+          </div>
+        )}
         
         <div className="flex justify-between items-center text-sm">
           <span className="text-forest-300">Payment Schedule:</span>
-          <span className="text-primary-100">{schedule}</span>
+          <span className="text-primary-100 text-right flex-1 ml-4">{schedule}</span>
         </div>
         
         <div className="flex justify-between items-center text-sm">
@@ -209,62 +270,53 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
         </div>
       </div>
 
-      {/* Expandable Details */}
-      <button
-        onClick={() => setShowDetails(!showDetails)}
-        className="w-full text-xs text-forest-300 hover:text-primary-100 transition-colors mb-3 flex items-center justify-center space-x-1"
-      >
-        <span>{showDetails ? 'Hide' : 'Show'} Details</span>
-        <svg 
-          className={`w-4 h-4 transform transition-transform ${showDetails ? 'rotate-180' : ''}`}
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {showDetails && (
-        <div className="bg-forest-950/50 rounded-lg p-3 mb-4 space-y-2 text-xs">
-          <div className="flex justify-between">
-            <span className="text-forest-400">Route Type:</span>
-            <span className="text-primary-100">{invoice.route_type || 'invoice-routes'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-forest-400">Route ID:</span>
-            <span className="text-primary-100 font-mono">{invoice.id}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-forest-400">Created:</span>
-            <span className="text-primary-100">{formatDate(invoice.created_at!)}</span>
-          </div>
-          {invoice.blockchain_tx_hash && (
-            <div className="flex justify-between">
-              <span className="text-forest-400">Tx Hash:</span>
-              <span className="text-primary-100 font-mono text-xs break-all">
-                {truncateAddress(invoice.blockchain_tx_hash)}
-              </span>
+      {/* Insufficient Balance Warning */}
+      {isPending && onAccept && onDecline && hasInsufficientBalance && (
+        <div className="mb-3 bg-red-500/20 border border-red-500/50 rounded-lg p-3">
+          <div className="flex items-start space-x-2">
+            <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-red-300 uppercase tracking-wide">Insufficient Balance</p>
+              <p className="text-xs text-red-200 mt-1">
+                You need {formatTokenAmount(invoice.amount_token_units, invoice.token.decimals)} {invoice.token.symbol} but only have {payerBalance !== null ? formatTokenAmount(payerBalance.toString(), invoice.token.decimals) : '0'} {invoice.token.symbol}
+              </p>
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* Action Buttons - Only show for pending invoices */}
-      {isPending && (
+      {/* Action Buttons - Only show for pending invoices AND when action handlers are provided (i.e., for received invoices, not sent) */}
+      {isPending && onAccept && onDecline && (
         <div className="flex space-x-3">
           <button
             onClick={handleAccept}
-            disabled={isAccepting || isDeclining}
+            disabled={isAccepting || isDeclining || isCheckingBalance || hasInsufficientBalance}
             className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-display font-bold text-sm uppercase tracking-wider py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
           >
-            {isAccepting ? (
+            {isCheckingBalance ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span>Checking...</span>
+              </>
+            ) : isAccepting ? (
               <>
                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
                 <span>Accepting...</span>
+              </>
+            ) : hasInsufficientBalance ? (
+              <>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span>Insufficient Balance</span>
               </>
             ) : (
               <>
@@ -303,4 +355,5 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
     </div>
   );
 }
+
 
