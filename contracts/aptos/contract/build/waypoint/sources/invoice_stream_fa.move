@@ -126,6 +126,7 @@ module waypoint::invoice_stream_fa {
     }
 
     /// Beneficiary-defined invoice creation.
+    /// - `amount` is the gross invoice total (before platform fees).
     /// This sets up the route metadata and escrow object but does not fund it.
     public entry fun create_invoice(
         beneficiary: &signer,
@@ -135,21 +136,20 @@ module waypoint::invoice_stream_fa {
         period_secs: u64,
         payout_amount: u64,
         max_periods: u64,
-        fee_amount: u64,
         payer: address
     ) acquires Routes, Config {
         assert!(period_secs > 0, E_BAD_TIME);
         assert!(max_periods > 0, E_BAD_TIME);
         assert!(payout_amount > 0, E_BAD_AMOUNT);
         assert!(amount > 0, E_BAD_AMOUNT);
-        assert!(fee_amount > 0, E_BAD_AMOUNT);
 
         let schedule_total = (payout_amount as u128) * (max_periods as u128);
-        let deposit_amount = (amount as u128);
+        let gross_amount = (amount as u128);
+        let fee_amount = compute_platform_fee(gross_amount);
+        assert!(gross_amount > fee_amount, E_BAD_AMOUNT);
+        let deposit_amount = gross_amount - fee_amount;
+        assert!(deposit_amount > 0, E_BAD_AMOUNT);
         assert!(deposit_amount <= schedule_total, E_BAD_AMOUNT);
-
-        let expected_fee = compute_platform_fee(deposit_amount);
-        assert!((fee_amount as u128) == expected_fee, E_BAD_AMOUNT);
 
         let treasury_addr = borrow_global<Config>(@waypoint).treasury;
         primary_fungible_store::ensure_primary_store_exists(treasury_addr, fa);
@@ -160,8 +160,7 @@ module waypoint::invoice_stream_fa {
         let extend_ref = Obj::generate_extend_ref(ctor);
         let store: Object<FungibleStore> = FA::create_store(ctor, fa);
 
-        let fee_amount_u128 = (fee_amount as u128);
-        let requested_amount = deposit_amount + fee_amount_u128;
+        let requested_amount = gross_amount;
 
         let route = Route {
             store,
@@ -173,8 +172,8 @@ module waypoint::invoice_stream_fa {
             payout_amount,
             max_periods,
             requested_amount,
-            fee_amount: fee_amount_u128,
-            deposit_amount,
+            fee_amount: 0u128,
+            deposit_amount: 0u128,
             claimed_amount: 0u128,
             funded: false,
             extend_ref
@@ -193,7 +192,7 @@ module waypoint::invoice_stream_fa {
                 payer,
                 requested_amount,
                 net_amount: deposit_amount,
-                fee_amount: fee_amount_u128,
+                fee_amount,
                 start_ts,
                 period_secs,
                 payout_amount,
@@ -204,12 +203,11 @@ module waypoint::invoice_stream_fa {
 
     /// Create a linear route and fund it in one call.
     /// - fa: the FA metadata object of the asset being streamed
-    /// - amount: smallest unit of the FA
+    /// - amount: gross invoice amount (in smallest units) before fees
     /// - start_ts: when the payout schedule begins
     /// - period_secs: cadence between allowed payouts
     /// - payout_amount: target amount per period (final payout may be smaller)
     /// - max_periods: number of scheduled periods
-    /// - fee_amount: upfront fee routed to the treasury (must equal 0.5% of `amount`)
     /// - beneficiary: who will be able to claim
     public entry fun create_route_and_fund(
         creator: &signer,
@@ -219,20 +217,20 @@ module waypoint::invoice_stream_fa {
         period_secs: u64,
         payout_amount: u64,
         max_periods: u64,
-        fee_amount: u64,
         beneficiary: address
     ) acquires Routes, Config {
         assert!(period_secs > 0, E_BAD_TIME);
         assert!(max_periods > 0, E_BAD_TIME);
         assert!(payout_amount > 0, E_BAD_AMOUNT);
         assert!(amount > 0, E_BAD_AMOUNT);
-        assert!(fee_amount > 0, E_BAD_AMOUNT);
 
         let schedule_total = (payout_amount as u128) * (max_periods as u128);
-        assert!((amount as u128) <= schedule_total, E_BAD_AMOUNT);
-
-        let expected_fee = compute_platform_fee(amount as u128);
-        assert!((fee_amount as u128) == expected_fee, E_BAD_AMOUNT);
+        let gross_amount = (amount as u128);
+        let fee_amount_u128 = compute_platform_fee(gross_amount);
+        assert!(gross_amount > fee_amount_u128, E_BAD_AMOUNT);
+        let net_amount_u128 = gross_amount - fee_amount_u128;
+        assert!(net_amount_u128 > 0, E_BAD_AMOUNT);
+        assert!(net_amount_u128 <= schedule_total, E_BAD_AMOUNT);
 
         let treasury_addr = borrow_global<Config>(@waypoint).treasury;
         let creator_addr = signer::address_of(creator);
@@ -249,19 +247,22 @@ module waypoint::invoice_stream_fa {
 
         // 3) Move funds from the payer’s PRIMARY store into the route’s store
         // withdraw from creator primary store (this returns a FungibleAsset "coin")
+        let net_amount_u64 = net_amount_u128 as u64;
+        assert!((net_amount_u64 as u128) == net_amount_u128, E_BAD_AMOUNT);
+        let fee_amount_u64 = fee_amount_u128 as u64;
+        assert!((fee_amount_u64 as u128) == fee_amount_u128, E_BAD_AMOUNT);
+
         let fa_chunk: FungibleAsset = primary_fungible_store::withdraw(
-            creator, fa, amount
+            creator, fa, net_amount_u64
         );
         // deposit into route-owned secondary store
         dispatchable_fungible_asset::deposit(store, fa_chunk);
 
         let fee_chunk: FungibleAsset =
-            primary_fungible_store::withdraw(creator, fa, fee_amount);
+            primary_fungible_store::withdraw(creator, fa, fee_amount_u64);
         primary_fungible_store::deposit(treasury_addr, fee_chunk);
 
-        let net_amount_u128 = (amount as u128);
-        let fee_amount_u128 = (fee_amount as u128);
-        let requested_amount = net_amount_u128 + fee_amount_u128;
+        let requested_amount = gross_amount;
         let payer_addr = signer::address_of(creator);
 
         // 4) Materialize the Route resource under the route object’s address
@@ -325,10 +326,16 @@ module waypoint::invoice_stream_fa {
         assert!(payer_addr == route.payer, E_NOT_PAYER);
         assert!(!route.funded, E_ALREADY_FUNDED);
 
-        let net_amount_u64 = route.deposit_amount as u64;
-        assert!((net_amount_u64 as u128) == route.deposit_amount, E_BAD_AMOUNT);
-        let fee_amount_u64 = route.fee_amount as u64;
-        assert!((fee_amount_u64 as u128) == route.fee_amount, E_BAD_AMOUNT);
+        let gross_amount = route.requested_amount;
+        let fee_amount_u128 = compute_platform_fee(gross_amount);
+        assert!(gross_amount > fee_amount_u128, E_BAD_AMOUNT);
+        let net_amount_u128 = gross_amount - fee_amount_u128;
+        assert!(net_amount_u128 > 0, E_BAD_AMOUNT);
+
+        let net_amount_u64 = net_amount_u128 as u64;
+        assert!((net_amount_u64 as u128) == net_amount_u128, E_BAD_AMOUNT);
+        let fee_amount_u64 = fee_amount_u128 as u64;
+        assert!((fee_amount_u64 as u128) == fee_amount_u128, E_BAD_AMOUNT);
 
         let treasury_addr = borrow_global<Config>(@waypoint).treasury;
         primary_fungible_store::ensure_primary_store_exists(treasury_addr, route.fa);
@@ -341,6 +348,8 @@ module waypoint::invoice_stream_fa {
             primary_fungible_store::withdraw(payer, route.fa, fee_amount_u64);
         primary_fungible_store::deposit(treasury_addr, fee_chunk);
 
+        route.deposit_amount = net_amount_u128;
+        route.fee_amount = fee_amount_u128;
         route.funded = true;
 
         event::emit(
@@ -478,8 +487,7 @@ module waypoint::invoice_stream_fa {
         start_ts: u64,
         period_secs: u64,
         payout_amount: u64,
-        max_periods: u64,
-        fee_amount: u64
+        max_periods: u64
     ): Object<ObjectCore> acquires Routes, Route, Config {
         create_invoice(
             beneficiary,
@@ -489,7 +497,6 @@ module waypoint::invoice_stream_fa {
             period_secs,
             payout_amount,
             max_periods,
-            fee_amount,
             signer::address_of(payer)
         );
         let routes = list_routes();
@@ -536,11 +543,11 @@ module waypoint::invoice_stream_fa {
             2,
             5,
             500,
-            2,
-            5
+            2
         );
         let base_balance = primary_fungible_store::balance(sender_addr, fa);
-        assert!(base_balance == 5, 199);
+        // Treasury equals payer in this test, so only the net deposit leaves the account (1005 - 995 = 10).
+        assert!(base_balance == 10, 199);
 
         // Advance time beyond first period (start=2, period=5 -> first claim at >=7)
         timestamp::update_global_time_for_test(7_000_000);
@@ -557,8 +564,8 @@ module waypoint::invoice_stream_fa {
         // Claim remainder
         claim(sender, route_obj);
         let bal_final = primary_fungible_store::balance(sender_addr, fa);
-        // Should now be 1000 total (second 500 payout)
-        assert!(bal_final - base_balance == 1_000, 201);
+        // Total streamed equals the net deposit of 995 (500 + 495 remainder)
+        assert!(bal_final - base_balance == 995, 201);
     }
 
     #[test(aptos_framework = @0x1, sender = @waypoint)]
@@ -595,13 +602,12 @@ module waypoint::invoice_stream_fa {
             0,
             3,
             350,
-            3,
-            5
+            3
         );
 
         // Balance right after funding equals the fee returned to the payer (treasury == payer in tests)
         let base_balance = primary_fungible_store::balance(sender_addr, fa);
-        assert!(base_balance == 5, 300);
+        assert!(base_balance == 10, 300);
 
         // --- First partial claim at t=3s: expect +350 ---
         timestamp::update_global_time_for_test(3_000_000);
@@ -615,11 +621,11 @@ module waypoint::invoice_stream_fa {
         let bal_after_t6 = primary_fungible_store::balance(sender_addr, fa);
         assert!(bal_after_t6 - base_balance == 700, 302);
 
-        // --- Final claim at t=9s: expect +300 remainder (total 1000) ---
+        // --- Final claim at t=9s: expect +295 remainder (total 995) ---
         timestamp::update_global_time_for_test(9_000_000);
         claim(sender, route_obj);
         let bal_final = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_final - base_balance == 1_000, 303);
+        assert!(bal_final - base_balance == 995, 303);
     }
 
     #[test(aptos_framework = @0x1, sender = @waypoint)]
@@ -658,11 +664,10 @@ module waypoint::invoice_stream_fa {
             0,
             period_secs,
             payout_amount,
-            max_periods,
-            5
+            max_periods
         );
         let base_balance = primary_fungible_store::balance(sender_addr, fa);
-        assert!(base_balance == 5, 398);
+        assert!(base_balance == 10, 398);
 
         timestamp::update_global_time_for_test(3_000_000);
         claim(sender, route_obj);
@@ -680,17 +685,17 @@ module waypoint::invoice_stream_fa {
             let addr = aptos_framework::object::object_address(&route_obj);
             let route_ref = borrow_global<Route>(addr);
             let (_, claimable_u64) = compute_claimable(route_ref, now);
-            assert!(claimable_u64 == 200, 402);
+            assert!(claimable_u64 == 195, 402);
         };
 
         claim(sender, route_obj);
         let bal_final = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_final - base_balance == 1_000, 403);
+        assert!(bal_final - base_balance == 995, 403);
 
         {
             let addr = aptos_framework::object::object_address(&route_obj);
             let route_ref = borrow_global<Route>(addr);
-            assert!(route_ref.claimed_amount == (route_amount as u128), 404);
+            assert!(route_ref.claimed_amount == route_ref.deposit_amount, 404);
             let (claimable_u128_after, claimable_u64_after) =
                 compute_claimable(route_ref, now);
             assert!(claimable_u128_after == 0, 405);
@@ -730,11 +735,10 @@ module waypoint::invoice_stream_fa {
             0,
             3,
             400,
-            3,
-            5
+            3
         );
         let base_balance = primary_fungible_store::balance(sender_addr, fa);
-        assert!(base_balance == 5, 500);
+        assert!(base_balance == 10, 500);
 
         // First period payout
         timestamp::update_global_time_for_test(3_000_000);
@@ -752,7 +756,7 @@ module waypoint::invoice_stream_fa {
         timestamp::update_global_time_for_test(9_000_000);
         claim(sender, route_obj);
         let bal_after_final = primary_fungible_store::balance(sender_addr, fa);
-        assert!(bal_after_final - base_balance == 1_000, 503);
+        assert!(bal_after_final - base_balance == 995, 503);
 
         // Advance time beyond the scheduled periods; additional claims should abort.
         timestamp::update_global_time_for_test(12_000_000);
@@ -796,8 +800,7 @@ module waypoint::invoice_stream_fa {
             start_ts,
             period_secs,
             payout_amount,
-            max_periods,
-            5
+            max_periods
         );
 
         // Current time (1s) is before start_ts (10s); claim should abort.
@@ -839,8 +842,7 @@ module waypoint::invoice_stream_fa {
             0,
             3,
             400,
-            3,
-            5
+            3
         );
 
         timestamp::update_global_time_for_test(3_000_000);
@@ -872,7 +874,7 @@ module waypoint::invoice_stream_fa {
         primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
 
         // Deposit exceeds schedule_total (2 periods * 400 = 800 < 1_000) so creation must abort.
-        create_invoice(sender, fa, 1_000, 0, 3, 400, 2, 5, sender_addr);
+        create_invoice(sender, fa, 1_000, 0, 3, 400, 2, sender_addr);
     }
 
     #[test(aptos_framework = @0x1, sender = @waypoint)]
@@ -910,7 +912,6 @@ module waypoint::invoice_stream_fa {
             3,
             400,
             3,
-            5,
             payer_addr
         );
 
@@ -963,7 +964,6 @@ module waypoint::invoice_stream_fa {
             3,
             400,
             3,
-            5,
             intended_addr
         );
 
@@ -1012,8 +1012,7 @@ module waypoint::invoice_stream_fa {
             0,
             3,
             400,
-            3,
-            5
+            3
         );
 
         fund_invoice(&payer, route_obj);
@@ -1053,7 +1052,6 @@ module waypoint::invoice_stream_fa {
             3,
             400,
             3,
-            5,
             payer_addr
         );
         let routes = list_routes();
@@ -1067,10 +1065,10 @@ module waypoint::invoice_stream_fa {
             get_route_core(route_obj);
         assert!(stored_payer == payer_addr, 900);
         assert!(stored_beneficiary == signer::address_of(&beneficiary), 901);
-        assert!(deposit == 1_000u128, 902);
+        assert!(deposit == 0u128, 902);
         assert!(claimed == 0u128, 903);
-        assert!(requested == 1_005u128, 904);
-        assert!(fee == 5u128, 905);
+        assert!(requested == 1_000u128, 904);
+        assert!(fee == 0u128, 905);
         assert!(!funded, 906);
 
         fund_invoice(&payer, route_obj);

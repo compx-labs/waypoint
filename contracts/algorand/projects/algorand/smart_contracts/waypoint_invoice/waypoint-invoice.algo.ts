@@ -201,10 +201,9 @@ export class WaypointInvoice extends Contract {
     this.deposit_amount.value = new UintN64(netDeposit);
     this.fee_amount.value = new UintN64(calculatedFee);
 
-    const now = Global.latestTimestamp;
     const requestedStart: uint64 = this.requested_start_ts.value.native;
-    const effectiveStart: uint64 = now > requestedStart ? now : requestedStart;
-    this.start_ts.value = new UintN64(effectiveStart);
+    // Mirror Aptos behavior: honor the supplied start timestamp even if funding is delayed.
+    this.start_ts.value = new UintN64(requestedStart);
 
     const netPayoutPerPeriod: uint64 = this.deriveNetPayoutPerPeriod(netDeposit, grossDeposit);
 
