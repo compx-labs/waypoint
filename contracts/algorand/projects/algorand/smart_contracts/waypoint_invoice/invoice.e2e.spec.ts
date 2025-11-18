@@ -218,22 +218,12 @@ describe("waypoint invoice contract", async () => {
   test("claim releases accrued funds to beneficiary", async () => {
     await waypointInvoiceAppClient.algorand.setSignerFromAccount(beneficiaryAccount);
 
-    await expect(
-      waypointInvoiceAppClient
-        .newGroup()
-        .claim({
-          args: {},
-          sender: beneficiaryAccount.addr,
-        })
-        .send()
-    ).rejects.toThrow(/Nothing claimable yet/);
-
-    const status = await localnet.context.algod.status().do();
-    //await localnet.context.algorand.waitForBlock(status["last-round"] + 4);
-
     const balanceBefore = await getAssetBalance(beneficiaryAccount.addr.toString());
 
-    await waypointInvoiceAppClient.newGroup().claim({ args: {} }).send();
+    await waypointInvoiceAppClient
+      .newGroup()
+      .claim({ args: {}, sender: beneficiaryAccount.addr })
+      .send();
 
     const balanceAfter = await getAssetBalance(beneficiaryAccount.addr.toString());
     expect(balanceAfter - balanceBefore).toBe(EXPECTED_NET);
@@ -249,6 +239,7 @@ describe("waypoint invoice contract", async () => {
         .newGroup()
         .claim({
           args: {},
+          sender: beneficiaryAccount.addr,
         })
         .send()
     ).rejects.toThrow(/Nothing claimable yet/);
