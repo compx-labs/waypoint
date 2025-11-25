@@ -1241,7 +1241,7 @@ module waypoint::invoice_stream_fa {
     #[test(aptos_framework = @0x1, sender = @waypoint)]
     fun test_list_routes_tracks_creations(
         aptos_framework: &signer, sender: &signer
-    ) acquires Routes, Route, Config {
+    ) acquires Routes, Config {
         let sender_addr = signer::address_of(sender);
         init_module(sender);
         timestamp::set_time_has_started_for_testing(aptos_framework);
