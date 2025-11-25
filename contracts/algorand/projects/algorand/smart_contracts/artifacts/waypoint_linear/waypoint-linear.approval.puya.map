@@ -4,7 +4,7 @@
     "/Users/kierannelson/Development/waypoint/contracts/algorand/projects/algorand/smart_contracts/waypoint_linear/config.algo.ts",
     "/Users/kierannelson/Development/waypoint/contracts/algorand/projects/algorand/smart_contracts/waypoint_linear/waypoint-linear.algo.ts"
   ],
-  "mappings": "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",
+  "mappings": "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",
   "op_pc_offset": 0,
   "pc_events": {
     "1": {
@@ -6322,49 +6322,62 @@
       "op": "proto 0 0"
     },
     "1055": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "val_as_bytes%0#0"
+      ]
+    },
+    "1056": {
       "op": "pushbytes \"\"",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0"
       ]
     },
-    "1057": {
-      "op": "dupn 3",
+    "1058": {
+      "op": "dupn 4",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0"
       ]
     },
-    "1059": {
+    "1060": {
       "op": "txn Sender",
       "defined_out": [
         "tmp%0#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tmp%0#0"
       ]
     },
-    "1061": {
+    "1062": {
       "op": "intc_0 // 0",
       "defined_out": [
         "0",
         "tmp%0#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tmp%0#0",
         "0"
       ]
     },
-    "1062": {
+    "1063": {
       "op": "bytec 8 // \"beneficiary\"",
       "defined_out": [
         "\"beneficiary\"",
@@ -6372,16 +6385,18 @@
         "tmp%0#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tmp%0#0",
         "0",
         "\"beneficiary\""
       ]
     },
-    "1064": {
+    "1065": {
       "op": "app_global_get_ex",
       "defined_out": [
         "maybe_exists%0#0",
@@ -6389,149 +6404,171 @@
         "tmp%0#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tmp%0#0",
         "maybe_value%0#0",
         "maybe_exists%0#0"
       ]
     },
-    "1065": {
+    "1066": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tmp%0#0",
         "maybe_value%0#0"
       ]
     },
-    "1066": {
+    "1067": {
       "op": "==",
       "defined_out": [
         "tmp%1#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tmp%1#0"
       ]
     },
-    "1067": {
+    "1068": {
       "error": "Only beneficiary can claim",
       "op": "assert // Only beneficiary can claim",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0"
       ]
     },
-    "1068": {
+    "1069": {
       "op": "intc_0 // 0",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "0"
       ]
     },
-    "1069": {
+    "1070": {
       "op": "bytec_1 // \"token_id\"",
       "defined_out": [
         "\"token_id\"",
         "0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "0",
         "\"token_id\""
       ]
     },
-    "1070": {
+    "1071": {
       "op": "app_global_get_ex",
       "defined_out": [
         "maybe_exists%1#0",
         "maybe_value%1#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "maybe_value%1#0",
         "maybe_exists%1#0"
       ]
     },
-    "1071": {
+    "1072": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "maybe_value%1#0"
       ]
     },
-    "1072": {
+    "1073": {
       "op": "btoi",
       "defined_out": [
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0"
       ]
     },
-    "1073": {
+    "1074": {
       "op": "dup",
       "defined_out": [
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "tokenId#0"
       ]
     },
-    "1074": {
+    "1075": {
       "error": "Route not initialized",
       "op": "assert // Route not initialized",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0"
       ]
     },
-    "1075": {
+    "1076": {
       "op": "global LatestTimestamp"
     },
-    "1077": {
+    "1078": {
       "op": "dup"
     },
-    "1078": {
+    "1079": {
       "op": "intc_0 // 0"
     },
-    "1079": {
+    "1080": {
       "op": "bytec_2 // \"start_ts\"",
       "defined_out": [
         "\"start_ts\"",
@@ -6540,9 +6577,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6551,7 +6590,7 @@
         "\"start_ts\""
       ]
     },
-    "1080": {
+    "1081": {
       "op": "app_global_get_ex",
       "defined_out": [
         "maybe_exists%0#0",
@@ -6560,9 +6599,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6571,13 +6612,15 @@
         "maybe_exists%0#0"
       ]
     },
-    "1081": {
+    "1082": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6585,7 +6628,7 @@
         "maybe_value%0#1"
       ]
     },
-    "1082": {
+    "1083": {
       "op": "btoi",
       "defined_out": [
         "now#0",
@@ -6593,9 +6636,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6603,12 +6648,14 @@
         "startTs#0"
       ]
     },
-    "1083": {
+    "1084": {
       "op": "dup",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6617,7 +6664,7 @@
         "startTs#0"
       ]
     },
-    "1084": {
+    "1085": {
       "op": "cover 2",
       "defined_out": [
         "now#0",
@@ -6625,9 +6672,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6636,7 +6685,7 @@
         "startTs#0"
       ]
     },
-    "1086": {
+    "1087": {
       "op": "<=",
       "defined_out": [
         "now#0",
@@ -6645,9 +6694,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6655,39 +6706,22 @@
         "tmp%0#1"
       ]
     },
-    "1087": {
-      "op": "bz claim_after_if_else@8",
+    "1088": {
+      "op": "bz claim_after_if_else@11",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0"
-      ]
-    },
-    "1090": {
-      "op": "intc_0 // 0",
-      "defined_out": [
-        "now#0",
-        "startTs#0",
-        "tokenId#0",
-        "vested#0"
-      ],
-      "stack_out": [
-        "alreadyClaimed#0",
-        "candidateLo#0",
-        "periodSecs#0",
-        "vested#0",
-        "tokenId#0",
-        "now#0",
-        "startTs#0",
-        "vested#0"
       ]
     },
     "1091": {
-      "op": "frame_bury 3",
+      "op": "intc_0 // 0",
       "defined_out": [
         "now#0",
         "startTs#0",
@@ -6695,21 +6729,46 @@
         "vested#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "vested#0"
+      ]
+    },
+    "1092": {
+      "op": "frame_bury 5",
+      "defined_out": [
+        "now#0",
+        "startTs#0",
+        "tokenId#0",
+        "vested#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0"
       ]
     },
-    "1093": {
-      "block": "claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@13",
+    "1094": {
+      "block": "claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@16",
       "stack_in": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6720,9 +6779,11 @@
         "0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6730,16 +6791,18 @@
         "0"
       ]
     },
-    "1094": {
+    "1095": {
       "op": "bytec 7 // \"claimed_amount\"",
       "defined_out": [
         "\"claimed_amount\"",
         "0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6748,16 +6811,18 @@
         "\"claimed_amount\""
       ]
     },
-    "1096": {
+    "1097": {
       "op": "app_global_get_ex",
       "defined_out": [
         "maybe_exists%0#0",
         "maybe_value%0#1"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6766,13 +6831,15 @@
         "maybe_exists%0#0"
       ]
     },
-    "1097": {
+    "1098": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6780,45 +6847,51 @@
         "maybe_value%0#1"
       ]
     },
-    "1098": {
+    "1099": {
       "op": "btoi",
       "defined_out": [
         "alreadyClaimed#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0",
-        "alreadyClaimed#0"
-      ]
-    },
-    "1099": {
-      "op": "dup",
-      "stack_out": [
-        "alreadyClaimed#0",
-        "candidateLo#0",
-        "periodSecs#0",
-        "vested#0",
-        "tokenId#0",
-        "now#0",
-        "startTs#0",
-        "alreadyClaimed#0",
         "alreadyClaimed#0"
       ]
     },
     "1100": {
-      "op": "frame_bury 0",
+      "op": "dup",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "alreadyClaimed#0",
+        "alreadyClaimed#0"
+      ]
+    },
+    "1101": {
+      "op": "frame_bury 1",
       "defined_out": [
         "alreadyClaimed#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6826,16 +6899,18 @@
         "alreadyClaimed#0"
       ]
     },
-    "1102": {
-      "op": "frame_dig 3",
+    "1103": {
+      "op": "frame_dig 5",
       "defined_out": [
         "alreadyClaimed#0",
         "vested#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6844,7 +6919,7 @@
         "vested#0"
       ]
     },
-    "1104": {
+    "1105": {
       "op": "<",
       "defined_out": [
         "alreadyClaimed#0",
@@ -6852,9 +6927,11 @@
         "vested#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6862,24 +6939,28 @@
         "tmp%0#1"
       ]
     },
-    "1105": {
-      "op": "bz claim_after_if_else@4",
+    "1106": {
+      "op": "bz claim_after_if_else@7",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0"
       ]
     },
-    "1108": {
-      "op": "frame_dig 3",
+    "1109": {
+      "op": "frame_dig 5",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6887,12 +6968,14 @@
         "vested#0"
       ]
     },
-    "1110": {
-      "op": "frame_dig 0",
+    "1111": {
+      "op": "frame_dig 1",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6901,7 +6984,7 @@
         "alreadyClaimed#0"
       ]
     },
-    "1112": {
+    "1113": {
       "op": "-",
       "defined_out": [
         "alreadyClaimed#0",
@@ -6909,9 +6992,11 @@
         "vested#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6919,12 +7004,14 @@
         "claimableAmount#0"
       ]
     },
-    "1113": {
-      "block": "claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.computeClaimable@5",
+    "1114": {
+      "block": "claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.computeClaimable@8",
       "stack_in": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6937,9 +7024,11 @@
         "claimableAmount#0 (copy)"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6948,13 +7037,15 @@
         "claimableAmount#0 (copy)"
       ]
     },
-    "1114": {
+    "1115": {
       "error": "Nothing claimable yet",
       "op": "assert // Nothing claimable yet",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6962,19 +7053,21 @@
         "claimableAmount#0"
       ]
     },
-    "1115": {
+    "1116": {
       "op": "itxn_begin"
     },
-    "1116": {
+    "1117": {
       "op": "intc_0 // 0",
       "defined_out": [
         "0",
         "claimableAmount#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -6983,7 +7076,7 @@
         "0"
       ]
     },
-    "1117": {
+    "1118": {
       "op": "bytec 8 // \"beneficiary\"",
       "defined_out": [
         "\"beneficiary\"",
@@ -6991,9 +7084,11 @@
         "claimableAmount#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7003,7 +7098,7 @@
         "\"beneficiary\""
       ]
     },
-    "1119": {
+    "1120": {
       "op": "app_global_get_ex",
       "defined_out": [
         "claimableAmount#0",
@@ -7011,9 +7106,11 @@
         "maybe_value%2#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7023,13 +7120,15 @@
         "maybe_exists%2#0"
       ]
     },
-    "1120": {
+    "1121": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7038,12 +7137,14 @@
         "maybe_value%2#0"
       ]
     },
-    "1121": {
+    "1122": {
       "op": "itxn_field AssetReceiver",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7051,12 +7152,14 @@
         "claimableAmount#0"
       ]
     },
-    "1123": {
+    "1124": {
       "op": "dup",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7065,12 +7168,14 @@
         "claimableAmount#0 (copy)"
       ]
     },
-    "1124": {
+    "1125": {
       "op": "itxn_field AssetAmount",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7078,16 +7183,18 @@
         "claimableAmount#0"
       ]
     },
-    "1126": {
-      "op": "frame_dig 4",
+    "1127": {
+      "op": "frame_dig 6",
       "defined_out": [
         "claimableAmount#0",
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7096,12 +7203,14 @@
         "tokenId#0"
       ]
     },
-    "1128": {
+    "1129": {
       "op": "itxn_field XferAsset",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7109,7 +7218,7 @@
         "claimableAmount#0"
       ]
     },
-    "1130": {
+    "1131": {
       "op": "intc_2 // 4",
       "defined_out": [
         "4",
@@ -7117,9 +7226,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7128,12 +7239,14 @@
         "4"
       ]
     },
-    "1131": {
+    "1132": {
       "op": "itxn_field TypeEnum",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7141,7 +7254,7 @@
         "claimableAmount#0"
       ]
     },
-    "1133": {
+    "1134": {
       "op": "intc_3 // 1000",
       "defined_out": [
         "1000",
@@ -7149,9 +7262,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7160,12 +7275,14 @@
         "1000"
       ]
     },
-    "1134": {
+    "1135": {
       "op": "itxn_field Fee",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7173,15 +7290,17 @@
         "claimableAmount#0"
       ]
     },
-    "1136": {
+    "1137": {
       "op": "itxn_submit"
     },
-    "1137": {
+    "1138": {
       "op": "intc_0 // 0",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7190,7 +7309,7 @@
         "0"
       ]
     },
-    "1138": {
+    "1139": {
       "op": "bytec 7 // \"claimed_amount\"",
       "defined_out": [
         "\"claimed_amount\"",
@@ -7199,9 +7318,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7211,7 +7332,7 @@
         "\"claimed_amount\""
       ]
     },
-    "1140": {
+    "1141": {
       "op": "app_global_get_ex",
       "defined_out": [
         "claimableAmount#0",
@@ -7220,9 +7341,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7232,13 +7355,15 @@
         "maybe_exists%3#0"
       ]
     },
-    "1141": {
+    "1142": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7247,7 +7372,7 @@
         "maybe_value%3#0"
       ]
     },
-    "1142": {
+    "1143": {
       "op": "btoi",
       "defined_out": [
         "claimableAmount#0",
@@ -7255,9 +7380,11 @@
         "tokenId#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7266,16 +7393,18 @@
         "tmp%4#0"
       ]
     },
-    "1143": {
+    "1144": {
       "op": "+",
       "defined_out": [
         "tokenId#0",
         "updatedClaimed#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7283,16 +7412,18 @@
         "updatedClaimed#0"
       ]
     },
-    "1144": {
+    "1145": {
       "op": "itob",
       "defined_out": [
         "tokenId#0",
         "val_as_bytes%0#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7300,12 +7431,49 @@
         "val_as_bytes%0#0"
       ]
     },
-    "1145": {
-      "op": "bytec 7 // \"claimed_amount\"",
+    "1146": {
+      "op": "dup",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "val_as_bytes%0#0",
+        "val_as_bytes%0#0"
+      ]
+    },
+    "1147": {
+      "op": "frame_bury 0",
+      "defined_out": [
+        "tokenId#0",
+        "val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "val_as_bytes%0#0"
+      ]
+    },
+    "1149": {
+      "op": "bytec 7 // \"claimed_amount\"",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7314,12 +7482,14 @@
         "\"claimed_amount\""
       ]
     },
-    "1147": {
+    "1151": {
       "op": "swap",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7328,28 +7498,486 @@
         "val_as_bytes%0#0"
       ]
     },
-    "1148": {
+    "1152": {
       "op": "app_global_put",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0"
       ]
     },
-    "1149": {
+    "1153": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "0"
+      ]
+    },
+    "1154": {
+      "op": "bytec 10 // \"registry_app_id\"",
+      "defined_out": [
+        "\"registry_app_id\"",
+        "0",
+        "tokenId#0",
+        "val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "0",
+        "\"registry_app_id\""
+      ]
+    },
+    "1156": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%4#0",
+        "maybe_value%4#0",
+        "tokenId#0",
+        "val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "maybe_value%4#0",
+        "maybe_exists%4#0"
+      ]
+    },
+    "1157": {
+      "error": "check GlobalState exists",
+      "op": "assert // check GlobalState exists",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "maybe_value%4#0"
+      ]
+    },
+    "1158": {
+      "op": "btoi",
+      "defined_out": [
+        "registryApp#0",
+        "tokenId#0",
+        "val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "registryApp#0"
+      ]
+    },
+    "1159": {
+      "op": "dup",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "registryApp#0",
+        "registryApp#0"
+      ]
+    },
+    "1160": {
+      "op": "frame_bury 4",
+      "defined_out": [
+        "registryApp#0",
+        "tokenId#0",
+        "val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "registryApp#0"
+      ]
+    },
+    "1162": {
+      "op": "bz claim_after_if_else@4",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0"
+      ]
+    },
+    "1165": {
+      "op": "itxn_begin"
+    },
+    "1166": {
+      "op": "global CurrentApplicationAddress",
+      "defined_out": [
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "registryApp#0",
+        "tokenId#0",
+        "val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0"
+      ]
+    },
+    "1168": {
+      "op": "global CurrentApplicationID",
+      "defined_out": [
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "registryApp#0",
+        "to_encode%0#0",
+        "tokenId#0",
+        "val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "to_encode%0#0"
+      ]
+    },
+    "1170": {
+      "op": "itob",
+      "defined_out": [
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "registryApp#0",
+        "tokenId#0",
+        "val_as_bytes%0#0",
+        "val_as_bytes%1#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "val_as_bytes%1#0"
+      ]
+    },
+    "1171": {
+      "op": "pushbytes 0xaebc3416 // method \"updateRouteClaimedAmount(uint64,uint64)void\"",
+      "defined_out": [
+        "Method(updateRouteClaimedAmount(uint64,uint64)void)",
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "registryApp#0",
+        "tokenId#0",
+        "val_as_bytes%0#0",
+        "val_as_bytes%1#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "val_as_bytes%1#0",
+        "Method(updateRouteClaimedAmount(uint64,uint64)void)"
+      ]
+    },
+    "1177": {
+      "op": "itxn_field ApplicationArgs",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "val_as_bytes%1#0"
+      ]
+    },
+    "1179": {
+      "op": "itxn_field ApplicationArgs",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0"
+      ]
+    },
+    "1181": {
+      "op": "frame_dig 0",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "val_as_bytes%0#0"
+      ]
+    },
+    "1183": {
+      "op": "itxn_field ApplicationArgs",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0"
+      ]
+    },
+    "1185": {
+      "op": "frame_dig 4",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "registryApp#0"
+      ]
+    },
+    "1187": {
+      "op": "dup",
+      "defined_out": [
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "registryApp#0",
+        "registryApp#0 (copy)",
+        "tokenId#0",
+        "val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "registryApp#0",
+        "registryApp#0 (copy)"
+      ]
+    },
+    "1188": {
+      "op": "itxn_field Applications",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "inner_txn_params%1%%param_Sender_idx_0#0",
+        "registryApp#0"
+      ]
+    },
+    "1190": {
+      "op": "itxn_field ApplicationID"
+    },
+    "1192": {
+      "op": "itxn_field Sender",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0"
+      ]
+    },
+    "1194": {
+      "op": "pushint 6 // appl",
+      "defined_out": [
+        "appl",
+        "registryApp#0",
+        "tokenId#0",
+        "val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "appl"
+      ]
+    },
+    "1196": {
+      "op": "itxn_field TypeEnum",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0"
+      ]
+    },
+    "1198": {
+      "op": "intc_3 // 1000",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0",
+        "1000"
+      ]
+    },
+    "1199": {
+      "op": "itxn_field Fee",
+      "stack_out": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0"
+      ]
+    },
+    "1201": {
+      "op": "itxn_submit"
+    },
+    "1202": {
+      "block": "claim_after_if_else@4",
+      "stack_in": [
+        "val_as_bytes%0#0",
+        "alreadyClaimed#0",
+        "candidateLo#0",
+        "periodSecs#0",
+        "registryApp#0",
+        "vested#0",
+        "tokenId#0",
+        "now#0",
+        "startTs#0"
+      ],
       "retsub": true,
       "op": "retsub"
     },
-    "1150": {
-      "block": "claim_after_if_else@4",
+    "1203": {
+      "block": "claim_after_if_else@7",
       "stack_in": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7360,9 +7988,11 @@
         "claimableAmount#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7370,15 +8000,17 @@
         "claimableAmount#0"
       ]
     },
-    "1151": {
-      "op": "b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.computeClaimable@5"
+    "1204": {
+      "op": "b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.computeClaimable@8"
     },
-    "1154": {
-      "block": "claim_after_if_else@8",
+    "1207": {
+      "block": "claim_after_if_else@11",
       "stack_in": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7389,9 +8021,11 @@
         "0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7399,16 +8033,18 @@
         "0"
       ]
     },
-    "1155": {
+    "1208": {
       "op": "bytec_3 // \"period_secs\"",
       "defined_out": [
         "\"period_secs\"",
         "0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7417,16 +8053,18 @@
         "\"period_secs\""
       ]
     },
-    "1156": {
+    "1209": {
       "op": "app_global_get_ex",
       "defined_out": [
         "maybe_exists%1#0",
         "maybe_value%1#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7435,13 +8073,15 @@
         "maybe_exists%1#0"
       ]
     },
-    "1157": {
+    "1210": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7449,15 +8089,17 @@
         "maybe_value%1#0"
       ]
     },
-    "1158": {
+    "1211": {
       "op": "btoi",
       "defined_out": [
         "periodSecs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7465,12 +8107,14 @@
         "periodSecs#0"
       ]
     },
-    "1159": {
+    "1212": {
       "op": "dup",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7479,15 +8123,17 @@
         "periodSecs#0"
       ]
     },
-    "1160": {
-      "op": "frame_bury 2",
+    "1213": {
+      "op": "frame_bury 3",
       "defined_out": [
         "periodSecs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7495,28 +8141,32 @@
         "periodSecs#0"
       ]
     },
-    "1162": {
-      "op": "bnz claim_after_if_else@10",
+    "1215": {
+      "op": "bnz claim_after_if_else@13",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0"
       ]
     },
-    "1165": {
+    "1218": {
       "op": "intc_0 // 0",
       "defined_out": [
         "periodSecs#0",
         "vested#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7524,44 +8174,50 @@
         "vested#0"
       ]
     },
-    "1166": {
-      "op": "frame_bury 3",
+    "1219": {
+      "op": "frame_bury 5",
       "defined_out": [
         "periodSecs#0",
         "vested#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0"
       ]
     },
-    "1168": {
-      "op": "b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@13"
+    "1221": {
+      "op": "b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@16"
     },
-    "1171": {
-      "block": "claim_after_if_else@10",
+    "1224": {
+      "block": "claim_after_if_else@13",
       "stack_in": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0"
       ],
-      "op": "frame_dig 5",
+      "op": "frame_dig 7",
       "defined_out": [
         "now#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7569,16 +8225,18 @@
         "now#0"
       ]
     },
-    "1173": {
-      "op": "frame_dig 6",
+    "1226": {
+      "op": "frame_dig 8",
       "defined_out": [
         "now#0",
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7587,7 +8245,7 @@
         "startTs#0"
       ]
     },
-    "1175": {
+    "1228": {
       "op": "-",
       "defined_out": [
         "elapsed#0",
@@ -7595,9 +8253,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7605,7 +8265,7 @@
         "elapsed#0"
       ]
     },
-    "1176": {
+    "1229": {
       "op": "intc_0 // 0",
       "defined_out": [
         "0",
@@ -7614,9 +8274,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7625,12 +8287,14 @@
         "0"
       ]
     },
-    "1177": {
+    "1230": {
       "op": "swap",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7639,8 +8303,8 @@
         "elapsed#0"
       ]
     },
-    "1178": {
-      "op": "frame_dig 2",
+    "1231": {
+      "op": "frame_dig 3",
       "defined_out": [
         "0",
         "elapsed#0",
@@ -7649,9 +8313,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7661,7 +8327,7 @@
         "periodSecs#0"
       ]
     },
-    "1180": {
+    "1233": {
       "op": "divw",
       "defined_out": [
         "now#0",
@@ -7670,9 +8336,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7680,12 +8348,14 @@
         "periodsElapsed#0"
       ]
     },
-    "1181": {
+    "1234": {
       "op": "intc_0 // 0",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7694,7 +8364,7 @@
         "0"
       ]
     },
-    "1182": {
+    "1235": {
       "op": "bytec 5 // \"max_periods\"",
       "defined_out": [
         "\"max_periods\"",
@@ -7705,9 +8375,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7717,7 +8389,7 @@
         "\"max_periods\""
       ]
     },
-    "1184": {
+    "1237": {
       "op": "app_global_get_ex",
       "defined_out": [
         "maybe_exists%2#0",
@@ -7728,9 +8400,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7740,13 +8414,15 @@
         "maybe_exists%2#0"
       ]
     },
-    "1185": {
+    "1238": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7755,7 +8431,7 @@
         "maybe_value%2#1"
       ]
     },
-    "1186": {
+    "1239": {
       "op": "btoi",
       "defined_out": [
         "maxPeriods#0",
@@ -7765,9 +8441,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7776,7 +8454,7 @@
         "maxPeriods#0"
       ]
     },
-    "1187": {
+    "1240": {
       "op": "dup2",
       "defined_out": [
         "maxPeriods#0",
@@ -7788,9 +8466,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7801,7 +8481,7 @@
         "maxPeriods#0 (copy)"
       ]
     },
-    "1188": {
+    "1241": {
       "op": ">",
       "defined_out": [
         "maxPeriods#0",
@@ -7812,9 +8492,11 @@
         "tmp%2#1"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7824,7 +8506,7 @@
         "tmp%2#1"
       ]
     },
-    "1189": {
+    "1242": {
       "op": "select",
       "defined_out": [
         "cappedPeriods#0",
@@ -7833,9 +8515,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7843,12 +8527,14 @@
         "cappedPeriods#0"
       ]
     },
-    "1190": {
+    "1243": {
       "op": "intc_0 // 0",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7857,7 +8543,7 @@
         "0"
       ]
     },
-    "1191": {
+    "1244": {
       "op": "bytec 4 // \"payout_amount\"",
       "defined_out": [
         "\"payout_amount\"",
@@ -7868,9 +8554,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7880,7 +8568,7 @@
         "\"payout_amount\""
       ]
     },
-    "1193": {
+    "1246": {
       "op": "app_global_get_ex",
       "defined_out": [
         "cappedPeriods#0",
@@ -7891,9 +8579,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7903,13 +8593,15 @@
         "maybe_exists%3#0"
       ]
     },
-    "1194": {
+    "1247": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7918,7 +8610,7 @@
         "maybe_value%3#0"
       ]
     },
-    "1195": {
+    "1248": {
       "op": "btoi",
       "defined_out": [
         "cappedPeriods#0",
@@ -7928,9 +8620,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7939,12 +8633,14 @@
         "payoutAmount#0"
       ]
     },
-    "1196": {
+    "1249": {
       "op": "intc_0 // 0",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7954,7 +8650,7 @@
         "0"
       ]
     },
-    "1197": {
+    "1250": {
       "op": "bytec 6 // \"deposit_amount\"",
       "defined_out": [
         "\"deposit_amount\"",
@@ -7966,9 +8662,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -7979,7 +8677,7 @@
         "\"deposit_amount\""
       ]
     },
-    "1199": {
+    "1252": {
       "op": "app_global_get_ex",
       "defined_out": [
         "cappedPeriods#0",
@@ -7991,9 +8689,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8004,13 +8704,15 @@
         "maybe_exists%4#0"
       ]
     },
-    "1200": {
+    "1253": {
       "error": "check GlobalState exists",
       "op": "assert // check GlobalState exists",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8020,7 +8722,7 @@
         "maybe_value%4#0"
       ]
     },
-    "1201": {
+    "1254": {
       "op": "btoi",
       "defined_out": [
         "cappedPeriods#0",
@@ -8031,9 +8733,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8043,7 +8747,7 @@
         "depositAmount#0"
       ]
     },
-    "1202": {
+    "1255": {
       "op": "cover 2",
       "defined_out": [
         "cappedPeriods#0",
@@ -8054,9 +8758,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8066,7 +8772,7 @@
         "payoutAmount#0"
       ]
     },
-    "1204": {
+    "1257": {
       "op": "mulw",
       "defined_out": [
         "candidateHi#0",
@@ -8077,9 +8783,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8089,8 +8797,8 @@
         "candidateLo#0"
       ]
     },
-    "1205": {
-      "op": "frame_bury 1",
+    "1258": {
+      "op": "frame_bury 2",
       "defined_out": [
         "candidateHi#0",
         "candidateLo#0",
@@ -8100,9 +8808,11 @@
         "startTs#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8111,12 +8821,14 @@
         "candidateHi#0"
       ]
     },
-    "1207": {
-      "op": "bz claim_after_if_else@12",
+    "1260": {
+      "op": "bz claim_after_if_else@15",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8124,8 +8836,8 @@
         "depositAmount#0"
       ]
     },
-    "1210": {
-      "op": "frame_bury 3",
+    "1263": {
+      "op": "frame_bury 5",
       "defined_out": [
         "candidateLo#0",
         "now#0",
@@ -8134,38 +8846,44 @@
         "vested#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0"
       ]
     },
-    "1212": {
-      "op": "b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@13"
+    "1265": {
+      "op": "b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@16"
     },
-    "1215": {
-      "block": "claim_after_if_else@12",
+    "1268": {
+      "block": "claim_after_if_else@15",
       "stack_in": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0",
         "depositAmount#0"
       ],
-      "op": "frame_dig 1",
+      "op": "frame_dig 2",
       "defined_out": [
         "candidateLo#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8174,16 +8892,18 @@
         "candidateLo#0"
       ]
     },
-    "1217": {
+    "1270": {
       "op": "dup",
       "defined_out": [
         "candidateLo#0",
         "candidateLo#0 (copy)"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8193,7 +8913,7 @@
         "candidateLo#0 (copy)"
       ]
     },
-    "1218": {
+    "1271": {
       "op": "dig 2",
       "defined_out": [
         "candidateLo#0",
@@ -8202,9 +8922,11 @@
         "depositAmount#0 (copy)"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8215,7 +8937,7 @@
         "depositAmount#0 (copy)"
       ]
     },
-    "1220": {
+    "1273": {
       "op": ">",
       "defined_out": [
         "candidateLo#0",
@@ -8223,9 +8945,11 @@
         "tmp%4#1"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8235,12 +8959,14 @@
         "tmp%4#1"
       ]
     },
-    "1221": {
+    "1274": {
       "op": "swap",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8250,12 +8976,14 @@
         "candidateLo#0"
       ]
     },
-    "1222": {
+    "1275": {
       "op": "cover 2",
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8265,16 +8993,18 @@
         "tmp%4#1"
       ]
     },
-    "1224": {
+    "1277": {
       "op": "select",
       "defined_out": [
         "candidateLo#0",
         "vested#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
@@ -8282,24 +9012,26 @@
         "vested#0"
       ]
     },
-    "1225": {
-      "op": "frame_bury 3",
+    "1278": {
+      "op": "frame_bury 5",
       "defined_out": [
         "candidateLo#0",
         "vested#0"
       ],
       "stack_out": [
+        "val_as_bytes%0#0",
         "alreadyClaimed#0",
         "candidateLo#0",
         "periodSecs#0",
+        "registryApp#0",
         "vested#0",
         "tokenId#0",
         "now#0",
         "startTs#0"
       ]
     },
-    "1227": {
-      "op": "b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@13"
+    "1280": {
+      "op": "b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@16"
     }
   }
 }

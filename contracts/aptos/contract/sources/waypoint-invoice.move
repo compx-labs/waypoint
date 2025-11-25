@@ -1076,4 +1076,202 @@ module waypoint::invoice_stream_fa {
         let (_, _, _, _, _, _, _, _, _, _, _, funded_after) = get_route_core(route_obj);
         assert!(funded_after, 907);
     }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    fun test_create_route_and_fund_happy_path(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Routes, Route, Config {
+        let sender_addr = signer::address_of(sender);
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        timestamp::update_global_time_for_test(1_000_000);
+
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0,
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
+
+        // Gross 1_000, fee 5, net 995; schedule fits 2 * 500.
+        create_route_and_fund(
+            sender,
+            fa,
+            1_000,
+            0,
+            3,
+            500,
+            2,
+            sender_addr
+        );
+
+        let routes = list_routes();
+        let route_addr = routes[routes.length() - 1];
+        let route_obj =
+            aptos_framework::object::address_to_object<aptos_framework::object::ObjectCore>(
+                route_addr
+            );
+
+        let (_, payer, beneficiary, _, _, payout, max_periods, deposit, claimed, requested, fee, funded) =
+            get_route_core(route_obj);
+        assert!(payer == sender_addr, 1000);
+        assert!(beneficiary == sender_addr, 1001);
+        assert!(payout == 500, 1002);
+        assert!(max_periods == 2, 1003);
+        assert!(deposit == 995, 1004);
+        assert!(claimed == 0, 1005);
+        assert!(requested == 1_000, 1006);
+        assert!(fee == 5, 1007);
+        assert!(funded, 1008);
+
+        // Claim first period after time has advanced.
+        timestamp::update_global_time_for_test(4_000_000);
+        claim(sender, route_obj);
+        let bal_after_first = primary_fungible_store::balance(sender_addr, fa);
+        assert!(bal_after_first == 510, 1009); // 10 residual + 500 payout
+    }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    #[expected_failure(abort_code = E_BAD_AMOUNT)]
+    fun test_create_route_and_fund_rejects_excess_schedule_total(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Routes, Config {
+        let sender_addr = signer::address_of(sender);
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0,
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
+
+        // Net 995 exceeds schedule total 2 * 400 = 800; should abort.
+        create_route_and_fund(
+            sender,
+            fa,
+            1_000,
+            0,
+            3,
+            400,
+            2,
+            sender_addr
+        );
+    }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    fun test_set_treasury_only_admin(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Config {
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let new_treasury = @0xbeef;
+        set_treasury(sender, new_treasury);
+        let cfg = borrow_global<Config>(@waypoint);
+        assert!(cfg.treasury == new_treasury, 1100);
+    }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    #[expected_failure(abort_code = E_NOT_ADMIN)]
+    fun test_set_treasury_non_admin_fails(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Config {
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        let outsider = account::create_account_for_test(@0xcafe);
+        set_treasury(&outsider, @0xbeef);
+    }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    #[expected_failure(abort_code = E_NOTHING_CLAIMABLE)]
+    fun test_mid_period_no_vesting(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Routes, Route, Config {
+        let sender_addr = signer::address_of(sender);
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        timestamp::update_global_time_for_test(1_000_000);
+
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0,
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 1_005);
+
+        let route_obj = create_and_fund_invoice_for_test(
+            sender,
+            sender,
+            fa,
+            1_000,
+            0,
+            10,
+            500,
+            2
+        );
+
+        // Half a period elapsed; nothing should be claimable yet.
+        timestamp::update_global_time_for_test(5_000_000);
+        claim(sender, route_obj);
+    }
+
+    #[test(aptos_framework = @0x1, sender = @waypoint)]
+    fun test_list_routes_tracks_creations(
+        aptos_framework: &signer, sender: &signer
+    ) acquires Routes, Route, Config {
+        let sender_addr = signer::address_of(sender);
+        init_module(sender);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let ctor = &aptos_framework::object::create_sticky_object(@waypoint);
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            ctor,
+            std::option::none<u128>(),
+            std::string::utf8(b"Waypoint Token"),
+            std::string::utf8(b"WPT"),
+            0,
+            std::string::utf8(b""),
+            std::string::utf8(b"")
+        );
+        let fa = aptos_framework::object::object_from_constructor_ref(ctor);
+        let mint_ref = aptos_framework::fungible_asset::generate_mint_ref(ctor);
+        primary_fungible_store::mint(&mint_ref, sender_addr, 5_000);
+
+        let before = list_routes();
+        assert!(before.length() == 0, 1200);
+
+        create_invoice(sender, fa, 1_000, 0, 3, 400, 3, sender_addr);
+        let after_first = list_routes();
+        assert!(after_first.length() == 1, 1201);
+
+        create_invoice(sender, fa, 500, 0, 2, 250, 2, sender_addr);
+        let after_second = list_routes();
+        assert!(after_second.length() == 2, 1202);
+        let last = after_second[after_second.length() - 1];
+        let prev = after_second[after_second.length() - 2];
+        assert!(last != prev, 1203);
+    }
 }

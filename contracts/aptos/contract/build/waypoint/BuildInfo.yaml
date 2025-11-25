@@ -12,10 +12,10 @@ compiled_package_info:
     vm: "0000000000000000000000000000000000000000000000000000000000000000"
     vm_reserved: "0000000000000000000000000000000000000000000000000000000000000000"
     waypoint: 12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0
-  source_digest: F46BBA908C5FD59599E3FBB2119F04984D2D967F3B353B634AB8576DE1E65A73
+  source_digest: D263CCA95662E1E983BAE798A0B927F3C79A5AFC6873A8D8CA81CB45FBAA8649
   build_flags:
-    dev_mode: true
-    test_mode: true
+    dev_mode: false
+    test_mode: false
     override_std: ~
     generate_docs: false
     generate_abis: false

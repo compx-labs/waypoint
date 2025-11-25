@@ -221,6 +221,17 @@ export class WaypointLinear extends Contract {
 
     const updatedClaimed: uint64 = this.claimed_amount.value.native + claimableAmount;
     this.claimed_amount.value = new UintN64(updatedClaimed);
+
+    const registryApp: Application = Application(this.registry_app_id.value.native);
+    if (registryApp.id !== 0) {
+      abiCall(WaypointRegistryStub.prototype.updateRouteClaimedAmount, {
+        appId: registryApp.id,
+        args: [Global.currentApplicationId.id, updatedClaimed],
+        sender: Global.currentApplicationAddress,
+        fee: STANDARD_TXN_FEE,
+        apps: [registryApp],
+      });
+    }
   }
 
   private vestedBySchedule(now: uint64): uint64 {

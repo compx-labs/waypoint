@@ -198,6 +198,9 @@ export class WaypointInvoice extends Contract {
     const netDeposit: uint64 = grossDeposit - calculatedFee;
     assert(netDeposit > 0, "Net deposit must be greater than 0");
 
+    const scheduleTotal: uint64 = this.payout_amount.value.native * this.max_periods.value.native;
+    assert(netDeposit <= scheduleTotal, "Deposit exceeds schedule total");
+
     this.deposit_amount.value = new UintN64(netDeposit);
     this.fee_amount.value = new UintN64(calculatedFee);
 
@@ -205,7 +208,7 @@ export class WaypointInvoice extends Contract {
     // Mirror Aptos behavior: honor the supplied start timestamp even if funding is delayed.
     this.start_ts.value = new UintN64(requestedStart);
 
-    const netPayoutPerPeriod: uint64 = this.deriveNetPayoutPerPeriod(netDeposit, grossDeposit);
+    const netPayoutPerPeriod: uint64 = this.payout_amount.value.native;
 
     abiCall(WaypointRegistryStub.prototype.registerRoute, {
       appId: registryApp.id,
@@ -228,6 +231,9 @@ export class WaypointInvoice extends Contract {
 
     this.route_status.value = new UintN64(STATUS_FUNDED);
   }
+
+  @abimethod({ allowActions: "NoOp" })
+  public gas(): void {}
 
   @abimethod({ allowActions: "NoOp" })
   public declineRoute(): void {
@@ -289,20 +295,17 @@ export class WaypointInvoice extends Contract {
 
     const updatedClaimed: uint64 = this.claimed_amount.value.native + claimableAmount;
     this.claimed_amount.value = new UintN64(updatedClaimed);
-  }
 
-  private deriveNetPayoutPerPeriod(netDeposit: uint64, grossDeposit: uint64): uint64 {
-    if (grossDeposit === 0) {
-      return 0;
+    const registryApp: Application = Application(this.registry_app_id.value.native);
+    if (registryApp.id !== 0) {
+      abiCall(WaypointRegistryStub.prototype.updateRouteClaimedAmount, {
+        appId: registryApp.id,
+        args: [Global.currentApplicationId.id, updatedClaimed],
+        sender: Global.currentApplicationAddress,
+        fee: STANDARD_TXN_FEE,
+        apps: [registryApp],
+      });
     }
-
-    const perPeriod: uint64 = this.payout_amount.value.native;
-    if (perPeriod === 0) {
-      return 0;
-    }
-
-    const [scaledHi, scaledLo] = mulw(perPeriod, netDeposit);
-    return divw(scaledHi, scaledLo, grossDeposit);
   }
 
   private vestedBySchedule(now: uint64): uint64 {
@@ -327,23 +330,20 @@ export class WaypointInvoice extends Contract {
     const cappedPeriods: uint64 = periodsElapsed > maxPeriods ? maxPeriods : periodsElapsed;
 
     const payoutAmount: uint64 = this.payout_amount.value.native;
-    const grossDeposit: uint64 = this.gross_deposit_amount.value.native;
     const netDeposit: uint64 = this.deposit_amount.value.native;
 
-    if (grossDeposit === 0 || netDeposit === 0 || payoutAmount === 0) {
+    if (netDeposit === 0 || payoutAmount === 0) {
       return 0;
     }
 
     const [candidateHi, candidateLo] = mulw(payoutAmount, cappedPeriods);
 
+    // Overflow means we've exceeded u64; cap to deposit.
     if (candidateHi > 0) {
       return netDeposit;
     }
 
-    const grossVestedCandidate: uint64 = candidateLo > grossDeposit ? grossDeposit : candidateLo;
-    const [netHi, netLo] = mulw(grossVestedCandidate, netDeposit);
-    const netVested: uint64 = divw(netHi, netLo, grossDeposit);
-    return netVested > netDeposit ? netDeposit : netVested;
+    return candidateLo > netDeposit ? netDeposit : candidateLo;
   }
 
   private computeClaimable(now: uint64): uint64 {

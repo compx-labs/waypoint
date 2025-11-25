@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAlgorand } from "../contexts/AlgorandContext";
 import { useToast } from "../contexts/ToastContext";
+import { useAlgorandAccount } from "../hooks/useQueries";
 import type { RouteData } from "../lib/api";
-import algosdk from "algosdk";
 
 interface InvoiceCardProps {
   invoice: RouteData;
@@ -69,8 +69,6 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
   const toast = useToast();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
-  const [payerBalance, setPayerBalance] = useState<bigint | null>(null);
-  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
 
   const isPending = invoice.status === 'pending';
   const isDeclined = invoice.status === 'declined';
@@ -80,8 +78,19 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
   const isSentByUser = currentUserAddress && invoice.sender.toLowerCase() === currentUserAddress.toLowerCase();
   const isReceivedByUser = currentUserAddress && invoice.payer_address?.toLowerCase() === currentUserAddress.toLowerCase();
   
-  const invoiceAmount = BigInt(invoice.amount_token_units);
-  const hasInsufficientBalance = payerBalance !== null && payerBalance < invoiceAmount;
+  // Fetch payer's account data if they're viewing an invoice they need to pay
+  const { data: payerAccountData, isLoading: isCheckingBalance } = useAlgorandAccount(
+    isReceivedByUser && currentUserAddress ? currentUserAddress : null,
+    network === 'mainnet' ? 'mainnet' : 'testnet'
+  );
+  
+  // Find the token balance for this specific token
+  const payerTokenBalance = payerAccountData?.balances.find(
+    (b) => b.symbol === invoice.token.symbol
+  );
+  const payerBalance = payerTokenBalance ? payerTokenBalance.amount : 0;
+  const invoiceAmount = parseFloat(invoice.amount_token_units) / Math.pow(10, invoice.token.decimals);
+  const hasInsufficientBalance = payerBalance < invoiceAmount;
   
   const totalAmount = formatTokenAmount(invoice.amount_token_units, invoice.token.decimals);
   const schedule = formatSchedule(
@@ -91,45 +100,6 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
     invoice.payment_frequency_number,
     invoice.token.decimals
   );
-
-  // Check payer's token balance if they're viewing a pending invoice they need to pay
-  useEffect(() => {
-    const checkPayerBalance = async () => {
-      if (!isReceivedByUser || !currentUserAddress || !isPending) {
-        return;
-      }
-
-      setIsCheckingBalance(true);
-      try {
-        // Get algod client based on current network
-        const algodServer = network === 'mainnet' 
-          ? 'https://mainnet-api.algonode.cloud'
-          : 'https://testnet-api.algonode.cloud';
-        const algodClient = new algosdk.Algodv2('', algodServer, '');
-
-        // Get account info
-        const accountInfo = await algodClient.accountInformation(currentUserAddress).do();
-        
-        // Find the asset balance
-        const assetId = parseInt(invoice.token.contract_address);
-        const assetHolding = accountInfo.assets?.find((asset: any) => asset['asset-id'] === assetId);
-        
-        if (assetHolding) {
-          setPayerBalance(BigInt(assetHolding.amount));
-        } else {
-          // User doesn't have this asset (balance = 0)
-          setPayerBalance(0n);
-        }
-      } catch (error) {
-        console.error('Error checking payer balance:', error);
-        setPayerBalance(null);
-      } finally {
-        setIsCheckingBalance(false);
-      }
-    };
-
-    checkPayerBalance();
-  }, [isReceivedByUser, currentUserAddress, isPending, invoice.token.contract_address, network]);
 
   const handleAccept = async () => {
     console.log("Accept button clicked");
@@ -280,7 +250,7 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
             <div className="flex-1">
               <p className="text-sm font-bold text-red-300 uppercase tracking-wide">Insufficient Balance</p>
               <p className="text-xs text-red-200 mt-1">
-                You need {formatTokenAmount(invoice.amount_token_units, invoice.token.decimals)} {invoice.token.symbol} but only have {payerBalance !== null ? formatTokenAmount(payerBalance.toString(), invoice.token.decimals) : '0'} {invoice.token.symbol}
+                You need {invoiceAmount.toFixed(2)} {invoice.token.symbol} but only have {payerBalance.toFixed(2)} {invoice.token.symbol}
               </p>
             </div>
           </div>
