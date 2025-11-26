@@ -30,12 +30,12 @@ export default function AddressDisplay({
   const userAddress = currentUserAddress || connectedAccount;
 
   if (userAddress && address.toLowerCase() === userAddress.toLowerCase()) {
-    return <span className={`font-display text-primary-100 ${className}`}>You</span>;
+    return <span className={`font-display text-forest-800 ${className}`}>You</span>;
   }
 
   if (loading) {
     return (
-      <span className={`text-primary-300 animate-pulse ${className}`}>
+      <span className={`text-forest-600 animate-pulse ${className}`}>
         Resolving...
       </span>
     );
@@ -45,14 +45,14 @@ export default function AddressDisplay({
     // Remove .algo or .apt suffix for display
     const displayName = name.replace(/\.(algo|apt)$/i, '');
     return (
-      <span className={`font-display text-sunset-400 ${className}`} title={address}>
+      <span className={`font-display text-sunset-600 ${className}`} title={address}>
         {displayName}
       </span>
     );
   }
 
   return (
-    <span className={`font-mono text-primary-100 ${className}`} title={address}>
+    <span className={`font-mono text-forest-800 ${className}`} title={address}>
       {shortenAddress(address, truncateLength)}
     </span>
   );

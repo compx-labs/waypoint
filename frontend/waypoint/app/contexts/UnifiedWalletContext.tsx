@@ -223,6 +223,8 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
         currentNetwork: selectedNetwork,
         nfd: null,
         nfdLoading: false,
+        ans: ansData,
+        ansLoading: ansLoading,
         error: null,
       };
     } else if (selectedNetwork === BlockchainNetwork.ALGORAND) {

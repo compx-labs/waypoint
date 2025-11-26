@@ -18,6 +18,7 @@ import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 import { ALGORAND_REGISTRY_APP } from "../lib/constants";
 import { BuyOnCompxButton } from "./BuyOnCompxButton";
 import { GetOnOrbitalButton } from "./GetOnOrbitalButton";
+import { resolveName } from "./RouteCreationWizard/addressUtils";
 
 // Fee calculation utility
 interface FeeCalculation {
@@ -1449,40 +1450,9 @@ const PayerStep: React.FC<WizardStepProps> = ({
     return validateAddress(data.payerAddress, selectedNetwork);
   });
 
-  // NFD resolution function
-  const resolveNFD = async (nfdName: string): Promise<string | null> => {
-    if (!nfdName || !nfdName.endsWith(".algo")) {
-      return null;
-    }
-
-    try {
-      setIsResolvingNFD(true);
-      const response = await fetch(
-        `https://api.nf.domains/nfd/${encodeURIComponent(
-          nfdName
-        )}?view=tiny&poll=false&nocache=false`
-      );
-      const data = await response.json();
-
-      // Check if NFD was found (error response has name: "notFound")
-      if (data && data.name !== "notFound" && data.depositAccount) {
-        return data.depositAccount;
-      }
-
-      // NFD not found or invalid
-      console.warn(`NFD not found: ${nfdName}`);
-      return null;
-    } catch (error) {
-      console.error("Failed to resolve NFD:", error);
-      return null;
-    } finally {
-      setIsResolvingNFD(false);
-    }
-  };
-
-  // Auto-resolve NFD when input changes (if on Algorand and it's a .algo domain)
+  // Auto-resolve NFD/ANS when input changes
   useEffect(() => {
-    const resolveIfNFD = async () => {
+    const resolveIfNameService = async () => {
       if (!inputValue) {
         setResolvedAddress("");
         setNfdResolved(false);
@@ -1492,12 +1462,14 @@ const PayerStep: React.FC<WizardStepProps> = ({
         return;
       }
 
-      if (
-        selectedNetwork === BlockchainNetwork.ALGORAND &&
-        inputValue.endsWith(".algo")
-      ) {
-        // This is an NFD - try to resolve it
-        const address = await resolveNFD(inputValue);
+      // Check if it's a name service (NFD for Algorand or ANS for Aptos)
+      const isAlgorandNFD = selectedNetwork === BlockchainNetwork.ALGORAND && inputValue.endsWith(".algo");
+      const isAptosANS = selectedNetwork === BlockchainNetwork.APTOS && (inputValue.endsWith(".apt") || inputValue.includes("."));
+      
+      if (isAlgorandNFD || isAptosANS) {
+        // This is a name service - try to resolve it
+        setIsResolvingNFD(true);
+        const address = await resolveName(inputValue, selectedNetwork);
         if (address) {
           setResolvedAddress(address);
           setNfdResolved(true);
@@ -1505,11 +1477,11 @@ const PayerStep: React.FC<WizardStepProps> = ({
           // Validate the resolved address
           const isValid = validateAddress(address, selectedNetwork);
           setIsAddressValid(isValid);
-          // Update form data: payerAddress gets the resolved address, payerNFD gets the NFD name
+          // Update form data: payerAddress gets the resolved address, payerNFD gets the name service name
           if (isValid) {
             updateData({
               payerAddress: address, // Store the resolved address
-              payerNFD: inputValue, // Store the NFD name
+              payerNFD: inputValue, // Store the name service name (NFD or ANS)
             });
           }
         } else {
@@ -1519,8 +1491,9 @@ const PayerStep: React.FC<WizardStepProps> = ({
           setIsAddressValid(false);
           updateData({ payerAddress: undefined, payerNFD: undefined });
         }
+        setIsResolvingNFD(false);
       } else {
-        // Not an NFD, treat as direct address - validate it
+        // Not a name service, treat as direct address - validate it
         setResolvedAddress("");
         setNfdResolved(false);
         setNfdNotFound(false);
@@ -1538,7 +1511,7 @@ const PayerStep: React.FC<WizardStepProps> = ({
       }
     };
 
-    const timeoutId = setTimeout(resolveIfNFD, 500); // Debounce by 500ms
+    const timeoutId = setTimeout(resolveIfNameService, 500); // Debounce by 500ms
     return () => clearTimeout(timeoutId);
   }, [inputValue, selectedNetwork]);
 
@@ -1580,7 +1553,9 @@ const PayerStep: React.FC<WizardStepProps> = ({
         <div className="flex space-x-2">
           <input
             type="text"
-            placeholder="Wallet address or short name..."
+            placeholder={selectedNetwork === BlockchainNetwork.ALGORAND 
+              ? "Wallet address or NFD (e.g., alice.algo)..." 
+              : "Wallet address or ANS name (e.g., name.apt)..."}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             className="flex-1 bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 focus:border-sunset-500 focus:outline-none transition-colors"
@@ -1610,21 +1585,21 @@ const PayerStep: React.FC<WizardStepProps> = ({
         </div>
         <div className="mt-2 text-xs text-primary-400 font-display">
           {selectedNetwork === BlockchainNetwork.ALGORAND
-            ? "Enter the wallet address or NFD of the person/entity who will pay this invoice"
-            : "Enter the wallet address of the person/entity who will pay this invoice"}
+            ? "Enter the wallet address or NFD (e.g., alice.algo) of the person/entity who will pay this invoice"
+            : "Enter the wallet address or ANS name (e.g., name.apt) of the person/entity who will pay this invoice"}
         </div>
 
-        {/* NFD Resolution Status */}
-        {selectedNetwork === BlockchainNetwork.ALGORAND &&
-          inputValue &&
-          inputValue.endsWith(".algo") && (
+        {/* NFD/ANS Resolution Status */}
+        {inputValue && 
+          ((selectedNetwork === BlockchainNetwork.ALGORAND && inputValue.endsWith(".algo")) ||
+           (selectedNetwork === BlockchainNetwork.APTOS && (inputValue.endsWith(".apt") || inputValue.includes(".")))) && (
             <div className="mt-3">
               {isResolvingNFD && (
                 <div className="bg-primary-500 bg-opacity-20 border border-primary-400 border-opacity-30 rounded-lg p-3">
                   <div className="flex items-center space-x-2">
                     <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-300"></div>
                     <span className="text-sm text-primary-300 font-display">
-                      Resolving NFD...
+                      Resolving {selectedNetwork === BlockchainNetwork.ALGORAND ? 'NFD' : 'ANS'}...
                     </span>
                   </div>
                 </div>
@@ -1645,7 +1620,7 @@ const PayerStep: React.FC<WizardStepProps> = ({
                     </svg>
                     <div className="flex-1">
                       <p className="text-sm font-display font-semibold text-green-300 uppercase tracking-wide">
-                        NFD Resolved
+                        {selectedNetwork === BlockchainNetwork.ALGORAND ? 'NFD' : 'ANS'} Resolved
                       </p>
                       <p className="text-xs text-primary-300 font-mono mt-1 break-all">
                         {resolvedAddress}
@@ -1670,10 +1645,10 @@ const PayerStep: React.FC<WizardStepProps> = ({
                     </svg>
                     <div className="flex-1">
                       <p className="text-sm font-display font-semibold text-sunset-300 uppercase tracking-wide">
-                        NFD Not Found
+                        {selectedNetwork === BlockchainNetwork.ALGORAND ? 'NFD' : 'ANS'} Not Found
                       </p>
                       <p className="text-xs text-primary-300 font-display mt-1">
-                        Please check the NFD name or enter a wallet address
+                        Please check the {selectedNetwork === BlockchainNetwork.ALGORAND ? 'NFD' : 'ANS'} name or enter a wallet address
                         directly.
                       </p>
                     </div>

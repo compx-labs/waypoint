@@ -50,8 +50,6 @@ function formatCurrency(amount: number): string {
   return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-import AddressDisplay from '../components/AddressDisplay';
-
 // Helper function to format payout period
 function formatPayoutPeriod(unit: string, number: number): string {
   const unitMap: Record<string, string> = {
@@ -926,7 +924,7 @@ export default function TokenRoutes() {
                         }`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-forest-800">
+                          <div className="text-sm font-semibold">
                             <AddressDisplay 
                               address={route.recipient} 
                               network={safeTokenData.network === 'aptos' ? BlockchainNetwork.APTOS : BlockchainNetwork.ALGORAND}
@@ -1062,7 +1060,7 @@ export default function TokenRoutes() {
                               <div className="text-xs font-display font-semibold text-forest-600 uppercase tracking-wide mb-1">
                                 Recipient
                               </div>
-                              <div className="text-sm text-forest-800 truncate">
+                              <div className="text-sm font-semibold truncate">
                                 <AddressDisplay 
                                   address={route.recipient} 
                                   network={safeTokenData.network === 'aptos' ? BlockchainNetwork.APTOS : BlockchainNetwork.ALGORAND}
