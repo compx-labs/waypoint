@@ -438,10 +438,11 @@ export class AlgorandTransactions {
       // Set the signer
       this.algorand.setDefaultSigner(params.signer);
 
-      // Get the app client
+      // Get the app client with default sender set
       const appClient = new WaypointInvoiceClient({
         algorand: this.algorand,
         appId: params.routeAppId,
+        defaultSender: params.payer,
       });
 
       appClient.algorand.setDefaultSigner(params.signer);
@@ -480,7 +481,7 @@ export class AlgorandTransactions {
       // Call acceptRoute
       const group = await appClient
         .newGroup()
-        .gas({ args: {} })
+        .gas({ args: {}, sender: params.payer })
         .acceptRoute({
           args: { tokenTransfer },
           sender: params.payer,

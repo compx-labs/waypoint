@@ -243,7 +243,7 @@ export default function AppDashboard() {
       if (r.route_obj_address === routeAppIdStr) return true;
       // Try BigInt comparison
       try {
-        if (BigInt(r.route_obj_address) === routeAppId) return true;
+        if (BigInt(r.route_obj_address as string) === routeAppId) return true;
       } catch (e) {
         // Ignore conversion errors
       }
@@ -297,7 +297,7 @@ export default function AppDashboard() {
         // Aptos: Build and submit fund invoice transaction
         console.log("Building Aptos fund invoice transaction...");
         const transactionPayload = await aptosWaypointClient!.buildFundInvoiceTransaction({
-          routeAddress: invoice.route_obj_address,
+          routeAddress: invoice.route_obj_address ?? '',
           payer: account,
         });
 
@@ -314,6 +314,7 @@ export default function AppDashboard() {
       } else {
         // Algorand: Use acceptInvoiceRoute
         console.log("Calling algorandWaypointClient.acceptInvoiceRoute...");
+        console.log('Payer:', account);
         await algorandWaypointClient!.acceptInvoiceRoute({
           routeAppId,
           payer: account,
@@ -386,7 +387,7 @@ export default function AppDashboard() {
       if (r.route_obj_address === routeAppIdStr) return true;
       // Try BigInt comparison
       try {
-        if (BigInt(r.route_obj_address) === routeAppId) return true;
+        if (BigInt(r.route_obj_address as string) === routeAppId) return true;
       } catch (e) {
         // Ignore conversion errors
       }
