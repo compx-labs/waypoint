@@ -384,15 +384,25 @@ export default function TokenRoutes() {
 
         // Build claim transaction using SDK based on route type
         const isMilestone = route.route_type === 'milestone-routes';
-        const transactionPayload = isMilestone
-          ? await aptosWaypointClient!.buildClaimMilestoneTransaction({
-              caller: aptosAccount!.address.toString(),
-              routeAddress: route.route_obj_address,
-            })
-          : await aptosWaypointClient!.buildClaimLinearTransaction({
-              caller: aptosAccount!.address.toString(),
-              routeAddress: route.route_obj_address,
-            });
+        const isInvoice = route.route_type === 'invoice-routes';
+        
+        let transactionPayload;
+        if (isMilestone) {
+          transactionPayload = await aptosWaypointClient!.buildClaimMilestoneTransaction({
+            caller: aptosAccount!.address.toString(),
+            routeAddress: route.route_obj_address,
+          });
+        } else if (isInvoice) {
+          transactionPayload = await aptosWaypointClient!.buildClaimInvoiceTransaction({
+            caller: aptosAccount!.address.toString(),
+            routeAddress: route.route_obj_address,
+          });
+        } else {
+          transactionPayload = await aptosWaypointClient!.buildClaimLinearTransaction({
+            caller: aptosAccount!.address.toString(),
+            routeAddress: route.route_obj_address,
+          });
+        }
 
         // Sign and submit transaction using wallet adapter
         const response = await signAndSubmitTransaction({
@@ -935,7 +945,11 @@ export default function TokenRoutes() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-forest-100 text-forest-700 border border-forest-200">
-                            {route.routeType === 'milestone-routes' ? 'Milestone' : 'Simple'}
+                            {route.routeType === 'milestone-routes' 
+                              ? 'Milestone' 
+                              : route.routeType === 'invoice-routes' 
+                              ? 'Invoice' 
+                              : 'Simple'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -954,6 +968,7 @@ export default function TokenRoutes() {
                                 refreshTrigger={refreshTrigger}
                                 onCompletionStatusChange={(isComplete) => handleCompletionStatusChange(route.id, isComplete)}
                                 onFullyApprovedStatusChange={(isFullyApproved) => handleFullyApprovedStatusChange(route.id, isFullyApproved)}
+                                fallback={route.remaining}
                               />
                             ) : (
                               route.remaining
@@ -1076,7 +1091,11 @@ export default function TokenRoutes() {
                                 Type
                               </div>
                               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-forest-100 text-forest-700 border border-forest-200">
-                                {route.routeType === 'milestone-routes' ? 'Milestone' : 'Simple'}
+                                {route.routeType === 'milestone-routes' 
+                              ? 'Milestone' 
+                              : route.routeType === 'invoice-routes' 
+                              ? 'Invoice' 
+                              : 'Simple'}
                               </span>
                             </div>
                             
@@ -1104,6 +1123,7 @@ export default function TokenRoutes() {
                                       refreshTrigger={refreshTrigger}
                                       onCompletionStatusChange={(isComplete) => handleCompletionStatusChange(route.id, isComplete)}
                                       onFullyApprovedStatusChange={(isFullyApproved) => handleFullyApprovedStatusChange(route.id, isFullyApproved)}
+                                      fallback={route.remaining}
                                     />
                                   ) : (
                                     route.remaining

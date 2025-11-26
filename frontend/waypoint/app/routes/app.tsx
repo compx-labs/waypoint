@@ -8,10 +8,14 @@ import InvoiceCard from "../components/InvoiceCard";
 import { useToast } from "../contexts/ToastContext";
 import { useUnifiedWallet } from "../contexts/UnifiedWalletContext";
 import { useAlgorand } from "../contexts/AlgorandContext";
+import { useAptos } from "../contexts/AptosContext";
 import { useRoutes } from "../hooks/useQueries";
 import type { RouteData } from "../lib/api";
 import { API_BASE_URL } from "../lib/constants";
 import { useWallet as useAlgorandWallet } from "@txnlab/use-wallet-react";
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+import { BlockchainNetwork } from "../contexts/NetworkContext";
 
 // Helper function to format currency
 function formatCurrency(amount: number): string {
@@ -43,9 +47,14 @@ export default function AppDashboard() {
   
   const navigate = useNavigate();
   const { account, connected } = useUnifiedWallet();
-  const { waypointClient } = useAlgorand();
+  const { waypointClient: algorandWaypointClient } = useAlgorand();
+  const { waypointClient: aptosWaypointClient } = useAptos();
   const { transactionSigner } = useAlgorandWallet();
+  const { signAndSubmitTransaction } = useWallet();
   const toast = useToast();
+  
+  // Initialize Aptos client for waiting for transactions
+  const aptos = new Aptos(new AptosConfig({ network: Network.MAINNET }));
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'routes' | 'invoices'>('routes');
   
@@ -217,33 +226,101 @@ export default function AppDashboard() {
 
   const handleAcceptInvoice = async (routeAppId: bigint) => {
     console.log("handleAcceptInvoice called with routeAppId:", routeAppId.toString());
-    console.log("waypointClient:", waypointClient);
     console.log("account:", account);
-    console.log("transactionSigner:", transactionSigner);
+    console.log("allRoutes:", allRoutes);
     
-    if (!waypointClient || !account || !transactionSigner) {
-      toast.error({ title: "Algorand wallet not connected" });
+    if (!account) {
+      toast.error({ title: "Wallet not connected" });
       return;
     }
 
-    // Find the invoice in the current data
-    const invoice = allRoutes?.find(r => r.route_obj_address === routeAppId.toString());
+    // Find the invoice in the current data - try multiple comparison methods
+    const routeAppIdStr = routeAppId.toString();
+    console.log("Looking for invoice with route_obj_address:", routeAppIdStr);
+    
+    const invoice = allRoutes?.find(r => {
+      // Try direct string comparison
+      if (r.route_obj_address === routeAppIdStr) return true;
+      // Try BigInt comparison
+      try {
+        if (BigInt(r.route_obj_address) === routeAppId) return true;
+      } catch (e) {
+        // Ignore conversion errors
+      }
+      return false;
+    });
+    
     if (!invoice) {
+      console.error("Invoice not found. Available routes:", allRoutes?.map(r => ({
+        id: r.id,
+        route_obj_address: r.route_obj_address,
+        route_type: r.route_type,
+        status: r.status
+      })));
       toast.error({ title: "Invoice not found" });
       return;
     }
 
+    console.log("Found invoice:", invoice.id, "network:", invoice.token?.network);
+
+    // Determine the invoice's network
+    const invoiceNetwork = invoice.token?.network === 'aptos' 
+      ? BlockchainNetwork.APTOS 
+      : BlockchainNetwork.ALGORAND;
+    const isAptosInvoice = invoiceNetwork === BlockchainNetwork.APTOS;
+    const isAlgorandInvoice = invoiceNetwork === BlockchainNetwork.ALGORAND;
+
+    console.log("Invoice network:", invoiceNetwork, "isAptos:", isAptosInvoice, "isAlgorand:", isAlgorandInvoice);
+
+    // Validate network-specific requirements
+    if (isAlgorandInvoice && (!algorandWaypointClient || !transactionSigner)) {
+      toast.error({ title: "Algorand wallet not connected" });
+      return;
+    }
+
+    if (isAptosInvoice && (!aptosWaypointClient || !signAndSubmitTransaction)) {
+      toast.error({ title: "Aptos wallet not connected" });
+      return;
+    }
+
     // Show loading toast
-    const loadingToastId = toast.loading({ title: "Accepting invoice..." });
+    let loadingToastId: string | undefined;
+    try {
+      loadingToastId = toast.loading({ title: "Accepting invoice..." });
+    } catch (toastError) {
+      console.error("Error creating toast:", toastError);
+      // Continue without toast if there's an issue
+    }
 
     try {
-      // Step 1: Accept on blockchain via SDK
-      console.log("Calling waypointClient.acceptInvoiceRoute...");
-      await waypointClient.acceptInvoiceRoute({
-        routeAppId,
-        payer: account,
-        signer: transactionSigner,
-      });
+      if (isAptosInvoice) {
+        // Aptos: Build and submit fund invoice transaction
+        console.log("Building Aptos fund invoice transaction...");
+        const transactionPayload = await aptosWaypointClient!.buildFundInvoiceTransaction({
+          routeAddress: invoice.route_obj_address,
+          payer: account,
+        });
+
+        console.log("Submitting Aptos transaction...");
+        const response = await signAndSubmitTransaction!({
+          data: transactionPayload,
+        });
+
+        console.log("Aptos transaction submitted, hash:", response.hash);
+
+        // Wait for transaction confirmation
+        await aptos.waitForTransaction({ transactionHash: response.hash });
+        console.log("Aptos transaction confirmed");
+      } else {
+        // Algorand: Use acceptInvoiceRoute
+        console.log("Calling algorandWaypointClient.acceptInvoiceRoute...");
+        await algorandWaypointClient!.acceptInvoiceRoute({
+          routeAppId,
+          payer: account,
+          signer: transactionSigner!,
+        });
+        console.log("Algorand transaction successful");
+      }
 
       console.log("Blockchain transaction successful, updating database...");
 
@@ -257,62 +334,120 @@ export default function AppDashboard() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update database');
+        const errorText = await response.text();
+        console.error("Database update failed:", response.status, errorText);
+        throw new Error(`Failed to update database: ${response.status} ${errorText}`);
       }
 
       console.log("Database updated successfully");
       
       // Step 3: Update toast and refetch
-      toast.update(loadingToastId, {
-        title: "Invoice accepted successfully!",
-        type: "success",
-      });
+      if (loadingToastId) {
+        toast.update(loadingToastId, {
+          title: "Invoice accepted successfully!",
+          type: "success",
+        });
+      } else {
+        toast.success({ title: "Invoice accepted successfully!" });
+      }
       
       // Refetch to get updated data
       refetch();
     } catch (error: any) {
       console.error("Error accepting invoice:", error);
-      toast.update(loadingToastId, {
-        title: error?.message || "Failed to accept invoice",
-        type: "error",
-      });
-      throw error;
+      if (loadingToastId) {
+        toast.update(loadingToastId, {
+          title: error?.message || "Failed to accept invoice",
+          type: "error",
+        });
+      } else {
+        toast.error({ title: error?.message || "Failed to accept invoice" });
+      }
+      // Don't rethrow - we've handled the error
     }
   };
 
   const handleDeclineInvoice = async (routeAppId: bigint) => {
     console.log("handleDeclineInvoice called with routeAppId:", routeAppId.toString());
-    console.log("waypointClient:", waypointClient);
     console.log("account:", account);
-    console.log("transactionSigner:", transactionSigner);
+    console.log("allRoutes:", allRoutes);
     
-    if (!waypointClient || !account || !transactionSigner) {
-      toast.error({ title: "Algorand wallet not connected" });
+    if (!account) {
+      toast.error({ title: "Wallet not connected" });
       return;
     }
 
-    // Find the invoice in the current data
-    const invoice = allRoutes?.find(r => r.route_obj_address === routeAppId.toString());
+    // Find the invoice in the current data - try multiple comparison methods
+    const routeAppIdStr = routeAppId.toString();
+    console.log("Looking for invoice with route_obj_address:", routeAppIdStr);
+    
+    const invoice = allRoutes?.find(r => {
+      // Try direct string comparison
+      if (r.route_obj_address === routeAppIdStr) return true;
+      // Try BigInt comparison
+      try {
+        if (BigInt(r.route_obj_address) === routeAppId) return true;
+      } catch (e) {
+        // Ignore conversion errors
+      }
+      return false;
+    });
+    
     if (!invoice) {
+      console.error("Invoice not found. Available routes:", allRoutes?.map(r => ({
+        id: r.id,
+        route_obj_address: r.route_obj_address,
+        route_type: r.route_type,
+        status: r.status
+      })));
       toast.error({ title: "Invoice not found" });
       return;
     }
 
+    console.log("Found invoice:", invoice.id, "network:", invoice.token?.network);
+
+    // Determine the invoice's network
+    const invoiceNetwork = invoice.token?.network === 'aptos' 
+      ? BlockchainNetwork.APTOS 
+      : BlockchainNetwork.ALGORAND;
+    const isAptosInvoice = invoiceNetwork === BlockchainNetwork.APTOS;
+    const isAlgorandInvoice = invoiceNetwork === BlockchainNetwork.ALGORAND;
+
+    console.log("Invoice network:", invoiceNetwork, "isAptos:", isAptosInvoice, "isAlgorand:", isAlgorandInvoice);
+
+    // Validate network-specific requirements for Algorand
+    if (isAlgorandInvoice && (!algorandWaypointClient || !transactionSigner)) {
+      toast.error({ title: "Algorand wallet not connected" });
+      return;
+    }
+
     // Show loading toast
-    const loadingToastId = toast.loading({ title: "Declining invoice..." });
+    let loadingToastId: string | undefined;
+    try {
+      loadingToastId = toast.loading({ title: "Declining invoice..." });
+    } catch (toastError) {
+      console.error("Error creating toast:", toastError);
+      // Continue without toast if there's an issue
+    }
 
     try {
-      // Step 1: Decline on blockchain via SDK
-      console.log("Calling waypointClient.declineInvoiceRoute...");
-      await waypointClient.declineInvoiceRoute({
-        routeAppId,
-        payer: account,
-        signer: transactionSigner,
-      });
+      if (isAptosInvoice) {
+        // Aptos: Only update database (no on-chain decline function)
+        console.log("Aptos invoice decline - updating database only");
+      } else {
+        // Algorand: Decline on blockchain via SDK
+        console.log("Calling algorandWaypointClient.declineInvoiceRoute...");
+        await algorandWaypointClient!.declineInvoiceRoute({
+          routeAppId,
+          payer: account,
+          signer: transactionSigner!,
+        });
+        console.log("Algorand decline transaction successful");
+      }
 
-      console.log("Blockchain transaction successful, updating database...");
+      console.log("Updating database...");
 
-      // Step 2: Update database status
+      // Update database status
       const response = await fetch(`${API_BASE_URL}/api/routes/${invoice.id}`, {
         method: 'PATCH',
         headers: {
@@ -322,26 +457,36 @@ export default function AppDashboard() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update database');
+        const errorText = await response.text();
+        console.error("Database update failed:", response.status, errorText);
+        throw new Error(`Failed to update database: ${response.status} ${errorText}`);
       }
 
       console.log("Database updated successfully");
       
-      // Step 3: Update toast and refetch
-      toast.update(loadingToastId, {
-        title: "Invoice declined",
-        type: "info",
-      });
+      // Update toast and refetch
+      if (loadingToastId) {
+        toast.update(loadingToastId, {
+          title: "Invoice declined",
+          type: "info",
+        });
+      } else {
+        toast.success({ title: "Invoice declined" });
+      }
       
       // Refetch to get updated data
       refetch();
     } catch (error: any) {
       console.error("Error declining invoice:", error);
-      toast.update(loadingToastId, {
-        title: error?.message || "Failed to decline invoice",
-        type: "error",
-      });
-      throw error;
+      if (loadingToastId) {
+        toast.update(loadingToastId, {
+          title: error?.message || "Failed to decline invoice",
+          type: "error",
+        });
+      } else {
+        toast.error({ title: error?.message || "Failed to decline invoice" });
+      }
+      // Don't rethrow - we've handled the error
     }
   };
 

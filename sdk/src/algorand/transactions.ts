@@ -224,8 +224,9 @@ export class AlgorandTransactions {
   }
 
   /**
-   * Claim from a linear streaming route
+   * Claim from a route (linear or invoice)
    * Beneficiary can claim all vested tokens
+   * Automatically detects route type and uses the appropriate client
    *
    * @param params Claim parameters
    * @returns Result with transaction ID and claimed amount
@@ -237,39 +238,93 @@ export class AlgorandTransactions {
       // Set the signer
       this.algorand.setDefaultSigner(params.signer);
 
-      // Get the app client
-      const appClient = new WaypointLinearClient({
-        algorand: this.algorand,
-        appId: params.routeAppId,
-      });
+      // Try to detect if this is an invoice route by attempting to fetch invoice details
+      // If it succeeds, it's an invoice route; otherwise, it's a linear route
+      let isInvoiceRoute = false;
+      try {
+        const invoiceClient = new WaypointInvoiceClient({
+          algorand: this.algorand,
+          appId: params.routeAppId,
+        });
+        const invoiceState = await invoiceClient.state.global.getAll();
+        // Check if it has invoice-specific fields (like requester or routeStatus)
+        if (invoiceState && (invoiceState.requester !== undefined || invoiceState.routeStatus !== undefined)) {
+          isInvoiceRoute = true;
+        }
+      } catch {
+        // Not an invoice route, will use linear client
+        isInvoiceRoute = false;
+      }
 
-      appClient.algorand.setDefaultSigner(params.signer);
+      if (isInvoiceRoute) {
+        // Use invoice client for invoice routes
+        const appClient = new WaypointInvoiceClient({
+          algorand: this.algorand,
+          appId: params.routeAppId,
+        });
 
-      // Get current state to know how much will be claimed
-      const stateBefore = await appClient.state.global.getAll();
-      const claimedBefore = stateBefore?.claimedAmount || 0n;
+        appClient.algorand.setDefaultSigner(params.signer);
 
-      // Call claim
-      const claimTxn = await appClient.send.claim({
-        args: {},
-        sender: params.beneficiary,
-      });
+        // Get current state to know how much will be claimed
+        const stateBefore = await appClient.state.global.getAll();
+        const claimedBefore = stateBefore?.claimedAmount || 0n;
 
-      // Get new state
-      const stateAfter = await appClient.state.global.getAll();
-      const claimedAfter = stateAfter?.claimedAmount || 0n;
+        // Call claim
+        const claimTxn = await appClient.send.claim({
+          args: {},
+          sender: params.beneficiary,
+        });
 
-      const amountClaimed = claimedAfter - claimedBefore;
+        // Get new state
+        const stateAfter = await appClient.state.global.getAll();
+        const claimedAfter = stateAfter?.claimedAmount || 0n;
 
-      console.log(
-        `Claimed ${amountClaimed} tokens from route ${params.routeAppId}`
-      );
+        const amountClaimed = claimedAfter - claimedBefore;
 
-      return {
-        txId: claimTxn.txIds[0],
-        claimedAmount: amountClaimed,
-        totalClaimed: claimedAfter,
-      };
+        console.log(
+          `Claimed ${amountClaimed} tokens from invoice route ${params.routeAppId}`
+        );
+
+        return {
+          txId: claimTxn.txIds[0],
+          claimedAmount: amountClaimed,
+          totalClaimed: claimedAfter,
+        };
+      } else {
+        // Use linear client for linear routes
+        const appClient = new WaypointLinearClient({
+          algorand: this.algorand,
+          appId: params.routeAppId,
+        });
+
+        appClient.algorand.setDefaultSigner(params.signer);
+
+        // Get current state to know how much will be claimed
+        const stateBefore = await appClient.state.global.getAll();
+        const claimedBefore = stateBefore?.claimedAmount || 0n;
+
+        // Call claim
+        const claimTxn = await appClient.send.claim({
+          args: {},
+          sender: params.beneficiary,
+        });
+
+        // Get new state
+        const stateAfter = await appClient.state.global.getAll();
+        const claimedAfter = stateAfter?.claimedAmount || 0n;
+
+        const amountClaimed = claimedAfter - claimedBefore;
+
+        console.log(
+          `Claimed ${amountClaimed} tokens from linear route ${params.routeAppId}`
+        );
+
+        return {
+          txId: claimTxn.txIds[0],
+          claimedAmount: amountClaimed,
+          totalClaimed: claimedAfter,
+        };
+      }
     } catch (error) {
       console.error("Error claiming from route:", error);
       throw error;

@@ -136,8 +136,6 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
         await onAccept(routeAppId);
       }
       
-      toast.success({ title: "Invoice accepted successfully!" });
-      
       // Trigger status update
       if (onStatusChange) {
         onStatusChange();
@@ -170,8 +168,6 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
       if (onDecline) {
         await onDecline(routeAppId);
       }
-      
-      toast.info({ title: "Invoice declined" });
       
       // Trigger status update
       if (onStatusChange) {
