@@ -248,7 +248,11 @@ export class AlgorandTransactions {
         });
         const invoiceState = await invoiceClient.state.global.getAll();
         // Check if it has invoice-specific fields (like requester or routeStatus)
-        if (invoiceState && (invoiceState.requester !== undefined || invoiceState.routeStatus !== undefined)) {
+        if (
+          invoiceState &&
+          (invoiceState.requester !== undefined ||
+            invoiceState.routeStatus !== undefined)
+        ) {
           isInvoiceRoute = true;
         }
       } catch {
@@ -481,7 +485,7 @@ export class AlgorandTransactions {
       // Call acceptRoute
       const group = await appClient
         .newGroup()
-        .gas({ args: {}, sender: params.payer })
+        .gas({ args: {} })
         .acceptRoute({
           args: { tokenTransfer },
           sender: params.payer,
@@ -489,7 +493,8 @@ export class AlgorandTransactions {
           accountReferences: [requester, beneficiary],
           assetReferences: [tokenId],
         })
-        .send();
+
+        .send({ populateAppCallResources: true });
 
       console.log("Invoice accepted and funded!");
 
