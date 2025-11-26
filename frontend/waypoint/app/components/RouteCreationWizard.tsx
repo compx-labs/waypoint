@@ -1886,11 +1886,15 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     fetchGasBalance();
   }, [accountAddress, selectedNetwork, aptosNetwork, algorandAccountData]);
 
+  // Check if this is an invoice route
+  const isInvoiceRoute = routeType === "invoice-routes";
+
   const requiredGasFee =
     selectedNetwork === BlockchainNetwork.APTOS ? GAS_FEE_APT : GAS_FEE_ALGO;
   const hasInsufficientGas = gasBalance < requiredGasFee;
 
   // Calculate fee dynamically based on network, token, and Flux tier
+  // For invoice routes, still calculate fee to show what payer will pay (but requester doesn't pay it)
   const totalAmountValue = parseFloat(data.totalAmount || "0");
   const feeCalc = calculateFee(
     totalAmountValue,
@@ -1899,7 +1903,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     selectedNetwork === BlockchainNetwork.ALGORAND ? fluxTier : 0
   );
   const totalRequiredWithFee = totalAmountValue + feeCalc.feeAmount;
-  const hasInsufficientTokenBalance = totalRequiredWithFee > tokenBalance;
+  // Skip balance check for invoice routes (requester doesn't need tokens)
+  const hasInsufficientTokenBalance = !isInvoiceRoute && totalRequiredWithFee > tokenBalance;
 
   const totalDuration =
     data.totalAmount && data.unlockAmount
@@ -1932,6 +1937,9 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       : null;
 
   const handleCreateAptosRoute = async () => {
+    // Check if this is an invoice route
+    const isInvoiceRoute = routeType === "invoice-routes";
+    
     if (
       !aptosWallet.account ||
       !data.selectedToken ||
@@ -1939,7 +1947,8 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       !data.unlockAmount ||
       !data.unlockUnit ||
       !data.startTime ||
-      !data.recipientAddress
+      !data.recipientAddress ||
+      (isInvoiceRoute && !data.payerAddress) // Payer is required for invoice routes
     ) {
       setBuildError("Missing required form data");
       return;
@@ -1952,30 +1961,33 @@ const SummaryStep: React.FC<WizardStepProps> = ({
     }
 
     // Note: data.recipientAddress already contains the resolved address if an NFD was used
-    // Validate sufficient token balance (route amount + fee)
-    const routeAmount = parseFloat(data.totalAmount);
-    const routeFeeCalc = calculateFee(
-      routeAmount,
-      BlockchainNetwork.APTOS, // Always Aptos in this function
-      data.selectedToken.symbol,
-      0 // Aptos doesn't use Flux tiers
-    );
-    const platformFee = routeFeeCalc.feeAmount;
-    const totalRequired = routeAmount + platformFee;
-
-    if (totalRequired > tokenBalance) {
-      setBuildError(
-        `Insufficient ${
-          data.selectedToken.symbol
-        } balance. You need ${totalRequired.toFixed(6)} ${
-          data.selectedToken.symbol
-        } (${routeAmount.toFixed(6)} route + ${platformFee.toFixed(
-          6
-        )} fee) but only have ${tokenBalance.toFixed(6)} ${
-          data.selectedToken.symbol
-        }.`
+    // For invoice routes, skip balance checks (requester doesn't need tokens)
+    // For regular routes, validate sufficient token balance (route amount + fee)
+    if (!isInvoiceRoute) {
+      const routeAmount = parseFloat(data.totalAmount);
+      const routeFeeCalc = calculateFee(
+        routeAmount,
+        BlockchainNetwork.APTOS, // Always Aptos in this function
+        data.selectedToken.symbol,
+        0 // Aptos doesn't use Flux tiers
       );
-      return;
+      const platformFee = routeFeeCalc.feeAmount;
+      const totalRequired = routeAmount + platformFee;
+
+      if (totalRequired > tokenBalance) {
+        setBuildError(
+          `Insufficient ${
+            data.selectedToken.symbol
+          } balance. You need ${totalRequired.toFixed(6)} ${
+            data.selectedToken.symbol
+          } (${routeAmount.toFixed(6)} route + ${platformFee.toFixed(
+            6
+          )} fee) but only have ${tokenBalance.toFixed(6)} ${
+            data.selectedToken.symbol
+          }.`
+        );
+        return;
+      }
     }
 
     setIsBuilding(true);
@@ -2007,7 +2019,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
       // Show loading toast
       const loadingToastId = toast.loading({
-        title: "Creating Route",
+        title: isInvoiceRoute ? "Creating Invoice Request" : "Creating Route",
         description: "Please confirm the transaction in your wallet...",
       });
       // Configure Aptos SDK with the correct network
@@ -2016,28 +2028,44 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       const aptos = new Aptos(config);
 
       // Build transaction using SDK based on route type
-      const isMilestone = routeType === "milestone-routes";
-      const transactionPayload = isMilestone
-        ? await aptosWaypointClient.buildCreateMilestoneRouteTransaction({
-            sender: aptosWallet.account.address.toString(),
-            beneficiary: data.recipientAddress,
-            tokenMetadata: data.selectedToken.contract_address,
-            amount: amountInUnits,
-            startTimestamp: Number(startTimestamp),
-            periodSeconds: Number(periodInSeconds),
-            payoutAmount: payoutAmountInUnits,
-            maxPeriods: Number(maxPeriods),
-          })
-        : await aptosWaypointClient.buildCreateLinearRouteTransaction({
-            sender: aptosWallet.account.address.toString(),
-            beneficiary: data.recipientAddress,
-            tokenMetadata: data.selectedToken.contract_address,
-            amount: amountInUnits,
-            startTimestamp: Number(startTimestamp),
-            periodSeconds: Number(periodInSeconds),
-            payoutAmount: payoutAmountInUnits,
-            maxPeriods: Number(maxPeriods),
-          });
+      let transactionPayload;
+      if (isInvoiceRoute) {
+        // For invoice routes, use buildCreateInvoiceTransaction
+        transactionPayload = await aptosWaypointClient.buildCreateInvoiceTransaction({
+          beneficiary: data.recipientAddress, // Beneficiary is the requester (current user)
+          payer: data.payerAddress!, // Payer must fund the invoice
+          tokenMetadata: data.selectedToken.contract_address,
+          amount: amountInUnits,
+          startTimestamp: Number(startTimestamp),
+          periodSeconds: Number(periodInSeconds),
+          payoutAmount: payoutAmountInUnits,
+          maxPeriods: Number(maxPeriods),
+        });
+      } else {
+        // For regular routes, use milestone or linear transaction builders
+        const isMilestone = routeType === "milestone-routes";
+        transactionPayload = isMilestone
+          ? await aptosWaypointClient.buildCreateMilestoneRouteTransaction({
+              sender: aptosWallet.account.address.toString(),
+              beneficiary: data.recipientAddress,
+              tokenMetadata: data.selectedToken.contract_address,
+              amount: amountInUnits,
+              startTimestamp: Number(startTimestamp),
+              periodSeconds: Number(periodInSeconds),
+              payoutAmount: payoutAmountInUnits,
+              maxPeriods: Number(maxPeriods),
+            })
+          : await aptosWaypointClient.buildCreateLinearRouteTransaction({
+              sender: aptosWallet.account.address.toString(),
+              beneficiary: data.recipientAddress,
+              tokenMetadata: data.selectedToken.contract_address,
+              amount: amountInUnits,
+              startTimestamp: Number(startTimestamp),
+              periodSeconds: Number(periodInSeconds),
+              payoutAmount: payoutAmountInUnits,
+              maxPeriods: Number(maxPeriods),
+            });
+      }
 
       // Sign and submit transaction using wallet adapter
       const response = await aptosWallet.signAndSubmitTransaction({
@@ -2107,21 +2135,45 @@ const SummaryStep: React.FC<WizardStepProps> = ({
       if (routeObjAddress) {
         try {
           console.log("Registering route with backend via SDK...");
-          await aptosWaypointClient.registerRouteWithBackend({
-            sender: aptosWallet.account.address.toString(),
-            recipient: data.recipientAddress,
-            amountPerPeriodTokenUnits: payoutAmountInUnits.toString(),
-            amountTokenUnits: amountInUnits.toString(),
-            startDate: data.startTime,
-            paymentFrequencyUnit: data.unlockUnit,
-            paymentFrequencyNumber: 1,
-            blockchainTxHash: response.hash,
-            routeObjAddress: routeObjAddress,
-            routeType:
-              routeType === "milestone-routes" ? "milestone" : "simple",
-            tokenId: Number(data.selectedToken.id),
-          });
-          console.log("✅ Route successfully registered with backend");
+          // For invoice routes, we need to save directly to database with pending status
+          // The SDK's registerRouteWithBackend doesn't support invoice-specific fields
+          // So we'll use the mutation directly for invoice routes
+          if (isInvoiceRoute) {
+            const routePayload = {
+              sender: aptosWallet.account.address.toString(),
+              recipient: data.recipientAddress,
+              token_id: Number(data.selectedToken.id),
+              amount_token_units: amountInUnits.toString(),
+              amount_per_period_token_units: payoutAmountInUnits.toString(),
+              start_date: data.startTime.toISOString(),
+              payment_frequency_unit: data.unlockUnit,
+              payment_frequency_number: 1,
+              blockchain_tx_hash: response.hash,
+              route_obj_address: routeObjAddress,
+              route_type: routeType,
+              status: "pending" as "pending" | "active",
+              payer_address: data.payerAddress,
+            };
+            await createRouteMutation.mutateAsync(routePayload);
+            console.log("✅ Invoice route successfully registered with backend");
+          } else {
+            // For regular routes, use SDK's registerRouteWithBackend
+            await aptosWaypointClient.registerRouteWithBackend({
+              sender: aptosWallet.account.address.toString(),
+              recipient: data.recipientAddress,
+              amountPerPeriodTokenUnits: payoutAmountInUnits.toString(),
+              amountTokenUnits: amountInUnits.toString(),
+              startDate: data.startTime,
+              paymentFrequencyUnit: data.unlockUnit,
+              paymentFrequencyNumber: 1,
+              blockchainTxHash: response.hash,
+              routeObjAddress: routeObjAddress,
+              routeType:
+                routeType === "milestone-routes" ? "milestone" : "simple",
+              tokenId: Number(data.selectedToken.id),
+            });
+            console.log("✅ Route successfully registered with backend");
+          }
         } catch (registrationError) {
           console.error(
             "❌ Failed to register route with backend:",
@@ -2150,8 +2202,10 @@ const SummaryStep: React.FC<WizardStepProps> = ({
 
       // Success! Show success toast
       toast.update(loadingToastId, {
-        title: "Route Created Successfully!",
-        description: `Your ${data.selectedToken?.symbol} route has been created and is now active.`,
+        title: isInvoiceRoute ? "Invoice Request Created Successfully!" : "Route Created Successfully!",
+        description: isInvoiceRoute
+          ? `Your invoice request has been sent to ${data.payerNFD || data.payerAddress}. They must accept it before tokens will be routed.`
+          : `Your ${data.selectedToken?.symbol} route has been created and is now active.`,
         type: "success",
       });
 

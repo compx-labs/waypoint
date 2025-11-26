@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 
 interface NavItem {
   id: string;
@@ -7,7 +8,7 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-const navigationItems: NavItem[] = [
+export const navigationItems: NavItem[] = [
   {
     id: "overview",
     title: "Overview",
@@ -38,6 +39,12 @@ const navigationItems: NavItem[] = [
     description: "Approvals and claiming",
     icon: <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>,
   },
+  {
+    id: "invoice-routes",
+    title: "Invoice Routes",
+    description: "Request, approve, and pay invoices",
+    icon: <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>,
+  },
 ];
 
 interface DocsNavigationProps {
@@ -46,10 +53,108 @@ interface DocsNavigationProps {
 }
 
 export default function DocsNavigation({ activeSection, onSectionChange }: DocsNavigationProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const activeItem = navigationItems.find(item => item.id === activeSection);
+
   return (
-    <div 
-      className="w-80 bg-gradient-to-b from-forest-900 to-forest-800 border-r border-forest-700 min-h-screen"
-    >
+    <>
+      {/* Mobile Dropdown Button */}
+      <div className="md:hidden bg-gradient-to-r from-forest-800 to-forest-700 border-b border-forest-600 px-4 py-3">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-full flex items-center justify-between bg-forest-700 hover:bg-forest-600 border border-forest-600 rounded-lg p-4 transition-all duration-200"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0 text-primary-300">
+              {activeItem?.icon}
+            </div>
+            <div className="text-left">
+              <h3 className="font-display font-semibold text-sm uppercase tracking-wide text-primary-100">
+                {activeItem?.title || "Select Section"}
+              </h3>
+              <p className="text-xs text-primary-400 mt-0.5">
+                {activeItem?.description}
+              </p>
+            </div>
+          </div>
+          <svg
+            className={`w-5 h-5 text-primary-300 transition-transform duration-200 ${
+              isMobileMenuOpen ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile Dropdown Menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden bg-gradient-to-b from-forest-800 to-forest-900 border-b border-forest-700 overflow-hidden"
+          >
+            <div className="p-4 space-y-2">
+              {navigationItems.map((item) => {
+                const isActive = item.id === activeSection;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      onSectionChange(item.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left rounded-lg p-4 transition-all duration-200 ${
+                      isActive
+                        ? "bg-gradient-to-r from-sunset-600 to-sunset-700 border border-sunset-500"
+                        : "bg-forest-700 hover:bg-forest-600 border border-forest-600"
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 text-primary-300">
+                        {item.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className={`font-display font-semibold text-sm uppercase tracking-wide ${
+                            isActive ? "text-primary-100" : "text-primary-200"
+                          }`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p
+                          className={`text-xs mt-1 leading-relaxed ${
+                            isActive ? "text-primary-200" : "text-primary-400"
+                          }`}
+                        >
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Sidebar */}
+      <div 
+        className="hidden md:block w-80 bg-gradient-to-b from-forest-900 to-forest-800 border-r border-forest-700 min-h-screen"
+      >
       {/* Header */}
       <div className="p-6 border-b border-forest-700">
         <div className="flex items-center space-x-3 mb-4">
@@ -118,8 +223,7 @@ export default function DocsNavigation({ activeSection, onSectionChange }: DocsN
           );
         })}
       </div>
-
-      
-    </div>
+      </div>
+    </>
   );
 }
