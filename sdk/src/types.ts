@@ -117,3 +117,86 @@ export interface WaypointClientConfig {
   moduleAddress?: string;
 }
 
+/**
+ * Invoice route status
+ */
+export enum InvoiceRouteStatus {
+  UNINITIALIZED = 0,
+  PENDING = 1,
+  FUNDED = 2,
+  DECLINED = 3,
+}
+
+/**
+ * Invoice route details from on-chain data
+ */
+export interface InvoiceRouteDetails {
+  routeAddress: string;
+  payer: string;
+  beneficiary: string;
+  tokenMetadata: string;
+  startTimestamp: number;
+  periodSeconds: number;
+  payoutAmount: bigint;
+  maxPeriods: number;
+  requestedAmount: bigint; // Gross invoice amount (before fees)
+  feeAmount: bigint;
+  depositAmount: bigint; // Net amount available to stream (after fees)
+  claimedAmount: bigint;
+  funded: boolean;
+}
+
+/**
+ * Parameters for creating an invoice (two-phase: create then fund)
+ */
+export interface CreateInvoiceParams {
+  /** Beneficiary address (creates the invoice) */
+  beneficiary: string;
+  /** Payer address (must fund the invoice) */
+  payer: string;
+  /** Token metadata object address */
+  tokenMetadata: string;
+  /** Gross invoice amount (before platform fees) */
+  amount: bigint;
+  /** Requested start timestamp (Unix timestamp in seconds) */
+  startTimestamp: number;
+  /** Period duration in seconds */
+  periodSeconds: number;
+  /** Amount to release per period */
+  payoutAmount: bigint;
+  /** Maximum number of periods */
+  maxPeriods: number;
+}
+
+/**
+ * Parameters for creating and funding an invoice in one transaction
+ */
+export interface CreateRouteAndFundParams {
+  /** Creator/payer address (funds immediately) */
+  creator: string;
+  /** Beneficiary address (receives the payments) */
+  beneficiary: string;
+  /** Token metadata object address */
+  tokenMetadata: string;
+  /** Gross invoice amount (before platform fees) */
+  amount: bigint;
+  /** Start timestamp (Unix timestamp in seconds) */
+  startTimestamp: number;
+  /** Period duration in seconds */
+  periodSeconds: number;
+  /** Amount to release per period */
+  payoutAmount: bigint;
+  /** Maximum number of periods */
+  maxPeriods: number;
+}
+
+/**
+ * Parameters for funding an existing invoice
+ */
+export interface FundInvoiceParams {
+  /** Payer address (must match route's payer) */
+  payer: string;
+  /** Route object address */
+  routeAddress: string;
+}
+

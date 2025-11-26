@@ -7,6 +7,7 @@ interface NetworkConfig {
   moduleAddress: string;
   linearModule: string;
   milestoneModule: string;
+  invoiceModule: string;
   backendUrl?: string;
 }
 
@@ -18,6 +19,7 @@ export const NETWORKS: Record<Network, NetworkConfig> = {
     moduleAddress: '0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0',
     linearModule: '0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0::linear_stream_fa',
     milestoneModule: '0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0::milestone_stream_fa',
+    invoiceModule: '0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0::invoice_stream_fa',
     backendUrl: undefined, // To be configured
   },
   testnet: {
@@ -25,6 +27,7 @@ export const NETWORKS: Record<Network, NetworkConfig> = {
     moduleAddress: '0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0',
     linearModule: '0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0::linear_stream_fa',
     milestoneModule: '0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0::milestone_stream_fa',
+    invoiceModule: '0x12dd47c0156dc2237a6e814b227bb664f54e85332ff636a64bc9dd1ce7d1bdb0::invoice_stream_fa',
     backendUrl: undefined, // To be configured
   },
 };
@@ -47,6 +50,12 @@ export const ENTRY_FUNCTIONS = {
     CREATE_ROUTE: 'create_route_and_fund',
     CLAIM: 'claim',
     APPROVE_MILESTONE: 'approve_milestone',
+  },
+  INVOICE: {
+    CREATE_INVOICE: 'create_invoice',
+    CREATE_ROUTE_AND_FUND: 'create_route_and_fund',
+    FUND_INVOICE: 'fund_invoice',
+    CLAIM: 'claim',
   },
 } as const;
 

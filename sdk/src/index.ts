@@ -29,7 +29,13 @@ export type {
   ApproveMilestoneParams,
   BackendRouteData,
   WaypointClientConfig,
+  CreateInvoiceParams,
+  CreateRouteAndFundParams,
+  FundInvoiceParams,
+  InvoiceRouteDetails,
 } from './types';
+
+
 
 // Constants
 export { NETWORKS, FEE_BASIS_POINTS, FEE_DENOMINATOR } from './aptos/constants';

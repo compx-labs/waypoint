@@ -6,7 +6,9 @@ This directory contains examples demonstrating how to use the Waypoint SDK with 
 
 ### Aptos Examples
 - **`aptos-node.ts`** - Node.js example for Aptos linear routes
+- **`aptos-invoice-node.ts`** - Node.js example for Aptos invoice routes (two-phase and single-phase)
 - **`aptos-react.tsx`** - React example for Aptos integration with wallet adapters
+- **`aptos-invoice-react.tsx`** - React example for Aptos invoice routes with wallet adapters
 
 ### Algorand Examples
 - **`algorand-linear-node.ts`** - Node.js example for Algorand linear streaming routes
@@ -36,6 +38,19 @@ export PRIVATE_KEY="0x..."
 npx tsx examples/aptos-node.ts
 ```
 
+#### Aptos Invoice Route
+```bash
+# Set private keys for beneficiary and payer
+export BENEFICIARY_PRIVATE_KEY="0x..."
+export PAYER_PRIVATE_KEY="0x..."
+
+# Optional: Set token metadata address (defaults to AptosCoin)
+export TOKEN_METADATA_ADDRESS="0x1::aptos_coin::AptosCoin"
+
+# Run the example
+npx tsx examples/aptos-invoice-node.ts
+```
+
 #### Algorand Linear Route
 ```bash
 # Set wallet mnemonics (test accounts only!)
@@ -61,7 +76,7 @@ npx tsx examples/algorand-invoice-node.ts
 
 ### React Examples
 
-The React examples (`aptos-react.tsx` and `algorand-react.tsx`) are meant to be integrated into your React application. Copy the code and adapt it to your project structure.
+The React examples (`aptos-react.tsx`, `aptos-invoice-react.tsx`, and `algorand-react.tsx`) are meant to be integrated into your React application. Copy the code and adapt it to your project structure.
 
 **Key Integration Steps:**
 
@@ -104,25 +119,35 @@ Linear routes are for direct streaming payments where the depositor creates and 
 2. Route is immediately active
 3. Beneficiary claims vested tokens over time
 
-### Invoice Routes (Two-Phase) - Algorand Only
+### Invoice Routes (Two-Phase & Single-Phase)
 
-Invoice routes are for payment requests where the beneficiary creates a request that the payer must approve.
+Invoice routes support two patterns:
+1. **Two-phase**: Beneficiary creates invoice → Payer funds later
+2. **Single-phase**: Creator funds immediately upon creation
 
 **Use Cases:**
 - B2B invoicing (contractor → client)
 - Freelance payments (freelancer → client)
 - Payment requests
+- Immediate streaming payments
 
-**Flow:**
-1. Requester creates invoice/payment request
+**Two-Phase Flow:**
+1. Beneficiary creates invoice/payment request
 2. Payer reviews request
 3. Payer accepts (funds) or declines
 4. If accepted, beneficiary claims payment
 
+**Single-Phase Flow:**
+1. Creator creates and funds invoice immediately
+2. Beneficiary claims payment over time
+
 ## 🔑 Environment Variables
 
 ### Aptos Examples
-- `PRIVATE_KEY` - Private key for your Aptos account (hex format)
+- `PRIVATE_KEY` - Private key for your Aptos account (hex format) - for linear routes
+- `BENEFICIARY_PRIVATE_KEY` - Private key for beneficiary account (hex format) - for invoice routes
+- `PAYER_PRIVATE_KEY` - Private key for payer account (hex format) - for invoice routes
+- `TOKEN_METADATA_ADDRESS` - Optional: Token metadata object address (defaults to AptosCoin)
 
 ### Algorand Examples
 - `DEPOSITOR_MNEMONIC` - 25-word mnemonic for depositor/sender account
