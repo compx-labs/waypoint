@@ -101,8 +101,13 @@ export default function AppDashboard() {
     const walletAddress = account;
     
     // Filter routes for this wallet
+    // Exclude invoice routes that are pending (not yet approved) - they should only appear in invoices tab
     const userRoutes = allRoutes.filter(
-      route => route.sender === walletAddress || route.recipient === walletAddress
+      route => {
+        const isUserRoute = route.sender === walletAddress || route.recipient === walletAddress;
+        const isPendingInvoice = route.route_type === 'invoice-routes' && route.status === 'pending';
+        return isUserRoute && !isPendingInvoice;
+      }
     );
     
     // Group by token and calculate stats

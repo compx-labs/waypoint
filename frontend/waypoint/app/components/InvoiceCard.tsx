@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useAlgorand } from "../contexts/AlgorandContext";
 import { useToast } from "../contexts/ToastContext";
-import { useAlgorandAccount } from "../hooks/useQueries";
+import { useAlgorandAccount, useAptosAccount } from "../hooks/useQueries";
+import { BlockchainNetwork } from "../contexts/NetworkContext";
 import type { RouteData } from "../lib/api";
+import AddressDisplay from "./AddressDisplay";
 
 interface InvoiceCardProps {
   invoice: RouteData;
@@ -58,11 +60,6 @@ const formatDate = (date: string | Date): string => {
   });
 };
 
-// Helper to truncate address
-const truncateAddress = (address: string): string => {
-  if (address.length <= 16) return address;
-  return `${address.slice(0, 8)}...${address.slice(-8)}`;
-};
 
 export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChange, currentUserAddress }: InvoiceCardProps) {
   const { waypointClient, network } = useAlgorand();
@@ -78,11 +75,28 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
   const isSentByUser = currentUserAddress && invoice.sender.toLowerCase() === currentUserAddress.toLowerCase();
   const isReceivedByUser = currentUserAddress && invoice.payer_address?.toLowerCase() === currentUserAddress.toLowerCase();
   
+  // Determine the network from the invoice token
+  const invoiceNetwork = invoice.token?.network === 'aptos' 
+    ? BlockchainNetwork.APTOS 
+    : BlockchainNetwork.ALGORAND;
+  const isAlgorandInvoice = invoiceNetwork === BlockchainNetwork.ALGORAND;
+  const isAptosInvoice = invoiceNetwork === BlockchainNetwork.APTOS;
+  
   // Fetch payer's account data if they're viewing an invoice they need to pay
-  const { data: payerAccountData, isLoading: isCheckingBalance } = useAlgorandAccount(
-    isReceivedByUser && currentUserAddress ? currentUserAddress : null,
+  // Use the appropriate hook based on the invoice's network
+  const { data: algorandAccountData, isLoading: isCheckingAlgorandBalance } = useAlgorandAccount(
+    isReceivedByUser && currentUserAddress && isAlgorandInvoice ? currentUserAddress : null,
     network === 'mainnet' ? 'mainnet' : 'testnet'
   );
+  
+  const { data: aptosAccountData, isLoading: isCheckingAptosBalance } = useAptosAccount(
+    isReceivedByUser && currentUserAddress && isAptosInvoice ? currentUserAddress : null,
+    network === 'mainnet' ? 'mainnet' : 'testnet'
+  );
+  
+  // Get the appropriate account data based on network
+  const payerAccountData = isAlgorandInvoice ? algorandAccountData : aptosAccountData;
+  const isCheckingBalance = isAlgorandInvoice ? isCheckingAlgorandBalance : isCheckingAptosBalance;
   
   // Find the token balance for this specific token
   const payerTokenBalance = payerAccountData?.balances.find(
@@ -215,17 +229,25 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
       <div className="space-y-3 mb-4">
         <div className="flex justify-between items-center text-sm">
           <span className="text-forest-300">From:</span>
-          <span className="text-primary-100 font-mono">
-            {isSentByUser ? 'You' : truncateAddress(invoice.sender)}
-          </span>
+          <AddressDisplay 
+            address={invoice.sender}
+            network={invoiceNetwork}
+            currentUserAddress={currentUserAddress}
+            truncateLength={8}
+            className="text-primary-100"
+          />
         </div>
         
         {invoice.payer_address && (
           <div className="flex justify-between items-center text-sm">
             <span className="text-forest-300">Payer:</span>
-            <span className="text-primary-100 font-mono">
-              {isReceivedByUser ? 'You' : truncateAddress(invoice.payer_address)}
-            </span>
+            <AddressDisplay 
+              address={invoice.payer_address}
+              network={invoiceNetwork}
+              currentUserAddress={currentUserAddress}
+              truncateLength={8}
+              className="text-primary-100"
+            />
           </div>
         )}
         
@@ -238,6 +260,13 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
           <span className="text-forest-300">Start Date:</span>
           <span className="text-primary-100">{formatDate(invoice.start_date)}</span>
         </div>
+        
+        {invoice.created_at && (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-forest-300">Created:</span>
+            <span className="text-primary-100">{formatDate(invoice.created_at)}</span>
+          </div>
+        )}
       </div>
 
       {/* Insufficient Balance Warning */}

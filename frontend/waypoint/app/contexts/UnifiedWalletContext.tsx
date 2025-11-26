@@ -85,6 +85,35 @@ async function getNFD(address: string): Promise<NFDData | null> {
   }
 }
 
+// ANS fetching function (reverse lookup: address -> name)
+async function getANS(address: string): Promise<string | null> {
+  try {
+    const network = "mainnet"; // Could be made dynamic if needed
+    const ansURL = `https://www.aptosnames.com/api/${network}/v1/primary-name/${encodeURIComponent(address)}`;
+    
+    const response = await fetch(ansURL);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`ANS API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // API returns: {"name": "xxiled.apt"} or similar
+    if (data && data.name) {
+      return data.name;
+    }
+
+    return null;
+  } catch (e) {
+    console.error('❌ ANS fetch error:', e);
+    return null;
+  }
+}
+
 interface UnifiedWalletContextType {
   // Connection state
   connected: boolean;
@@ -105,6 +134,10 @@ interface UnifiedWalletContextType {
   // NFD data (Algorand name service)
   nfd: NFDData | null;
   nfdLoading: boolean;
+  
+  // ANS data (Aptos name service)
+  ans: string | null;
+  ansLoading: boolean;
   
   // Error state
   error: string | null;
@@ -129,6 +162,10 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
   const [nfdData, setNfdData] = useState<NFDData | null>(null);
   const [nfdLoading, setNfdLoading] = useState(false);
 
+  // ANS state for Aptos
+  const [ansData, setAnsData] = useState<string | null>(null);
+  const [ansLoading, setAnsLoading] = useState(false);
+
   // Fetch NFD when Algorand account changes
   useEffect(() => {
     const fetchNFD = async () => {
@@ -146,6 +183,24 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
 
     fetchNFD();
   }, [selectedNetwork, algorandWallet.activeAccount?.address]);
+
+  // Fetch ANS when Aptos account changes
+  useEffect(() => {
+    const fetchANS = async () => {
+      if (selectedNetwork === BlockchainNetwork.APTOS && aptosWallet.account?.address) {
+        setAnsLoading(true);
+        const ans = await getANS(aptosWallet.account.address.toString());
+        setAnsData(ans);
+        setAnsLoading(false);
+      } else {
+        // Clear ANS data when not on Aptos or no account
+        setAnsData(null);
+        setAnsLoading(false);
+      }
+    };
+
+    fetchANS();
+  }, [selectedNetwork, aptosWallet.account?.address]);
 
   // Compute unified wallet state based on selected network
   const value: UnifiedWalletContextType = useMemo(() => {
@@ -190,6 +245,8 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
         currentNetwork: selectedNetwork,
         nfd: nfdData,
         nfdLoading: nfdLoading,
+        ans: null,
+        ansLoading: false,
         error: null,
       };
     } else {
@@ -207,10 +264,12 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
         currentNetwork: selectedNetwork,
         nfd: null,
         nfdLoading: false,
+        ans: null,
+        ansLoading: false,
         error: null,
       };
     }
-  }, [selectedNetwork, aptosWallet, algorandWallet, nfdData, nfdLoading]);
+  }, [selectedNetwork, aptosWallet, algorandWallet, nfdData, nfdLoading, ansData, ansLoading]);
 
   return (
     <UnifiedWalletContext.Provider value={value}>

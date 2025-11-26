@@ -24,6 +24,8 @@ export default function AppNavigation() {
     currentNetwork: selectedNetwork,
     nfd,
     nfdLoading,
+    ans,
+    ansLoading,
     walletName,
   } = useUnifiedWallet();
   const toast = useToast();
@@ -229,6 +231,8 @@ export default function AppNavigation() {
                       <span className="font-mono text-xs md:text-sm leading-tight uppercase truncate max-w-[120px] md:max-w-none">
                         {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name
                           ? nfd.name.replace(/\.algo$/i, '')
+                          : selectedNetwork === BlockchainNetwork.APTOS && ans
+                          ? ans.replace(/\.apt$/i, '')
                           : `${account?.slice(0, 6)}...${account?.slice(-4)}`}
                       </span>
                       {selectedNetwork === BlockchainNetwork.ALGORAND && walletIcon && (
@@ -237,7 +241,8 @@ export default function AppNavigation() {
                         </span>
                       )}
                     </div>
-                    {nfdLoading && selectedNetwork === BlockchainNetwork.ALGORAND && (
+                    {((nfdLoading && selectedNetwork === BlockchainNetwork.ALGORAND) || 
+                      (ansLoading && selectedNetwork === BlockchainNetwork.APTOS)) && (
                       <svg
                         className="animate-spin h-4 w-4 text-primary-300"
                         xmlns="http://www.w3.org/2000/svg"
@@ -307,6 +312,15 @@ export default function AppNavigation() {
                                     {nfd.name.replace(/\.algo$/i, '')}
                                   </p>
                                 </div>
+                                <p className="text-xs text-primary-300 font-mono">
+                                  {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
+                                </p>
+                              </div>
+                            ) : selectedNetwork === BlockchainNetwork.APTOS && ans ? (
+                              <div>
+                                <p className="text-sm text-primary-100 font-display font-bold">
+                                  {ans.replace(/\.apt$/i, '')}
+                                </p>
                                 <p className="text-xs text-primary-300 font-mono">
                                   {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
                                 </p>
@@ -418,6 +432,8 @@ export default function AppNavigation() {
                       <span className="font-mono text-xs leading-tight uppercase">
                         {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name
                           ? nfd.name.replace(/\.algo$/i, '')
+                          : selectedNetwork === BlockchainNetwork.APTOS && ans
+                          ? ans.replace(/\.apt$/i, '')
                           : `${account?.slice(0, 4)}...${account?.slice(-3)}`}
                       </span>
                       {selectedNetwork === BlockchainNetwork.ALGORAND && walletIcon && (
@@ -581,6 +597,15 @@ export default function AppNavigation() {
                               {nfd.name.replace(/\.algo$/i, '')}
                             </p>
                           </div>
+                          <p className="text-xs text-primary-300 font-mono">
+                            {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
+                          </p>
+                        </div>
+                      ) : selectedNetwork === BlockchainNetwork.APTOS && ans ? (
+                        <div>
+                          <p className="text-sm text-primary-100 font-display font-bold">
+                            {ans.replace(/\.apt$/i, '')}
+                          </p>
                           <p className="text-xs text-primary-300 font-mono">
                             {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
                           </p>
