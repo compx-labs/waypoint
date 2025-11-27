@@ -51,7 +51,8 @@ export class AlgorandTransactions {
     this.network = network;
     this.registryAppId =
       registryAppId || ALGORAND_NETWORKS[network].registryAppId;
-    this.fluxOracleAppId = fluxOracleAppId || ALGORAND_NETWORKS[network].fluxOracleAppId;
+    this.fluxOracleAppId =
+      fluxOracleAppId || ALGORAND_NETWORKS[network].fluxOracleAppId;
 
     // Set default validity window
     this.algorand.setDefaultValidityWindow(DEFAULT_VALIDITY_WINDOW);
@@ -470,37 +471,26 @@ export class AlgorandTransactions {
         throw new Error("Invalid token ID");
       }
 
-      const beneficiary = state.beneficiary || "";
-      const requester = state.requester || "";
-
       console.log(`Accepting invoice: ${grossAmount} tokens`);
 
       // Create asset transfer transaction
-      const tokenTransfer = await appClient.algorand.createTransaction.assetTransfer(
-        {
+      const tokenTransfer =
+        await appClient.algorand.createTransaction.assetTransfer({
           amount: grossAmount,
           sender: params.payer,
           receiver: appClient.appAddress,
           assetId: tokenId,
-        }
-      );
+        });
 
       // Call acceptRoute
-      const group = await appClient
-        .newGroup()
-        .gas({ args: {} })
-        .acceptRoute({
-          args: { tokenTransfer },
-          sender: params.payer,
-          appReferences: [this.registryAppId, this.fluxOracleAppId],
-          accountReferences: [requester, beneficiary, 'HPD6ZADEDED6EIZ6HDGDJG4QQWVSEPUOKOPJD7BFTKUC7YFHHGFVYTW5QQ'],
-          assetReferences: [tokenId],
-        })
-        .send({ populateAppCallResources: true });
+      const txn = await appClient.send.acceptRoute({
+        args: { tokenTransfer: tokenTransfer },
+        populateAppCallResources: true,
+      });
 
       console.log("Invoice accepted and funded!");
 
-      return { txId: group.txIds[0] ?? "" };
+      return { txId: txn.txIds[0] };
     } catch (error) {
       console.error("Error accepting invoice:", error);
       throw error;
