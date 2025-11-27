@@ -28,6 +28,7 @@ export interface RouteData {
   route_obj_address: string | null;
   route_type?: string;
   payer_address?: string | null;
+  memo?: string | null;
   created_at?: string;
   updated_at?: string;
   token: Token;
@@ -56,6 +57,7 @@ export interface CreateRoutePayload {
   route_obj_address?: string | null;
   route_type?: string;
   payer_address?: string | null;
+  memo?: string | null;
   status?: 'pending' | 'active' | 'completed' | 'cancelled' | 'declined';
 }
 

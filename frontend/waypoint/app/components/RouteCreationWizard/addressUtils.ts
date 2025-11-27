@@ -114,19 +114,55 @@ export const resolveAddressToNFD = async (address: string): Promise<string | nul
 
   try {
     // NFD API reverse lookup: address -> NFD name
-    const response = await fetch(
-      `https://api.nf.domains/nfd/lookup?address=${encodeURIComponent(address)}&view=tiny&poll=false&nocache=false`
-    );
+    const url = `https://api.nf.domains/nfd/lookup?address=${encodeURIComponent(address)}&view=tiny&poll=false&nocache=false`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      return null;
+    }
+    
     const data = await response.json();
 
-    // NFD API returns an array of NFDs, get the first one (primary)
-    if (Array.isArray(data) && data.length > 0 && data[0]?.name) {
-      return data[0].name;
+    // NFD API can return different structures:
+    // 1. Array of NFDs: [{name: "xxiled.algo", ...}, ...]
+    // 2. Object with address as key: {address: {name: "xxiled.algo", ...}}
+    // 3. Single object: {name: "xxiled.algo", ...}
+    
+    // Handle array response (multiple NFDs)
+    if (Array.isArray(data)) {
+      if (data.length > 0 && data[0]?.name) {
+        return data[0].name;
+      }
     }
-
-    // Check if single object response
-    if (data && data.name && data.name !== "notFound") {
-      return data.name;
+    
+    // Handle object response - check if address is a key in the object
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      // Check if the address itself is a key (NFD API sometimes returns {address: {name: ...}})
+      if (address in data && data[address]?.name) {
+        const nfdName = data[address].name;
+        if (nfdName !== "notFound" && nfdName.trim() !== "") {
+          return nfdName;
+        }
+      }
+      
+      // Check if name is directly on the object
+      if (data.name) {
+        const nfdName = data.name;
+        if (nfdName !== "notFound" && nfdName.trim() !== "") {
+          return nfdName;
+        }
+      }
+      
+      // Check all object values for NFD data (in case structure is different)
+      for (const key in data) {
+        const value = data[key];
+        if (value && typeof value === 'object' && value.name) {
+          const nfdName = value.name;
+          if (nfdName !== "notFound" && nfdName.trim() !== "") {
+            return nfdName;
+          }
+        }
+      }
     }
 
     return null;

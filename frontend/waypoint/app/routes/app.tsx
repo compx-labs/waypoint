@@ -353,26 +353,6 @@ export default function AppDashboard() {
         console.log("Aptos transaction confirmed");
       } else {
         // Algorand: Use acceptInvoiceRoute
-        /* const algorand = algokit.AlgorandClient.mainNet();
-        const appClient = new WaypointInvoiceClient({
-          algorand: algorand,
-          appId: routeAppId,
-          defaultSender: account,
-        });
-        appClient.algorand.setDefaultSigner(transactionSigner!);
-        const axfer = appClient.algorand.createTransaction.assetTransfer({
-          amount: BigInt(invoice.amount_token_units),
-          sender: account,
-          receiver: appClient.appAddress,
-          assetId: BigInt(760037151),
-        });
-
-        console.log("Building Algorand transaction...");
-
-        await appClient.send.acceptRoute({
-          args: {tokenTransfer: axfer},
-          populateAppCallResources: true,
-        }) */
 
           const txn = await algorandWaypointClient!.acceptInvoiceRoute({
             routeAppId: routeAppId,

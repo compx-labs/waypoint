@@ -69,6 +69,7 @@ router.post('/', async (req, res, next) => {
       route_obj_address,
       route_type,
       payer_address,
+      memo,
       status,
     } = req.body;
     
@@ -96,6 +97,7 @@ router.post('/', async (req, res, next) => {
       route_obj_address,
       route_type: route_type || 'simple',
       payer_address,
+      memo,
       status: status || (route_type === 'invoice-routes' ? 'pending' : 'active'),
     });
     

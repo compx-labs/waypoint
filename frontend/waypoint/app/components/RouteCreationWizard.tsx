@@ -190,6 +190,7 @@ export interface RouteFormData {
   // Step 4b: Payer (for invoice routes only)
   payerAddress?: string; // The payer's resolved address
   payerNFD?: string; // The payer's NFD name if one was used
+  memo?: string; // Optional memo for invoice routes
 }
 
 interface RouteCreationWizardProps {
@@ -1700,6 +1701,25 @@ const PayerStep: React.FC<WizardStepProps> = ({
         )}
       </div>
 
+      {/* Memo Field (Optional) */}
+      <div>
+        <label className="block text-sm font-display font-semibold text-primary-100 uppercase tracking-wide mb-2">
+          Memo (Optional)
+        </label>
+        <textarea
+          placeholder="Add a note or message for the payer..."
+          value={data.memo || ""}
+          onChange={(e) => updateData({ memo: e.target.value })}
+          rows={3}
+          maxLength={500}
+          className="w-full bg-forest-700 border-2 border-forest-500 rounded-lg text-primary-100 font-display px-4 py-3 focus:border-sunset-500 focus:outline-none transition-colors resize-none"
+        />
+        <div className="mt-1 text-xs text-primary-400 font-display flex justify-between">
+          <span>Optional message that will be stored with this invoice</span>
+          <span>{data.memo?.length || 0}/500</span>
+        </div>
+      </div>
+
       {/* Navigation */}
       <div className="flex justify-between pt-4">
         <button
@@ -2128,6 +2148,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
               route_type: routeType,
               status: "pending" as "pending" | "active",
               payer_address: data.payerAddress,
+              ...(data.memo && { memo: data.memo }),
             };
             await createRouteMutation.mutateAsync(routePayload);
             console.log("✅ Invoice route successfully registered with backend");
@@ -2365,6 +2386,7 @@ const SummaryStep: React.FC<WizardStepProps> = ({
         route_type: routeType, // Use the full route type ID (e.g., "invoice-routes")
         status: (isInvoiceRoute ? "pending" : "active") as "pending" | "active", // Invoice routes start as pending
         ...(isInvoiceRoute && { payer_address: data.payerAddress }), // Include payer for invoice routes
+        ...(isInvoiceRoute && data.memo && { memo: data.memo }), // Include memo for invoice routes
       };
 
       // Save route to database
@@ -2623,6 +2645,18 @@ const SummaryStep: React.FC<WizardStepProps> = ({
                 {data.payerAddress}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Memo (for invoice routes only) */}
+        {routeType === "invoice-routes" && data.memo && (
+          <div>
+            <div className="text-sm font-display text-primary-400 uppercase tracking-wide mb-1">
+              Memo
+            </div>
+            <div className="text-primary-100 text-sm whitespace-pre-wrap break-words">
+              {data.memo}
+            </div>
           </div>
         )}
 

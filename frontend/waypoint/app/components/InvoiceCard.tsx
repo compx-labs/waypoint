@@ -76,9 +76,10 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
   const isReceivedByUser = currentUserAddress && invoice.payer_address?.toLowerCase() === currentUserAddress.toLowerCase();
   
   // Determine the network from the invoice token
+  // Default to ALGORAND if token network is not specified (for backwards compatibility)
   const invoiceNetwork = invoice.token?.network === 'aptos' 
     ? BlockchainNetwork.APTOS 
-    : BlockchainNetwork.ALGORAND;
+    : BlockchainNetwork.ALGORAND; // Default to Algorand for invoice routes
   const isAlgorandInvoice = invoiceNetwork === BlockchainNetwork.ALGORAND;
   const isAptosInvoice = invoiceNetwork === BlockchainNetwork.APTOS;
   
@@ -261,6 +262,13 @@ export default function InvoiceCard({ invoice, onAccept, onDecline, onStatusChan
           <div className="flex justify-between items-center text-sm">
             <span className="text-forest-300">Created:</span>
             <span className="text-primary-100">{formatDate(invoice.created_at)}</span>
+          </div>
+        )}
+        
+        {invoice.memo && (
+          <div className="flex flex-col text-sm pt-3 mt-3 border-t border-forest-600">
+            <span className="text-forest-300 mb-2 font-semibold uppercase tracking-wide text-xs">Memo:</span>
+            <span className="text-primary-100 whitespace-pre-wrap break-words leading-relaxed">{invoice.memo}</span>
           </div>
         )}
       </div>

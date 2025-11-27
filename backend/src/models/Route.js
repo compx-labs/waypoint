@@ -64,6 +64,11 @@ export const Route = sequelize.define('Route', {
     allowNull: true,
     comment: 'The wallet address that will fund the route (for invoice routes)',
   },
+  memo: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Optional memo/note for invoice routes (stored off-chain)',
+  },
   status: {
     type: DataTypes.ENUM('pending', 'active', 'completed', 'cancelled', 'declined'),
     defaultValue: 'active',

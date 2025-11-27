@@ -45,7 +45,7 @@ export default function AddressDisplay({
     // Remove .algo or .apt suffix for display
     const displayName = name.replace(/\.(algo|apt)$/i, '');
     return (
-      <span className={`font-display text-sunset-600 ${className}`} title={address}>
+      <span className={`font-display text-primary-100 ${className}`} title={address}>
         {displayName}
       </span>
     );
