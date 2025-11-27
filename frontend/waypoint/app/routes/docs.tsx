@@ -615,6 +615,23 @@ export default function Docs() {
                           <div className="w-10 h-10 bg-sunset-500 rounded-full flex items-center justify-center text-white font-bold">6</div>
                         </div>
                         <div className="flex-1">
+                          <h4 className="font-display font-semibold text-forest-800 mb-2">Add Optional Memo</h4>
+                          <p className="text-forest-700 mb-3">
+                            Optionally add a memo or note (up to 500 characters) that will be stored with the invoice. This memo is stored off-chain in our database and will be visible to the payer when they review the invoice. Use it to provide context, reference numbers, or any additional information about the payment request.
+                          </p>
+                          <div className="bg-forest-50 p-3 rounded border border-forest-200">
+                            <p className="text-sm text-forest-600">
+                              <span className="font-semibold">Tip:</span> Memos are helpful for tracking purposes, providing payment context, or including reference numbers. They're completely optional and can be left blank.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-sunset-500 rounded-full flex items-center justify-center text-white font-bold">7</div>
+                        </div>
+                        <div className="flex-1">
                           <h4 className="font-display font-semibold text-forest-800 mb-2">Create Invoice</h4>
                           <p className="text-forest-700 mb-3">
                             Review all details and click "Create Invoice". Approve the transaction in your wallet. No tokens are transferred at this stage—you're just creating the payment request.
@@ -660,6 +677,7 @@ export default function Docs() {
                             <li>• Start date</li>
                             <li>• Beneficiary address</li>
                             <li>• Token type</li>
+                            <li>• Memo (if provided by the requester)</li>
                           </ul>
                         </div>
                       </div>
