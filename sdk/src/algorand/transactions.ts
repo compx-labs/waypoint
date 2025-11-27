@@ -269,6 +269,7 @@ export class AlgorandTransactions {
         const appClient = new WaypointInvoiceClient({
           algorand: this.algorand,
           appId: params.routeAppId,
+          defaultSender: params.beneficiary,
         });
 
         appClient.algorand.setDefaultSigner(params.signer);
@@ -277,11 +278,19 @@ export class AlgorandTransactions {
         const stateBefore = await appClient.state.global.getAll();
         const claimedBefore = stateBefore?.claimedAmount || 0n;
 
-        // Call claim
-        const claimTxn = await appClient.send.claim({
-          args: {},
+        const optIn = await appClient.algorand.createTransaction.assetOptIn({
+          assetId: stateBefore?.tokenId || 0n,
           sender: params.beneficiary,
         });
+
+        // Call claim
+        const groupTxn = await appClient
+          .newGroup()
+          .addTransaction(optIn)
+          .claim({
+            args: {},
+          })
+          .send({ populateAppCallResources: true });
 
         // Get new state
         const stateAfter = await appClient.state.global.getAll();
@@ -294,7 +303,7 @@ export class AlgorandTransactions {
         );
 
         return {
-          txId: claimTxn.txIds[0],
+          txId: groupTxn.txIds[0],
           claimedAmount: amountClaimed,
           totalClaimed: claimedAfter,
         };
@@ -303,6 +312,7 @@ export class AlgorandTransactions {
         const appClient = new WaypointLinearClient({
           algorand: this.algorand,
           appId: params.routeAppId,
+          defaultSender: params.beneficiary,
         });
 
         appClient.algorand.setDefaultSigner(params.signer);
@@ -311,11 +321,16 @@ export class AlgorandTransactions {
         const stateBefore = await appClient.state.global.getAll();
         const claimedBefore = stateBefore?.claimedAmount || 0n;
 
-        // Call claim
-        const claimTxn = await appClient.send.claim({
-          args: {},
+        const optIn = await appClient.algorand.createTransaction.assetOptIn({
+          assetId: stateBefore?.tokenId || 0n,
           sender: params.beneficiary,
         });
+
+        const groupTxn = await appClient
+          .newGroup()
+          .addTransaction(optIn)
+          .claim({ args: {} })
+          .send({ populateAppCallResources: true });
 
         // Get new state
         const stateAfter = await appClient.state.global.getAll();
@@ -328,7 +343,7 @@ export class AlgorandTransactions {
         );
 
         return {
-          txId: claimTxn.txIds[0],
+          txId: groupTxn.txIds[0],
           claimedAmount: amountClaimed,
           totalClaimed: claimedAfter,
         };
