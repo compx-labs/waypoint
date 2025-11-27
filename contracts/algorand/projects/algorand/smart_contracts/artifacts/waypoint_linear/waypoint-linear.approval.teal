@@ -1076,8 +1076,9 @@ claim:
     // @abimethod({ allowActions: "NoOp" })
     // public claim(): void {
     proto 0 0
+    intc_0 // 0
     pushbytes ""
-    dupn 3
+    dupn 4
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:205
     // assert(op.Txn.sender === this.beneficiary.value.native, "Only beneficiary can claim");
     txn Sender
@@ -1114,44 +1115,44 @@ claim:
     bytec_2 // "start_ts"
     app_global_get_ex
     assert // check GlobalState exists
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:227
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:238
     // const startTs: uint64 = this.start_ts.value.native;
     btoi
     dup
     cover 2
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:228
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:239
     // if (now <= startTs) {
     <=
-    bz claim_after_if_else@8
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:229
+    bz claim_after_if_else@11
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:240
     // return 0;
     intc_0 // 0
-    frame_bury 3
+    frame_bury 5
 
-claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@13:
+claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@16:
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:45
     // claimed_amount = GlobalState<UintN64>();
     intc_0 // 0
     bytec 7 // "claimed_amount"
     app_global_get_ex
     assert // check GlobalState exists
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:257
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:268
     // const alreadyClaimed: uint64 = this.claimed_amount.value.native;
     btoi
     dup
-    frame_bury 0
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:258
+    frame_bury 1
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:269
     // if (vested > alreadyClaimed) {
-    frame_dig 3
+    frame_dig 5
     <
-    bz claim_after_if_else@4
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:259
+    bz claim_after_if_else@7
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:270
     // return vested - alreadyClaimed;
-    frame_dig 3
-    frame_dig 0
+    frame_dig 5
+    frame_dig 1
     -
 
-claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.computeClaimable@5:
+claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.computeClaimable@8:
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:211
     // assert(claimableAmount > 0, "Nothing claimable yet");
     dup
@@ -1175,7 +1176,7 @@ claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::Way
     itxn_field AssetReceiver
     dup
     itxn_field AssetAmount
-    frame_dig 4
+    frame_dig 6
     itxn_field XferAsset
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:213-219
     // itxn
@@ -1214,6 +1215,8 @@ claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::Way
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:223
     // this.claimed_amount.value = new UintN64(updatedClaimed);
     itob
+    dup
+    frame_bury 0
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:45
     // claimed_amount = GlobalState<UintN64>();
     bytec 7 // "claimed_amount"
@@ -1221,50 +1224,115 @@ claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::Way
     // this.claimed_amount.value = new UintN64(updatedClaimed);
     swap
     app_global_put
-    retsub
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:33
+    // registry_app_id = GlobalState<UintN64>();
+    intc_0 // 0
+    bytec 10 // "registry_app_id"
+    app_global_get_ex
+    assert // check GlobalState exists
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:225
+    // const registryApp: Application = Application(this.registry_app_id.value.native);
+    btoi
+    dup
+    frame_bury 4
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:226
+    // if (registryApp.id !== 0) {
+    bz claim_after_if_else@4
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:227-233
+    // abiCall(WaypointRegistryStub.prototype.updateRouteClaimedAmount, {
+    //   appId: registryApp.id,
+    //   args: [Global.currentApplicationId.id, updatedClaimed],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [registryApp],
+    // });
+    itxn_begin
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:230
+    // sender: Global.currentApplicationAddress,
+    global CurrentApplicationAddress
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:229
+    // args: [Global.currentApplicationId.id, updatedClaimed],
+    global CurrentApplicationID
+    itob
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:227-233
+    // abiCall(WaypointRegistryStub.prototype.updateRouteClaimedAmount, {
+    //   appId: registryApp.id,
+    //   args: [Global.currentApplicationId.id, updatedClaimed],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [registryApp],
+    // });
+    pushbytes 0xaebc3416 // method "updateRouteClaimedAmount(uint64,uint64)void"
+    itxn_field ApplicationArgs
+    itxn_field ApplicationArgs
+    frame_dig 0
+    itxn_field ApplicationArgs
+    frame_dig 4
+    dup
+    itxn_field Applications
+    itxn_field ApplicationID
+    itxn_field Sender
+    pushint 6 // appl
+    itxn_field TypeEnum
+    // smart_contracts/waypoint_linear/config.algo.ts:3
+    // export const STANDARD_TXN_FEE: uint64 = 1000;
+    intc_3 // 1000
+    itxn_field Fee
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:227-233
+    // abiCall(WaypointRegistryStub.prototype.updateRouteClaimedAmount, {
+    //   appId: registryApp.id,
+    //   args: [Global.currentApplicationId.id, updatedClaimed],
+    //   sender: Global.currentApplicationAddress,
+    //   fee: STANDARD_TXN_FEE,
+    //   apps: [registryApp],
+    // });
+    itxn_submit
 
 claim_after_if_else@4:
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:262
+    retsub
+
+claim_after_if_else@7:
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:273
     // return 0;
     intc_0 // 0
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:210
     // const claimableAmount = this.computeClaimable(now);
-    b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.computeClaimable@5
+    b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.computeClaimable@8
 
-claim_after_if_else@8:
+claim_after_if_else@11:
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:41
     // period_secs = GlobalState<UintN64>();
     intc_0 // 0
     bytec_3 // "period_secs"
     app_global_get_ex
     assert // check GlobalState exists
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:232
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:243
     // const periodSecs: uint64 = this.period_secs.value.native;
     btoi
     dup
-    frame_bury 2
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:233
+    frame_bury 3
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:244
     // if (periodSecs === 0) {
-    bnz claim_after_if_else@10
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:234
+    bnz claim_after_if_else@13
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:245
     // return 0;
     intc_0 // 0
-    frame_bury 3
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:256
+    frame_bury 5
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:267
     // const vested = this.vestedBySchedule(now);
-    b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@13
+    b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@16
 
-claim_after_if_else@10:
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:237
+claim_after_if_else@13:
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:248
     // const elapsed: uint64 = now - startTs;
-    frame_dig 5
-    frame_dig 6
+    frame_dig 7
+    frame_dig 8
     -
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:238
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:249
     // const periodsElapsed: uint64 = divw(0, elapsed, periodSecs);
     intc_0 // 0
     swap
-    frame_dig 2
+    frame_dig 3
     divw
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:43
     // max_periods = GlobalState<UintN64>();
@@ -1272,10 +1340,10 @@ claim_after_if_else@10:
     bytec 5 // "max_periods"
     app_global_get_ex
     assert // check GlobalState exists
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:240
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:251
     // const maxPeriods: uint64 = this.max_periods.value.native;
     btoi
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:241
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:252
     // const cappedPeriods: uint64 = periodsElapsed > maxPeriods ? maxPeriods : periodsElapsed;
     dup2
     >
@@ -1286,7 +1354,7 @@ claim_after_if_else@10:
     bytec 4 // "payout_amount"
     app_global_get_ex
     assert // check GlobalState exists
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:243
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:254
     // const payoutAmount: uint64 = this.payout_amount.value.native;
     btoi
     // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:44
@@ -1295,33 +1363,33 @@ claim_after_if_else@10:
     bytec 6 // "deposit_amount"
     app_global_get_ex
     assert // check GlobalState exists
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:244
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:255
     // const depositAmount: uint64 = this.deposit_amount.value.native;
     btoi
     cover 2
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:245
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:256
     // const [candidateHi, candidateLo] = mulw(payoutAmount, cappedPeriods);
     mulw
-    frame_bury 1
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:247
+    frame_bury 2
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:258
     // if (candidateHi > 0) {
-    bz claim_after_if_else@12
-    frame_bury 3
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:256
+    bz claim_after_if_else@15
+    frame_bury 5
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:267
     // const vested = this.vestedBySchedule(now);
-    b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@13
+    b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@16
 
-claim_after_if_else@12:
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:252
+claim_after_if_else@15:
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:263
     // return vestedCandidate > depositAmount ? depositAmount : vestedCandidate;
-    frame_dig 1
+    frame_dig 2
     dup
     dig 2
     >
     swap
     cover 2
     select
-    frame_bury 3
-    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:256
+    frame_bury 5
+    // smart_contracts/waypoint_linear/waypoint-linear.algo.ts:267
     // const vested = this.vestedBySchedule(now);
-    b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@13
+    b claim_after_inlined_smart_contracts/waypoint_linear/waypoint-linear.algo.ts::WaypointLinear.vestedBySchedule@16

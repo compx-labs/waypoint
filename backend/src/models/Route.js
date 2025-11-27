@@ -57,11 +57,22 @@ export const Route = sequelize.define('Route', {
     type: DataTypes.STRING(50),
     allowNull: false,
     defaultValue: 'simple',
-    comment: 'Type of route: simple or milestone',
+    comment: 'Type of route: simple, milestone, or invoice',
+  },
+  payer_address: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'The wallet address that will fund the route (for invoice routes)',
+  },
+  memo: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Optional memo/note for invoice routes (stored off-chain)',
   },
   status: {
-    type: DataTypes.ENUM('active', 'completed', 'cancelled'),
+    type: DataTypes.ENUM('pending', 'active', 'completed', 'cancelled', 'declined'),
     defaultValue: 'active',
+    comment: 'Status: pending (invoice awaiting payer), active (funded), completed, cancelled, declined (invoice rejected)',
   },
 }, {
   tableName: 'routes',

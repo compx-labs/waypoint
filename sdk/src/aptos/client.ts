@@ -8,6 +8,10 @@ import type {
   ApproveMilestoneParams,
   RouteDetails,
   BackendRouteData,
+  CreateInvoiceParams,
+  CreateRouteAndFundParams,
+  FundInvoiceParams,
+  InvoiceRouteDetails,
 } from '../types';
 import { AptosQueries } from './queries';
 import { AptosTransactions } from './transactions';
@@ -178,6 +182,84 @@ export class AptosWaypointClient {
    */
   async getMilestoneClaimableAmount(routeAddress: string, currentTimestamp?: number): Promise<bigint> {
     return this.queries.getMilestoneClaimableAmount(routeAddress, currentTimestamp);
+  }
+
+  // ============================================================================
+  // INVOICE ROUTE METHODS
+  // ============================================================================
+
+  /**
+   * Build an unsigned transaction to create an invoice (two-phase: create then fund)
+   * Beneficiary creates the invoice, payer must fund it later via fundInvoice
+   * Developer must sign and submit this transaction
+   * 
+   * @param params Invoice creation parameters
+   * @returns Unsigned transaction ready to be signed
+   */
+  async buildCreateInvoiceTransaction(params: CreateInvoiceParams) {
+    return this.transactions.buildCreateInvoiceTransaction(params);
+  }
+
+  /**
+   * Build an unsigned transaction to create and fund an invoice in one call
+   * Creator/payer funds immediately upon creation
+   * Developer must sign and submit this transaction
+   * 
+   * @param params Route creation and funding parameters
+   * @returns Unsigned transaction ready to be signed
+   */
+  async buildCreateRouteAndFundTransaction(params: CreateRouteAndFundParams) {
+    return this.transactions.buildCreateRouteAndFundTransaction(params);
+  }
+
+  /**
+   * Build an unsigned transaction to fund an existing invoice
+   * Payer funds an invoice that was previously created
+   * Developer must sign and submit this transaction
+   * 
+   * @param params Funding parameters
+   * @returns Unsigned transaction ready to be signed
+   */
+  async buildFundInvoiceTransaction(params: FundInvoiceParams) {
+    return this.transactions.buildFundInvoiceTransaction(params);
+  }
+
+  /**
+   * Build an unsigned transaction to claim from an invoice route
+   * Developer must sign and submit this transaction
+   * 
+   * @param params Claim parameters
+   * @returns Unsigned transaction ready to be signed
+   */
+  async buildClaimInvoiceTransaction(params: ClaimParams) {
+    return this.transactions.buildClaimInvoiceTransaction(params);
+  }
+
+  /**
+   * Get all invoice routes from the contract
+   * @returns Array of route addresses
+   */
+  async listInvoiceRoutes(): Promise<string[]> {
+    return this.queries.listInvoiceRoutes();
+  }
+
+  /**
+   * Get details for a specific invoice route
+   * @param routeAddress The route object address
+   * @returns Invoice route details
+   */
+  async getInvoiceRouteDetails(routeAddress: string): Promise<InvoiceRouteDetails> {
+    return this.queries.getInvoiceRouteDetails(routeAddress);
+  }
+
+  /**
+   * Calculate claimable amount for an invoice route
+   * @param routeAddress The route object address
+   * @param currentTimestamp Optional timestamp (defaults to now)
+   * @returns Claimable amount in smallest token units
+   */
+  async getInvoiceClaimableAmount(routeAddress: string, currentTimestamp?: number): Promise<bigint> {
+    return this.queries.getInvoiceClaimableAmount(routeAddress, currentTimestamp);
   }
 
   // ============================================================================

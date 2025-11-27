@@ -104,6 +104,45 @@ export function AlgorandProvider({
     }
 
     try {
+      // Fetch route data from database to determine route type
+      const { fetchRoutes } = await import('../lib/api');
+      const routes = await fetchRoutes();
+      const route = routes.find(r => r.route_obj_address === routeId);
+
+      if (!route || !route.route_type) {
+        console.error('Route not found or missing route_type');
+        return null;
+      }
+
+      console.log(`[${route.route_type}] Fetching route details via SDK`);
+
+      // Check if this is an invoice route
+      const isInvoice = route.route_type === 'invoice-routes';
+      
+      if (isInvoice) {
+        // For invoice routes, use getInvoiceRouteDetails
+        const invoiceDetails = await waypointClient.getInvoiceRouteDetails(BigInt(routeId));
+        console.log('SDK Invoice route details:', invoiceDetails);
+        
+        if (!invoiceDetails) {
+          return null;
+        }
+
+        // Convert InvoiceRouteDetails to AlgorandRouteCore format
+        return {
+          routeId: invoiceDetails.routeId,
+          sender: invoiceDetails.requester, // Invoice routes use requester instead of depositor
+          recipient: invoiceDetails.beneficiary,
+          startTimestamp: Number(invoiceDetails.startTimestamp),
+          periodSeconds: Number(invoiceDetails.periodSeconds),
+          payoutAmount: Number(invoiceDetails.payoutAmount),
+          maxPeriods: Number(invoiceDetails.maxPeriods),
+          depositAmount: Number(invoiceDetails.depositAmount), // Net amount after fees
+          claimedAmount: Number(invoiceDetails.claimedAmount),
+        };
+      }
+
+      // For regular routes, use getRouteDetails
       const routeDetails: AlgorandRouteDetails | null = 
         await waypointClient.getRouteDetails(BigInt(routeId));
 

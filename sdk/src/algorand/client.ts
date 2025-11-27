@@ -13,10 +13,15 @@ import type {
   CreateAlgorandLinearRouteParams,
   ClaimAlgorandRouteParams,
   AlgorandRouteDetails,
+  AlgorandInvoiceRouteDetails,
   FluxTierInfo,
   CreateRouteResult,
   ClaimRouteResult,
+  CreateAlgorandInvoiceParams,
+  AcceptAlgorandInvoiceParams,
+  DeclineAlgorandInvoiceParams,
 } from './types';
+import { InvoiceRouteStatus } from './types';
 import { ALGORAND_NETWORKS } from './constants';
 
 /**
@@ -254,6 +259,122 @@ export class AlgorandWaypointClient {
     params: ClaimAlgorandRouteParams
   ): Promise<ClaimRouteResult> {
     return this.transactions.claimFromRoute(params);
+  }
+
+  // ============================================================================
+  // INVOICE METHODS - Request-based payment flows
+  // ============================================================================
+
+  /**
+   * Create an invoice payment request
+   * Beneficiary/requester creates a request that payer must approve
+   * 
+   * @param params Invoice request parameters
+   * @returns Result with transaction IDs and route app ID
+   */
+  async createInvoiceRequest(
+    params: CreateAlgorandInvoiceParams
+  ): Promise<CreateRouteResult> {
+    return this.transactions.createInvoiceRequest(params);
+  }
+
+  /**
+   * Accept and fund an invoice request
+   * Payer approves the invoice and transfers tokens
+   * 
+   * @param params Accept parameters
+   * @returns Result with transaction ID
+   */
+  async acceptInvoiceRoute(
+    params: AcceptAlgorandInvoiceParams
+  ): Promise<{ txId: string }> {
+    // Fetch nominated asset ID if not provided
+    const nominatedAssetId = params.nominatedAssetId !== undefined 
+      ? params.nominatedAssetId 
+      : await this.getNominatedAssetId();
+    
+    // Fetch user tier if not provided (note: uses payer's tier for acceptance)
+    const userTier = params.userTier !== undefined
+      ? params.userTier
+      : await this.getUserFluxTier(params.payer);
+    
+    console.log(`Accepting invoice with tier ${userTier}, nominated asset: ${nominatedAssetId}`);
+    
+    return this.transactions.acceptInvoiceRoute({
+      ...params,
+      nominatedAssetId,
+      userTier,
+    });
+  }
+
+  /**
+   * Decline an invoice request
+   * Payer rejects the invoice
+   * 
+   * @param params Decline parameters
+   * @returns Result with transaction ID
+   */
+  async declineInvoiceRoute(
+    params: DeclineAlgorandInvoiceParams
+  ): Promise<{ txId: string }> {
+    return this.transactions.declineInvoiceRoute(params);
+  }
+
+  /**
+   * Get invoice route details
+   * @param routeAppId Invoice route application ID
+   * @returns Invoice route details or null if not found
+   */
+  async getInvoiceRouteDetails(
+    routeAppId: bigint
+  ): Promise<AlgorandInvoiceRouteDetails | null> {
+    return this.queries.getInvoiceRouteDetails(routeAppId);
+  }
+
+  /**
+   * Check invoice status
+   * @param routeAppId Route application ID
+   * @returns Status of the invoice
+   */
+  async getInvoiceStatus(routeAppId: bigint): Promise<InvoiceRouteStatus> {
+    const details = await this.getInvoiceRouteDetails(routeAppId);
+    return details?.routeStatus ?? InvoiceRouteStatus.UNINITIALIZED;
+  }
+
+  /**
+   * Check if invoice is pending approval
+   * @param routeAppId Route application ID
+   * @returns True if invoice is pending
+   */
+  async isInvoicePending(routeAppId: bigint): Promise<boolean> {
+    return this.queries.isInvoicePending(routeAppId);
+  }
+
+  /**
+   * Check if invoice is funded and active
+   * @param routeAppId Route application ID
+   * @returns True if invoice is funded
+   */
+  async isInvoiceFunded(routeAppId: bigint): Promise<boolean> {
+    return this.queries.isInvoiceFunded(routeAppId);
+  }
+
+  /**
+   * Check if invoice was declined
+   * @param routeAppId Route application ID
+   * @returns True if invoice was declined
+   */
+  async isInvoiceDeclined(routeAppId: bigint): Promise<boolean> {
+    return this.queries.isInvoiceDeclined(routeAppId);
+  }
+
+  /**
+   * Calculate claimable amount for an invoice route
+   * @param routeAppId Invoice route application ID
+   * @returns Claimable amount in token base units
+   */
+  async calculateInvoiceClaimableAmount(routeAppId: bigint): Promise<bigint> {
+    return this.queries.calculateInvoiceClaimableAmount(routeAppId);
   }
 
   // ============================================================================

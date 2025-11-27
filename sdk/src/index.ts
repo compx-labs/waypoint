@@ -29,7 +29,13 @@ export type {
   ApproveMilestoneParams,
   BackendRouteData,
   WaypointClientConfig,
+  CreateInvoiceParams,
+  CreateRouteAndFundParams,
+  FundInvoiceParams,
+  InvoiceRouteDetails,
 } from './types';
+
+
 
 // Constants
 export { NETWORKS, FEE_BASIS_POINTS, FEE_DENOMINATOR } from './aptos/constants';
@@ -50,13 +56,20 @@ export type {
   AlgorandNetwork,
   AlgorandClientConfig,
   AlgorandRouteDetails,
+  AlgorandInvoiceRouteDetails,
   CreateAlgorandLinearRouteParams,
+  CreateAlgorandInvoiceParams,
+  AcceptAlgorandInvoiceParams,
+  DeclineAlgorandInvoiceParams,
   ClaimAlgorandRouteParams,
   FluxTierInfo,
   RegistryStats,
   CreateRouteResult,
   ClaimRouteResult,
 } from './algorand/types';
+
+// Enums
+export { InvoiceRouteStatus } from './algorand/types';
 
 // Constants
 export {
@@ -70,5 +83,7 @@ export {
 
 // Contract clients (for advanced usage)
 export { WaypointLinearClient, WaypointLinearFactory } from './algorand/waypoint-linearClient';
+export { WaypointInvoiceClient, WaypointInvoiceFactory } from './algorand/waypoint-invoiceClient';
+export { WaypointRegistryClient, WaypointRegistryFactory } from './algorand/waypoint-registryClient';
 export { FluxGateClient, FluxGateFactory } from './algorand/flux-gateClient';
 

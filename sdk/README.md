@@ -6,8 +6,10 @@ The Waypoint SDK is a lightweight TypeScript library that makes it easy to inter
 
 ## Features
 
-- ✅ **Transaction Building**: Generate unsigned transactions for creating routes, claiming tokens, and approving milestones
+- ✅ **Multi-Chain**: Support for both Aptos and Algorand blockchains
+- ✅ **Transaction Building**: Generate unsigned transactions for creating routes, claiming tokens, and more
 - ✅ **State Reading**: Query routes, calculate claimable amounts, and read contract configuration
+- ✅ **Invoice Support**: Two-phase payment requests on Algorand (create request → payer accepts/declines)
 - ✅ **Network Support**: Works on both mainnet and testnet
 - ✅ **Type-Safe**: Full TypeScript support with comprehensive type definitions
 - ✅ **Universal**: Compatible with Node.js and browser environments
@@ -16,8 +18,14 @@ The Waypoint SDK is a lightweight TypeScript library that makes it easy to inter
 
 ## Installation
 
+### For Aptos
 ```bash
 npm install @compx/waypoint-sdk @aptos-labs/ts-sdk
+```
+
+### For Algorand
+```bash
+npm install @compx/waypoint-sdk algosdk @algorandfoundation/algokit-utils
 ```
 
 ## Requirements
@@ -27,12 +35,10 @@ npm install @compx/waypoint-sdk @aptos-labs/ts-sdk
 
 ## Quick Start
 
+### Aptos
 ```typescript
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { AptosWaypointClient } from '@compx/waypoint-sdk';
-
-// Initialize Aptos SDK
-const aptos = new Aptos(new AptosConfig({ network: Network.MAINNET }));
 
 // Initialize Waypoint SDK
 const waypoint = new AptosWaypointClient({
@@ -44,18 +50,42 @@ const transaction = await waypoint.buildCreateLinearRouteTransaction({
   sender: '0x123...',
   beneficiary: '0x456...',
   tokenMetadata: '0xabc...',
-  amount: 1000_000000n, // 1000 tokens (6 decimals)
+  amount: 1000_000000n,
   startTimestamp: Math.floor(Date.now() / 1000),
   periodSeconds: 2592000, // 30 days
-  payoutAmount: 100_000000n, // 100 tokens per period
+  payoutAmount: 100_000000n,
   maxPeriods: 10,
 });
 
-// Sign and submit (using your wallet)
-const result = await aptos.signAndSubmitTransaction({
-  signer: account,
-  transaction,
+// Sign and submit using your wallet
+const aptos = new Aptos(new AptosConfig({ network: Network.MAINNET }));
+await aptos.signAndSubmitTransaction({ signer: account, transaction });
+```
+
+### Algorand
+```typescript
+import algosdk from 'algosdk';
+import { AlgorandWaypointClient } from '@compx/waypoint-sdk';
+
+// Initialize Waypoint SDK
+const client = new AlgorandWaypointClient({
+  network: 'mainnet', // or 'testnet'
 });
+
+// Create a linear streaming route
+const result = await client.createLinearRoute({
+  sender: depositor.addr,
+  beneficiary: beneficiary.addr,
+  tokenId: 31566704n, // USDC on Algorand
+  depositAmount: 1000_000000n,
+  payoutAmount: 100_000000n,
+  startTimestamp: BigInt(Math.floor(Date.now() / 1000)),
+  periodSeconds: 2_592_000n, // 30 days
+  maxPeriods: 10n,
+  signer: algosdk.makeBasicAccountTransactionSigner(depositor),
+});
+
+console.log('Route created:', result.routeAppId);
 ```
 
 ## Network Configuration
@@ -250,32 +280,66 @@ const valid = isValidAptosAddress('0x123...');
 
 ## Usage Examples
 
-### Node.js Example
+See the [examples](./examples) directory for complete, runnable examples:
 
-See [examples/aptos-node.ts](examples/aptos-node.ts) for a complete Node.js example.
+### Aptos Examples
+- **[aptos-node.ts](examples/aptos-node.ts)** - Complete Node.js example for linear routes
+- **[aptos-react.tsx](examples/aptos-react.tsx)** - React + wallet adapter integration
+
+### Algorand Examples
+- **[algorand-linear-node.ts](examples/algorand-linear-node.ts)** - Linear streaming routes (Node.js)
+- **[algorand-invoice-node.ts](examples/algorand-invoice-node.ts)** - Invoice/payment request routes (Node.js)
+- **[algorand-react.tsx](examples/algorand-react.tsx)** - React + wallet adapter integration
+
+### Running Examples
+```bash
+# Build the SDK first
+npm run build
+
+# Run examples
+npm run example:aptos
+npm run example:algo-linear
+npm run example:algo-invoice
+```
+
+See [examples/README.md](examples/README.md) for detailed instructions and environment variables.
+
+### Quick Node.js Example (Aptos)
 
 ```typescript
 import { Account, Ed25519PrivateKey } from '@aptos-labs/ts-sdk';
 import { AptosWaypointClient } from '@compx/waypoint-sdk';
 
-// Initialize SDK
 const waypoint = new AptosWaypointClient({ network: 'mainnet' });
+const account = Account.fromPrivateKey({ privateKey: new Ed25519PrivateKey('0x...') });
 
-// Create account (use your own private key management)
-const privateKey = new Ed25519PrivateKey('0x...');
-const account = Account.fromPrivateKey({ privateKey });
-
-// Create route
 const tx = await waypoint.buildCreateLinearRouteTransaction({...});
-const result = await aptos.signAndSubmitTransaction({
-  signer: account,
-  transaction: tx,
+const result = await aptos.signAndSubmitTransaction({ signer: account, transaction: tx });
+```
+
+### Quick Node.js Example (Algorand)
+
+```typescript
+import algosdk from 'algosdk';
+import { AlgorandWaypointClient } from '@compx/waypoint-sdk';
+
+const client = new AlgorandWaypointClient({ network: 'testnet' });
+const account = algosdk.mnemonicToSecretKey('your mnemonic...');
+
+const result = await client.createLinearRoute({
+  sender: account.addr,
+  beneficiary: 'BENEFICIARY_ADDRESS',
+  tokenId: 10458941n,
+  depositAmount: 1000_000000n,
+  payoutAmount: 100_000000n,
+  startTimestamp: BigInt(Math.floor(Date.now() / 1000)),
+  periodSeconds: 2_592_000n,
+  maxPeriods: 10n,
+  signer: algosdk.makeBasicAccountTransactionSigner(account),
 });
 ```
 
-### React Example
-
-See [examples/aptos-react.tsx](examples/aptos-react.tsx) for a complete React + Petra wallet example.
+### React Example (Aptos)
 
 ```typescript
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
@@ -290,10 +354,41 @@ function MyComponent() {
       sender: account.address,
       // ... other params
     });
+    await signAndSubmitTransaction({ sender: account.address, data: tx });
+  };
+}
+```
 
-    const result = await signAndSubmitTransaction({
-      sender: account.address,
-      data: tx,
+### React Example (Algorand)
+
+```typescript
+import { AlgorandWaypointClient, InvoiceRouteStatus } from '@compx/waypoint-sdk';
+
+function MyComponent() {
+  const [client] = useState(() => new AlgorandWaypointClient({ network: 'mainnet' }));
+  
+  // Create invoice request
+  const createInvoice = async (walletSigner) => {
+    const result = await client.createInvoiceRequest({
+      requester: walletAddress,
+      beneficiary: walletAddress,
+      payer: payerAddress,
+      tokenId: 31566704n,
+      grossInvoiceAmount: 5000_000000n,
+      payoutAmount: 5000_000000n,
+      startTimestamp: 0n,
+      periodSeconds: 1n,
+      maxPeriods: 1n,
+      signer: walletSigner,
+    });
+  };
+
+  // Payer accepts invoice
+  const acceptInvoice = async (invoiceAppId, walletSigner) => {
+    await client.acceptInvoiceRoute({
+      routeAppId: BigInt(invoiceAppId),
+      payer: walletAddress,
+      signer: walletSigner,
     });
   };
 }

@@ -13,6 +13,8 @@ import { useToast } from "../contexts/ToastContext";
 import { useAptos } from "../contexts/AptosContext";
 import { useAlgorand } from "../contexts/AlgorandContext";
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+import { BlockchainNetwork } from "../contexts/NetworkContext";
+import AddressDisplay from '../components/AddressDisplay';
 
 // Types for individual route data
 interface TokenRoute {
@@ -46,20 +48,6 @@ function formatCurrency(amount: number): string {
   if (amount === 0) return "$0.00";
   if (amount < 0.01) return "<$0.01";
   return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-// Helper function to shorten address
-function shortenAddress(address: string): string {
-  if (address.length <= 13) return address;
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
-
-// Helper function to display recipient (shows "You" if it's the current user)
-function displayRecipient(address: string, currentUserAddress?: string): string {
-  if (currentUserAddress && address === currentUserAddress) {
-    return 'You';
-  }
-  return shortenAddress(address);
 }
 
 // Helper function to format payout period
@@ -396,15 +384,25 @@ export default function TokenRoutes() {
 
         // Build claim transaction using SDK based on route type
         const isMilestone = route.route_type === 'milestone-routes';
-        const transactionPayload = isMilestone
-          ? await aptosWaypointClient!.buildClaimMilestoneTransaction({
-              caller: aptosAccount!.address.toString(),
-              routeAddress: route.route_obj_address,
-            })
-          : await aptosWaypointClient!.buildClaimLinearTransaction({
-              caller: aptosAccount!.address.toString(),
-              routeAddress: route.route_obj_address,
-            });
+        const isInvoice = route.route_type === 'invoice-routes';
+        
+        let transactionPayload;
+        if (isMilestone) {
+          transactionPayload = await aptosWaypointClient!.buildClaimMilestoneTransaction({
+            caller: aptosAccount!.address.toString(),
+            routeAddress: route.route_obj_address,
+          });
+        } else if (isInvoice) {
+          transactionPayload = await aptosWaypointClient!.buildClaimInvoiceTransaction({
+            caller: aptosAccount!.address.toString(),
+            routeAddress: route.route_obj_address,
+          });
+        } else {
+          transactionPayload = await aptosWaypointClient!.buildClaimLinearTransaction({
+            caller: aptosAccount!.address.toString(),
+            routeAddress: route.route_obj_address,
+          });
+        }
 
         // Sign and submit transaction using wallet adapter
         const response = await signAndSubmitTransaction({
@@ -936,13 +934,22 @@ export default function TokenRoutes() {
                         }`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-mono text-forest-800" title={route.recipient}>
-                            {displayRecipient(route.recipient, currentWalletAddress)}
+                          <div className="text-sm font-semibold">
+                            <AddressDisplay 
+                              address={route.recipient} 
+                              network={safeTokenData.network === 'aptos' ? BlockchainNetwork.APTOS : BlockchainNetwork.ALGORAND}
+                              currentUserAddress={currentWalletAddress}
+                              truncateLength={6}
+                            />
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-forest-100 text-forest-700 border border-forest-200">
-                            {route.routeType === 'milestone-routes' ? 'Milestone' : 'Simple'}
+                            {route.routeType === 'milestone-routes' 
+                              ? 'Milestone' 
+                              : route.routeType === 'invoice-routes' 
+                              ? 'Invoice' 
+                              : 'Simple'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -961,6 +968,7 @@ export default function TokenRoutes() {
                                 refreshTrigger={refreshTrigger}
                                 onCompletionStatusChange={(isComplete) => handleCompletionStatusChange(route.id, isComplete)}
                                 onFullyApprovedStatusChange={(isFullyApproved) => handleFullyApprovedStatusChange(route.id, isFullyApproved)}
+                                fallback={route.remaining}
                               />
                             ) : (
                               route.remaining
@@ -1067,8 +1075,13 @@ export default function TokenRoutes() {
                               <div className="text-xs font-display font-semibold text-forest-600 uppercase tracking-wide mb-1">
                                 Recipient
                               </div>
-                              <div className="text-sm font-mono text-forest-800 truncate" title={route.recipient}>
-                                {displayRecipient(route.recipient, currentWalletAddress)}
+                              <div className="text-sm font-semibold truncate">
+                                <AddressDisplay 
+                                  address={route.recipient} 
+                                  network={safeTokenData.network === 'aptos' ? BlockchainNetwork.APTOS : BlockchainNetwork.ALGORAND}
+                                  currentUserAddress={currentWalletAddress}
+                                  truncateLength={6}
+                                />
                               </div>
                             </div>
                             
@@ -1078,7 +1091,11 @@ export default function TokenRoutes() {
                                 Type
                               </div>
                               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-forest-100 text-forest-700 border border-forest-200">
-                                {route.routeType === 'milestone-routes' ? 'Milestone' : 'Simple'}
+                                {route.routeType === 'milestone-routes' 
+                              ? 'Milestone' 
+                              : route.routeType === 'invoice-routes' 
+                              ? 'Invoice' 
+                              : 'Simple'}
                               </span>
                             </div>
                             
@@ -1106,6 +1123,7 @@ export default function TokenRoutes() {
                                       refreshTrigger={refreshTrigger}
                                       onCompletionStatusChange={(isComplete) => handleCompletionStatusChange(route.id, isComplete)}
                                       onFullyApprovedStatusChange={(isFullyApproved) => handleFullyApprovedStatusChange(route.id, isFullyApproved)}
+                                      fallback={route.remaining}
                                     />
                                   ) : (
                                     route.remaining

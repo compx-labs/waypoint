@@ -24,6 +24,8 @@ export default function AppNavigation() {
     currentNetwork: selectedNetwork,
     nfd,
     nfdLoading,
+    ans,
+    ansLoading,
     walletName,
   } = useUnifiedWallet();
   const toast = useToast();
@@ -175,18 +177,18 @@ export default function AppNavigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left Side - Logo and Navigation */}
-          <div className="flex items-center space-x-8">
+          <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-8 min-w-0 flex-shrink">
             {/* Logo */}
-            <div className="flex items-center space-x-3">
+            <Link to="/" className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 hover:opacity-80 transition-opacity cursor-pointer min-w-0 flex-shrink">
               <img
                 src="/logo.svg"
                 alt="Waypoint"
-                className="h-8 w-auto rounded-full bg-stone-200 p-0.5"
+                className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 rounded-full bg-stone-200 p-0.5 flex-shrink-0"
               />
-              <span className="font-display text-xl font-bold text-primary-100 uppercase tracking-wider">
+              <span className="font-display text-sm sm:text-base md:text-xl font-bold text-primary-100 uppercase tracking-wider whitespace-nowrap">
                 WAYPOINT
               </span>
-            </div>
+            </Link>
 
             {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-6">
@@ -212,15 +214,15 @@ export default function AppNavigation() {
           </div>
 
           {/* Right Side - Actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4 flex-shrink-0">
             {/* Address Book Button */}
             <button
               onClick={() => setIsAddressBookOpen(true)}
-              className="text-primary-300 hover:text-primary-100 transition-colors p-2 hover:bg-forest-700 rounded-lg"
+              className="text-primary-300 hover:text-primary-100 transition-colors p-1.5 sm:p-2 hover:bg-forest-700 rounded-lg flex-shrink-0"
               title="Address Book"
             >
               <svg
-                className="w-6 h-6"
+                className="w-5 h-5 sm:w-6 sm:h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -259,7 +261,7 @@ export default function AppNavigation() {
               <div className="hidden md:block relative">
                 <button
                   onClick={() => setShowWalletDropdown(!showWalletDropdown)}
-                  className="flex items-center gap-2 px-5 py-1.5 bg-forest-700 hover:bg-forest-600 border border-forest-600 text-primary-100 font-display rounded-lg transition-colors duration-200"
+                  className="flex items-center gap-2 px-3 md:px-5 py-1.5 bg-forest-700 hover:bg-forest-600 border border-forest-600 text-primary-100 font-display rounded-lg transition-colors duration-200 flex-shrink-0"
                 >
                   <div className="flex items-center gap-2">
                     {selectedNetwork === BlockchainNetwork.APTOS ? (
@@ -297,10 +299,12 @@ export default function AppNavigation() {
                         className="w-5 h-5"
                       />
                     )}
-                    <div className="flex flex-col items-start">
-                      <span className="font-mono text-sm leading-tight uppercase">
+                    <div className="flex flex-col items-start min-w-0">
+                      <span className="font-mono text-xs md:text-sm leading-tight uppercase truncate max-w-[120px] md:max-w-none">
                         {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name
                           ? nfd.name.replace(/\.algo$/i, '')
+                          : selectedNetwork === BlockchainNetwork.APTOS && ans
+                          ? ans.replace(/\.apt$/i, '')
                           : `${account?.slice(0, 6)}...${account?.slice(-4)}`}
                       </span>
                       {selectedNetwork === BlockchainNetwork.ALGORAND && walletIcon && (
@@ -309,7 +313,8 @@ export default function AppNavigation() {
                         </span>
                       )}
                     </div>
-                    {nfdLoading && selectedNetwork === BlockchainNetwork.ALGORAND && (
+                    {((nfdLoading && selectedNetwork === BlockchainNetwork.ALGORAND) || 
+                      (ansLoading && selectedNetwork === BlockchainNetwork.APTOS)) && (
                       <svg
                         className="animate-spin h-4 w-4 text-primary-300"
                         xmlns="http://www.w3.org/2000/svg"
@@ -379,6 +384,15 @@ export default function AppNavigation() {
                                     {nfd.name.replace(/\.algo$/i, '')}
                                   </p>
                                 </div>
+                                <p className="text-xs text-primary-300 font-mono">
+                                  {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
+                                </p>
+                              </div>
+                            ) : selectedNetwork === BlockchainNetwork.APTOS && ans ? (
+                              <div>
+                                <p className="text-sm text-primary-100 font-display font-bold">
+                                  {ans.replace(/\.apt$/i, '')}
+                                </p>
                                 <p className="text-xs text-primary-300 font-mono">
                                   {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
                                 </p>
@@ -459,7 +473,7 @@ export default function AppNavigation() {
 
             {/* Mobile Wallet Button */}
             <button
-              className="md:hidden flex items-center gap-2 px-4 py-1.5 bg-forest-700 hover:bg-forest-600 border border-forest-600 text-primary-100 rounded-lg transition-colors"
+              className="md:hidden flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 md:px-4 py-1.5 bg-forest-700 hover:bg-forest-600 border border-forest-600 text-primary-100 rounded-lg transition-colors flex-shrink-0"
               onClick={() => {
                 setIsMobileWalletOpen(!isMobileWalletOpen);
                 setIsMobileMenuOpen(false);
@@ -508,6 +522,8 @@ export default function AppNavigation() {
                       <span className="font-mono text-xs leading-tight uppercase">
                         {selectedNetwork === BlockchainNetwork.ALGORAND && nfd?.name
                           ? nfd.name.replace(/\.algo$/i, '')
+                          : selectedNetwork === BlockchainNetwork.APTOS && ans
+                          ? ans.replace(/\.apt$/i, '')
                           : `${account?.slice(0, 4)}...${account?.slice(-3)}`}
                       </span>
                       {selectedNetwork === BlockchainNetwork.ALGORAND && walletIcon && (
@@ -540,7 +556,7 @@ export default function AppNavigation() {
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden text-primary-300 hover:text-primary-100 p-2"
+              className="md:hidden text-primary-300 hover:text-primary-100 p-1.5 sm:p-2 hover:bg-forest-700 rounded-lg flex-shrink-0"
               onClick={() => {
                 setIsMobileMenuOpen(!isMobileMenuOpen);
                 setIsMobileWalletOpen(false);
@@ -548,7 +564,7 @@ export default function AppNavigation() {
             >
               {isMobileMenuOpen ? (
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5 sm:w-6 sm:h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -562,7 +578,7 @@ export default function AppNavigation() {
                 </svg>
               ) : (
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5 sm:w-6 sm:h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -671,6 +687,15 @@ export default function AppNavigation() {
                               {nfd.name.replace(/\.algo$/i, '')}
                             </p>
                           </div>
+                          <p className="text-xs text-primary-300 font-mono">
+                            {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
+                          </p>
+                        </div>
+                      ) : selectedNetwork === BlockchainNetwork.APTOS && ans ? (
+                        <div>
+                          <p className="text-sm text-primary-100 font-display font-bold">
+                            {ans.replace(/\.apt$/i, '')}
+                          </p>
                           <p className="text-xs text-primary-300 font-mono">
                             {`${account?.slice(0, 8)}...${account?.slice(-6)}`}
                           </p>

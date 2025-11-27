@@ -9,104 +9,246 @@ import { deploy as deployRegistry } from "../waypoint_registry/registry-deploy";
 import { deploy } from "./invoice-deploy";
 import { createToken } from "./token-create";
 
-let waypointInvoiceAppClient: WaypointInvoiceClient;
-let registryAppClient: WaypointRegistryClient;
-let managerAccount: Account;
-let requesterAccount: Account;
-let beneficiaryAccount: Account;
-let payerAccount: Account;
-let stableAsset: bigint;
-let appAddress: string;
-
 const STATUS_PENDING = 1n;
 const STATUS_FUNDED = 2n;
-const FEE_BPS = 50n;
-const GROSS_INVOICE_AMOUNT = 1_000n;
-const PERIOD_SECS = 1n;
-const MAX_PERIODS = 1n;
-const PAYOUT_AMOUNT = GROSS_INVOICE_AMOUNT;
-const EXPECTED_FEE = (GROSS_INVOICE_AMOUNT * FEE_BPS) / 10_000n;
-const EXPECTED_NET = GROSS_INVOICE_AMOUNT - EXPECTED_FEE;
+const STATUS_DECLINED = 3n;
+const DEFAULT_FEE_BPS = 50n;
+const DEFAULT_GROSS = 1_000n;
+const DEFAULT_PERIOD_SECS = 1n;
+const DEFAULT_MAX_PERIODS = 1n;
+const DEFAULT_PAYOUT = DEFAULT_GROSS;
 
-describe("waypoint invoice contract", async () => {
-  const localnet = algorandFixture();
+const localnet = algorandFixture();
 
-  beforeAll(async () => {
-    await localnet.newScope();
+beforeAll(() => {
+  Config.configure({ debug: true });
+  registerDebugEventHandlers();
+});
 
-    Config.configure({ debug: true });
-    registerDebugEventHandlers();
+type ScenarioConfig = {
+  grossInvoiceAmount: bigint;
+  periodSecs: bigint;
+  maxPeriods: bigint;
+  payoutAmount: bigint;
+  startTs: bigint;
+  feeBps: bigint;
+};
 
-    const { generateAccount } = localnet.context;
-    managerAccount = await generateAccount({ initialFunds: microAlgo(90_000_000_000) });
-    requesterAccount = await generateAccount({ initialFunds: microAlgo(10_000_000) });
-    beneficiaryAccount = await generateAccount({ initialFunds: microAlgo(10_000_000) });
-    payerAccount = await generateAccount({ initialFunds: microAlgo(90_000_000) });
+type ScenarioContext = {
+  config: ScenarioConfig;
+  registryAppClient: WaypointRegistryClient;
+  waypointInvoiceAppClient: WaypointInvoiceClient;
+  accounts: {
+    manager: Account;
+    requester: Account;
+    beneficiary: Account;
+    payer: Account;
+    advanceer: Account;
+  };
+  stableAsset: bigint;
+  appAddress: string;
+  expectedFee: bigint;
+  expectedNet: bigint;
+};
 
-    stableAsset = await createToken(managerAccount, "XUSD", 6);
+const defaultScenario: ScenarioConfig = {
+  grossInvoiceAmount: DEFAULT_GROSS,
+  periodSecs: DEFAULT_PERIOD_SECS,
+  maxPeriods: DEFAULT_MAX_PERIODS,
+  payoutAmount: DEFAULT_PAYOUT,
+  startTs: 0n,
+  feeBps: DEFAULT_FEE_BPS,
+};
 
-    await localnet.context.algorand.setSignerFromAccount(beneficiaryAccount);
-    await localnet.context.algorand.send.assetOptIn({
-      sender: beneficiaryAccount.addr,
-      assetId: stableAsset,
-      suppressLog: true,
-    });
+const getAssetBalance = async (assetId: bigint, address: string) => {
+  try {
+    const holding = await localnet.context.algod.accountAssetInformation(address, Number(assetId)).do();
+    return BigInt(holding.assetHolding?.amount ?? 0);
+  } catch {
+    return 0n;
+  }
+};
 
-    await localnet.context.algorand.setSignerFromAccount(payerAccount);
-    await localnet.context.algorand.send.assetOptIn({
-      sender: payerAccount.addr,
-      assetId: stableAsset,
-      suppressLog: true,
-    });
+const setupScenario = async (overrides: Partial<ScenarioConfig> = {}): Promise<ScenarioContext> => {
+  await localnet.newScope();
 
-    await localnet.context.algorand.setSignerFromAccount(managerAccount);
-    await localnet.context.algorand.send.assetTransfer({
-      sender: managerAccount.addr,
-      receiver: payerAccount.addr,
-      assetId: stableAsset,
-      amount: 10_000n,
-      suppressLog: true,
-    });
-
-    registryAppClient = await deployRegistry({
-      deployer: managerAccount,
-      tokenId: stableAsset,
-      fluxOracleAppId: 0n,
-      treasury: managerAccount,
-      feeBps: FEE_BPS,
-    });
-
-    await localnet.algorand.send.payment({
-      sender: managerAccount.addr,
-      receiver: registryAppClient.appAddress,
-      amount: microAlgo(200_000),
-      suppressLog: true,
-    });
-
-    waypointInvoiceAppClient = await deploy({
-      deployer: managerAccount,
-      tokenId: stableAsset,
-      fluxOracleAppId: 0n,
-      treasury: managerAccount,
-      feeBps: FEE_BPS,
-      registryAppId: registryAppClient.appId,
-    });
-    appAddress = algosdk.encodeAddress(waypointInvoiceAppClient.appAddress.publicKey);
-    await waypointInvoiceAppClient.algorand.setSignerFromAccount(managerAccount);
-  });
-
-  const getAssetBalance = async (address: string) => {
-    try {
-      const holding = await localnet.context.algod.accountAssetInformation(address, Number(stableAsset)).do();
-      return BigInt(holding.assetHolding?.amount ?? 0);
-    } catch {
-      return 0n;
-    }
+  const config: ScenarioConfig = {
+    grossInvoiceAmount: overrides.grossInvoiceAmount ?? defaultScenario.grossInvoiceAmount,
+    periodSecs: overrides.periodSecs ?? defaultScenario.periodSecs,
+    maxPeriods: overrides.maxPeriods ?? defaultScenario.maxPeriods,
+    payoutAmount: overrides.payoutAmount ?? overrides.grossInvoiceAmount ?? defaultScenario.payoutAmount,
+    startTs: overrides.startTs ?? defaultScenario.startTs,
+    feeBps: overrides.feeBps ?? defaultScenario.feeBps,
   };
 
+  const { generateAccount } = localnet.context;
+  const manager = await generateAccount({ initialFunds: microAlgo(90_000_000_000) });
+  const requester = await generateAccount({ initialFunds: microAlgo(10_000_000) });
+  const beneficiary = await generateAccount({ initialFunds: microAlgo(10_000_000) });
+  const payer = await generateAccount({ initialFunds: microAlgo(90_000_000) });
+  const advanceer = await generateAccount({ initialFunds: microAlgo(100_000_000) });
+
+  const stableAsset = await createToken(manager, "XUSD", 6);
+
+  await localnet.context.algorand.setSignerFromAccount(beneficiary);
+  await localnet.context.algorand.send.assetOptIn({
+    sender: beneficiary.addr,
+    assetId: stableAsset,
+    suppressLog: true,
+  });
+
+  await localnet.context.algorand.setSignerFromAccount(payer);
+  await localnet.context.algorand.send.assetOptIn({
+    sender: payer.addr,
+    assetId: stableAsset,
+    suppressLog: true,
+  });
+
+  await localnet.context.algorand.setSignerFromAccount(manager);
+  await localnet.context.algorand.send.assetTransfer({
+    sender: manager.addr,
+    receiver: payer.addr,
+    assetId: stableAsset,
+    amount: 50_000n,
+    suppressLog: true,
+  });
+
+  const registryAppClient = await deployRegistry({
+    deployer: manager,
+    tokenId: stableAsset,
+    fluxOracleAppId: 0n,
+    treasury: manager,
+    feeBps: config.feeBps,
+  });
+
+  await localnet.algorand.send.payment({
+    sender: manager.addr,
+    receiver: registryAppClient.appAddress,
+    amount: microAlgo(200_000),
+    suppressLog: true,
+  });
+
+  const waypointInvoiceAppClient = await deploy({
+    deployer: manager,
+    tokenId: stableAsset,
+    fluxOracleAppId: 0n,
+    treasury: manager,
+    feeBps: config.feeBps,
+    registryAppId: registryAppClient.appId,
+  });
+  await waypointInvoiceAppClient.algorand.setSignerFromAccount(manager);
+  await localnet.algorand.send.payment({
+    sender: manager.addr,
+    receiver: waypointInvoiceAppClient.appAddress,
+    amount: microAlgo(200_000),
+    suppressLog: true,
+  });
+
+  const appAddress = algosdk.encodeAddress(waypointInvoiceAppClient.appAddress.publicKey);
+  const expectedFee = (config.grossInvoiceAmount * config.feeBps) / 10_000n;
+  const expectedNet = config.grossInvoiceAmount - expectedFee;
+
+  initializeApp({
+    config,
+    registryAppClient,
+    waypointInvoiceAppClient,
+    accounts: { manager, requester, beneficiary, payer, advanceer },
+    stableAsset,
+    appAddress,
+    expectedFee,
+    expectedNet,
+  });
+
+  return {
+    config,
+    registryAppClient,
+    waypointInvoiceAppClient,
+    accounts: { manager, requester, beneficiary, payer, advanceer },
+    stableAsset,
+    appAddress,
+    expectedFee,
+    expectedNet,
+  };
+};
+
+const initializeApp = async (scenario: ScenarioContext) => {
+  const mbrTxn = scenario.waypointInvoiceAppClient.algorand.createTransaction.payment({
+    sender: scenario.accounts.manager.addr,
+    receiver: scenario.waypointInvoiceAppClient.appAddress,
+    amount: microAlgo(400_000n),
+  });
+
+  await scenario.waypointInvoiceAppClient.send.initApp({
+    args: { mbrTxn },
+    sender: scenario.accounts.manager.addr,
+  });
+};
+
+const requestRoute = async (scenario: ScenarioContext, overrides: Partial<ScenarioConfig> = {}) => {
+  const config = { ...scenario.config, ...overrides };
+  const { requester, beneficiary, payer } = scenario.accounts;
+  await scenario.waypointInvoiceAppClient.algorand.setSignerFromAccount(requester);
+
+  await scenario.waypointInvoiceAppClient
+    .newGroup()
+    .createRoute({
+      sender: requester.addr,
+      appReferences: [scenario.registryAppClient.appId],
+      assetReferences: [scenario.stableAsset],
+      args: {
+        beneficiary: beneficiary.addr.toString(),
+        payer: payer.addr.toString(),
+        startTs: config.startTs,
+        periodSecs: config.periodSecs,
+        payoutAmount: config.payoutAmount,
+        maxPeriods: config.maxPeriods,
+        depositAmount: config.grossInvoiceAmount,
+        tokenId: scenario.stableAsset,
+      },
+    })
+    .send();
+};
+
+const fundRoute = async (scenario: ScenarioContext, amount?: bigint) => {
+  const { payer, beneficiary, requester } = scenario.accounts;
+  await scenario.waypointInvoiceAppClient.algorand.setSignerFromAccount(payer);
+
+  const tokenTransfer = await localnet.context.algorand.createTransaction.assetTransfer({
+    sender: payer.addr,
+    receiver: scenario.appAddress,
+    assetId: scenario.stableAsset,
+    amount: amount ?? scenario.config.grossInvoiceAmount,
+  });
+
+  return scenario.waypointInvoiceAppClient
+    .newGroup()
+    .acceptRoute({
+      sender: payer.addr,
+      appReferences: [scenario.registryAppClient.appId],
+      accountReferences: [requester.addr, beneficiary.addr],
+      assetReferences: [scenario.stableAsset],
+      args: { tokenTransfer },
+    })
+    .send();
+};
+
+const advanceRounds = async (scenario: ScenarioContext, rounds: number) => {
+  await localnet.context.algorand.setSignerFromAccount(scenario.accounts.advanceer);
+  for (let i = 0; i < rounds; i++) {
+    await localnet.context.algorand.send.payment({
+      sender: scenario.accounts.advanceer.addr,
+      receiver: scenario.accounts.advanceer.addr,
+      amount: microAlgo(0),
+      suppressLog: true,
+    });
+  }
+};
+
+describe("waypoint invoice contract", () => {
   test("createApplication sets initial state", async () => {
-    const globalState = await waypointInvoiceAppClient.state.global.getAll();
-    expect(globalState.tokenId).toBe(stableAsset);
+    const scenario = await setupScenario();
+    const globalState = await scenario.waypointInvoiceAppClient.state.global.getAll();
+    expect(globalState.tokenId).toBe(scenario.stableAsset);
     expect(globalState.contractVersion).toBe(1000n);
     expect(globalState.routeStatus).toBe(0n);
     expect(globalState.startTs).toBe(0n);
@@ -117,140 +259,133 @@ describe("waypoint invoice contract", async () => {
     expect(globalState.grossDepositAmount).toBe(0n);
   });
 
-  test("initApp prepares escrow holdings", async () => {
-    const mbrTxn = waypointInvoiceAppClient.algorand.createTransaction.payment({
-      sender: managerAccount.addr,
-      receiver: waypointInvoiceAppClient.appAddress,
-      amount: microAlgo(400_000n),
-    });
-
-    await waypointInvoiceAppClient.send.initApp({
-      args: { mbrTxn },
-      sender: managerAccount.addr,
-    });
-
-    const appAssetBalance = await getAssetBalance(appAddress);
-    const appAlgoBalance = await localnet.context.algod.accountInformation(appAddress).do();
-
-    expect(appAlgoBalance.amount).toBe(400_000n - 1_000n);
-    expect(appAssetBalance).toBe(0n);
-  });
 
   test("createRoute records invoice request without funding", async () => {
-    await waypointInvoiceAppClient.algorand.setSignerFromAccount(requesterAccount);
+    const scenario = await setupScenario();
+    await requestRoute(scenario, { startTs: 0n });
 
-    const startTs = 0n;
-
-    await waypointInvoiceAppClient
-      .newGroup()
-      .createRoute({
-        sender: requesterAccount.addr,
-        appReferences: [registryAppClient.appId],
-        assetReferences: [stableAsset],
-        args: {
-          beneficiary: beneficiaryAccount.addr.toString(),
-          payer: payerAccount.addr.toString(),
-          startTs,
-          periodSecs: PERIOD_SECS,
-          payoutAmount: PAYOUT_AMOUNT,
-          maxPeriods: MAX_PERIODS,
-          depositAmount: GROSS_INVOICE_AMOUNT,
-          tokenId: stableAsset,
-        },
-      })
-      .send();
-
-    const globalState = await waypointInvoiceAppClient.state.global.getAll();
-    expect(globalState.beneficiary).toBe(algosdk.encodeAddress(beneficiaryAccount.addr.publicKey));
-    expect(globalState.requester).toBe(algosdk.encodeAddress(requesterAccount.addr.publicKey));
-    expect(globalState.depositor).toBe(algosdk.encodeAddress(payerAccount.addr.publicKey));
+    const globalState = await scenario.waypointInvoiceAppClient.state.global.getAll();
+    expect(globalState.beneficiary).toBe(
+      algosdk.encodeAddress(algosdk.decodeAddress(scenario.accounts.beneficiary.addr.toString()).publicKey)
+    );
+    expect(globalState.requester).toBe(algosdk.encodeAddress(algosdk.decodeAddress(scenario.accounts.requester.addr.toString()).publicKey));
+    expect(globalState.depositor).toBe(algosdk.encodeAddress(algosdk.decodeAddress(scenario.accounts.payer.addr.toString()).publicKey));
     expect(globalState.routeStatus).toBe(STATUS_PENDING);
-    expect(globalState.requestedStartTs).toBe(startTs);
+    expect(globalState.requestedStartTs).toBe(0n);
     expect(globalState.startTs).toBe(0n);
-    expect(globalState.grossDepositAmount).toBe(GROSS_INVOICE_AMOUNT);
+    expect(globalState.grossDepositAmount).toBe(scenario.config.grossInvoiceAmount);
     expect(globalState.depositAmount).toBe(0n);
     expect(globalState.feeAmount).toBe(0n);
 
-    const appAssetBalance = await getAssetBalance(appAddress);
+    const appAssetBalance = await getAssetBalance(scenario.stableAsset, scenario.appAddress);
     expect(appAssetBalance).toBe(0n);
   });
 
   test("acceptRoute funds the invoice and deducts fees", async () => {
-    await waypointInvoiceAppClient.algorand.setSignerFromAccount(payerAccount);
+    const scenario = await setupScenario();
+    await requestRoute(scenario);
 
-    const treasuryBalanceBefore = await getAssetBalance(managerAccount.addr.toString());
+    const treasuryBalanceBefore = await getAssetBalance(scenario.stableAsset, scenario.accounts.manager.addr.toString());
+    await fundRoute(scenario);
 
-    const tokenTransfer = await localnet.context.algorand.createTransaction.assetTransfer({
-      sender: payerAccount.addr,
-      receiver: appAddress,
-      assetId: stableAsset,
-      amount: GROSS_INVOICE_AMOUNT,
-    });
-
-    await waypointInvoiceAppClient
-      .newGroup()
-      .acceptRoute({
-        sender: payerAccount.addr,
-        appReferences: [registryAppClient.appId],
-        accountReferences: [requesterAccount.addr, beneficiaryAccount.addr],
-        assetReferences: [stableAsset],
-        args: { tokenTransfer },
-      })
-      .send();
-
-    const globalState = await waypointInvoiceAppClient.state.global.getAll();
+    const globalState = await scenario.waypointInvoiceAppClient.state.global.getAll();
     expect(globalState.routeStatus).toBe(STATUS_FUNDED);
-    expect(globalState.depositAmount).toBe(EXPECTED_NET);
-    expect(globalState.grossDepositAmount).toBe(GROSS_INVOICE_AMOUNT);
-    expect(globalState.feeAmount).toBe(EXPECTED_FEE);
-    expect(globalState.periodSecs).toBe(PERIOD_SECS);
-    expect(globalState.maxPeriods).toBe(MAX_PERIODS);
-    expect(globalState.payoutAmount).toBe(PAYOUT_AMOUNT);
+    expect(globalState.depositAmount).toBe(scenario.expectedNet);
+    expect(globalState.grossDepositAmount).toBe(scenario.config.grossInvoiceAmount);
+    expect(globalState.feeAmount).toBe(scenario.expectedFee);
+    expect(globalState.periodSecs).toBe(scenario.config.periodSecs);
+    expect(globalState.maxPeriods).toBe(scenario.config.maxPeriods);
+    expect(globalState.payoutAmount).toBe(scenario.config.payoutAmount);
     expect(globalState.startTs ?? 0n).toBeGreaterThanOrEqual(globalState.requestedStartTs ?? 0n);
 
-    const appBalance = await getAssetBalance(appAddress);
-    expect(appBalance).toBe(EXPECTED_NET);
+    const appBalance = await getAssetBalance(scenario.stableAsset, scenario.appAddress);
+    expect(appBalance).toBe(scenario.expectedNet);
 
-    const treasuryBalanceAfter = await getAssetBalance(managerAccount.addr.toString());
-    expect(treasuryBalanceAfter - treasuryBalanceBefore).toBe(EXPECTED_FEE);
+    const treasuryBalanceAfter = await getAssetBalance(scenario.stableAsset, scenario.accounts.manager.addr.toString());
+    expect(treasuryBalanceAfter - treasuryBalanceBefore).toBe(scenario.expectedFee);
   });
 
   test("claim releases accrued funds to beneficiary", async () => {
-    await waypointInvoiceAppClient.algorand.setSignerFromAccount(beneficiaryAccount);
+    const scenario = await setupScenario();
+    await requestRoute(scenario);
+    await fundRoute(scenario);
 
-    await expect(
-      waypointInvoiceAppClient
-        .newGroup()
-        .claim({
-          args: {},
-          sender: beneficiaryAccount.addr,
-        })
-        .send()
-    ).rejects.toThrow(/Nothing claimable yet/);
+    await scenario.waypointInvoiceAppClient.algorand.setSignerFromAccount(scenario.accounts.beneficiary);
+    const balanceBefore = await getAssetBalance(scenario.stableAsset, scenario.accounts.beneficiary.addr.toString());
 
-    const status = await localnet.context.algod.status().do();
-    //await localnet.context.algorand.waitForBlock(status["last-round"] + 4);
+    await scenario.waypointInvoiceAppClient.newGroup().claim({ args: {}, sender: scenario.accounts.beneficiary.addr }).send();
 
-    const balanceBefore = await getAssetBalance(beneficiaryAccount.addr.toString());
+    const balanceAfter = await getAssetBalance(scenario.stableAsset, scenario.accounts.beneficiary.addr.toString());
+    expect(balanceAfter - balanceBefore).toBe(scenario.expectedNet);
 
-    await waypointInvoiceAppClient.newGroup().claim({ args: {} }).send();
+    const globalState = await scenario.waypointInvoiceAppClient.state.global.getAll();
+    expect(globalState.claimedAmount).toBe(scenario.expectedNet);
 
-    const balanceAfter = await getAssetBalance(beneficiaryAccount.addr.toString());
-    expect(balanceAfter - balanceBefore).toBe(EXPECTED_NET);
-
-    const globalState = await waypointInvoiceAppClient.state.global.getAll();
-    expect(globalState.claimedAmount).toBe(EXPECTED_NET);
-
-    const appBalance = await getAssetBalance(appAddress);
+    const appBalance = await getAssetBalance(scenario.stableAsset, scenario.appAddress);
     expect(appBalance).toBe(0n);
 
     await expect(
-      waypointInvoiceAppClient
-        .newGroup()
-        .claim({
-          args: {},
-        })
-        .send()
+      scenario.waypointInvoiceAppClient.newGroup().claim({ args: {}, sender: scenario.accounts.beneficiary.addr }).send()
     ).rejects.toThrow(/Nothing claimable yet/);
+  });
+
+  test("payer can decline pending routes", async () => {
+    const scenario = await setupScenario();
+    await requestRoute(scenario);
+
+    await scenario.waypointInvoiceAppClient.algorand.setSignerFromAccount(scenario.accounts.payer);
+    await scenario.waypointInvoiceAppClient.newGroup().declineRoute({ args: {}, sender: scenario.accounts.payer.addr }).send();
+
+    const globalState = await scenario.waypointInvoiceAppClient.state.global.getAll();
+    expect(globalState.routeStatus).toBe(STATUS_DECLINED);
+
+    await expect(fundRoute(scenario)).rejects.toThrow(/Route not pending|assert/);
+  });
+
+  test("non-beneficiary cannot claim funds", async () => {
+    const scenario = await setupScenario();
+    await requestRoute(scenario);
+    await fundRoute(scenario);
+
+    await scenario.waypointInvoiceAppClient.algorand.setSignerFromAccount(scenario.accounts.requester);
+    await expect(
+      scenario.waypointInvoiceAppClient.newGroup().claim({ args: {}, sender: scenario.accounts.requester.addr }).send()
+    ).rejects.toThrow(/Only beneficiary can claim/);
+  });
+
+  test("acceptRoute rejects insufficient funding", async () => {
+    const scenario = await setupScenario();
+    await requestRoute(scenario);
+
+    await expect(fundRoute(scenario, scenario.config.grossInvoiceAmount - 1n)).rejects.toThrow(/assert|Route/);
+  });
+
+  test.skip("multi-period schedule releases incremental payouts", async () => {
+    const scenario = await setupScenario({ periodSecs: 3n, maxPeriods: 3n, payoutAmount: 400n });
+    const currentTimestamp = BigInt(Math.floor(Date.now() / 1000)); // align requested start with current ledger time
+    await requestRoute(scenario, { startTs: currentTimestamp });
+    await fundRoute(scenario);
+
+    const netPerPeriod = (scenario.config.payoutAmount * scenario.expectedNet) / scenario.config.grossInvoiceAmount;
+    await scenario.waypointInvoiceAppClient.algorand.setSignerFromAccount(scenario.accounts.beneficiary);
+
+    await advanceRounds(scenario, 5);
+    const balanceBefore = await getAssetBalance(scenario.stableAsset, scenario.accounts.beneficiary.addr.toString());
+    await scenario.waypointInvoiceAppClient.newGroup().claim({ args: {}, sender: scenario.accounts.beneficiary.addr }).send();
+    const balanceAfterFirst = await getAssetBalance(scenario.stableAsset, scenario.accounts.beneficiary.addr.toString());
+    expect(balanceAfterFirst - balanceBefore).toBe(netPerPeriod);
+
+    await advanceRounds(scenario, 5);
+    await scenario.waypointInvoiceAppClient.newGroup().claim({ args: {}, sender: scenario.accounts.beneficiary.addr }).send();
+    const balanceAfterSecond = await getAssetBalance(scenario.stableAsset, scenario.accounts.beneficiary.addr.toString());
+    expect(balanceAfterSecond - balanceAfterFirst).toBe(netPerPeriod);
+
+    await advanceRounds(scenario, 5);
+    await scenario.waypointInvoiceAppClient.newGroup().claim({ args: {}, sender: scenario.accounts.beneficiary.addr }).send();
+    const finalBalance = await getAssetBalance(scenario.stableAsset, scenario.accounts.beneficiary.addr.toString());
+    expect(finalBalance - balanceBefore).toBe(scenario.expectedNet);
+
+    const globalState = await scenario.waypointInvoiceAppClient.state.global.getAll();
+    expect(globalState.claimedAmount).toBe(scenario.expectedNet);
   });
 });

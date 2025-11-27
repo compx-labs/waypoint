@@ -17,7 +17,7 @@ export default function CallToAction() {
           <Link to="/app" className="bg-forest-500 hover:bg-forest-600 text-primary-100 font-display text-lg uppercase tracking-wider font-bold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl border-2 border-forest-600">
             Launch App
           </Link>
-          <a href="/docs" className="bg-transparent border-2 border-forest-500 text-forest-500 hover:bg-forest-500 hover:text-primary-100 font-display text-lg uppercase tracking-wider font-semibold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-md hover:shadow-lg">
+          <a href="/app/docs" className="bg-transparent border-2 border-forest-500 text-forest-500 hover:bg-forest-500 hover:text-primary-100 font-display text-lg uppercase tracking-wider font-semibold py-4 px-7 rounded-xl transition-all duration-200 ease-out transform hover:translate-y-1 hover:scale-105 shadow-md hover:shadow-lg">
           Read the Docs
           </a>
         </div>

@@ -23,11 +23,14 @@ export interface RouteData {
   start_date: string;
   payment_frequency_unit: string;
   payment_frequency_number: number;
-  status: 'active' | 'completed' | 'cancelled';
+  status: 'pending' | 'active' | 'completed' | 'cancelled' | 'declined';
   blockchain_tx_hash: string | null;
   route_obj_address: string | null;
   route_type?: string;
-  created_at: string;
+  payer_address?: string | null;
+  memo?: string | null;
+  created_at?: string;
+  updated_at?: string;
   token: Token;
 }
 
@@ -53,6 +56,9 @@ export interface CreateRoutePayload {
   blockchain_tx_hash: string | null;
   route_obj_address?: string | null;
   route_type?: string;
+  payer_address?: string | null;
+  memo?: string | null;
+  status?: 'pending' | 'active' | 'completed' | 'cancelled' | 'declined';
 }
 
 export interface CreateAddressBookPayload {
@@ -190,7 +196,7 @@ export async function createRoute(payload: CreateRoutePayload): Promise<RouteDat
   return response.json();
 }
 
-export async function updateRouteStatus(routeId: number, status: 'active' | 'completed' | 'cancelled'): Promise<RouteData> {
+export async function updateRouteStatus(routeId: number, status: 'pending' | 'active' | 'completed' | 'cancelled' | 'declined'): Promise<RouteData> {
   const response = await fetch(`${API_BASE_URL}/api/routes/${routeId}`, {
     method: 'PATCH',
     headers: {

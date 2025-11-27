@@ -11,6 +11,7 @@ interface RouteBlockchainDataProps {
   onDataLoaded?: (data: RouteCore | AlgorandRouteCore | null) => void;
   onCompletionStatusChange?: (isComplete: boolean) => void;
   onFullyApprovedStatusChange?: (isFullyApproved: boolean) => void;
+  fallback?: React.ReactNode; // Fallback to show if blockchain data fails to load
 }
 
 /**
@@ -26,6 +27,7 @@ export default function RouteBlockchainData({
   onDataLoaded,
   onCompletionStatusChange,
   onFullyApprovedStatusChange,
+  fallback,
 }: RouteBlockchainDataProps) {
   const { getRouteCore: getAptosRouteCore } = useAptos();
   const { getRouteCore: getAlgorandRouteCore } = useAlgorand();
@@ -89,6 +91,10 @@ export default function RouteBlockchainData({
   }, [routeObjAddress, network, refreshTrigger]); // Refetch when address, network, or refresh trigger changes
 
   if (loading && !routeData) {
+    // Show fallback while loading if available, otherwise show loading indicator
+    if (fallback) {
+      return <>{fallback}</>;
+    }
     return (
       <span className="text-primary-400 text-xs">
         <span className="inline-block animate-pulse">●</span> Loading...
@@ -97,7 +103,8 @@ export default function RouteBlockchainData({
   }
 
   if (error || !routeData) {
-    return null; // Silently fail - show DB data instead
+    // If we have a fallback, show it. Otherwise return null (parent should handle fallback)
+    return fallback ? <>{fallback}</> : null;
   }
 
   // Calculate amounts - handle both Aptos (snake_case) and Algorand (camelCase)

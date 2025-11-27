@@ -124,9 +124,32 @@ export function AptosProvider({
 
       // Use SDK to fetch route details based on route type
       const isMilestone = route.route_type === 'milestone-routes';
-      const routeDetails = isMilestone
-        ? await waypointClient.getMilestoneRouteDetails(routeObjAddress)
-        : await waypointClient.getLinearRouteDetails(routeObjAddress);
+      const isInvoice = route.route_type === 'invoice-routes';
+      
+      let routeDetails;
+      if (isInvoice) {
+        // For invoice routes, use getInvoiceRouteDetails
+        const invoiceDetails = await waypointClient.getInvoiceRouteDetails(routeObjAddress);
+        console.log('SDK Invoice route details:', invoiceDetails);
+        
+        // Convert InvoiceRouteDetails to RouteCore format
+        return {
+          route_obj_address: invoiceDetails.routeAddress,
+          depositor: invoiceDetails.payer, // Invoice routes use payer instead of depositor
+          beneficiary: invoiceDetails.beneficiary,
+          start_timestamp: String(invoiceDetails.startTimestamp),
+          period_seconds: String(invoiceDetails.periodSeconds),
+          payout_amount: String(invoiceDetails.payoutAmount),
+          max_periods: String(invoiceDetails.maxPeriods),
+          deposit_amount: String(invoiceDetails.depositAmount), // Net amount after fees
+          claimed_amount: String(invoiceDetails.claimedAmount),
+          approved_amount: undefined, // Invoice routes don't have approval
+        };
+      } else if (isMilestone) {
+        routeDetails = await waypointClient.getMilestoneRouteDetails(routeObjAddress);
+      } else {
+        routeDetails = await waypointClient.getLinearRouteDetails(routeObjAddress);
+      }
 
       console.log('SDK Route details:', routeDetails);
 
