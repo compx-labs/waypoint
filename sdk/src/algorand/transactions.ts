@@ -39,16 +39,19 @@ export class AlgorandTransactions {
   private algorand: algokit.AlgorandClient;
   private network: AlgorandNetwork;
   private registryAppId: bigint;
+  private fluxOracleAppId: bigint;
 
   constructor(
     algorand: algokit.AlgorandClient,
     network: AlgorandNetwork,
-    registryAppId?: bigint
+    registryAppId?: bigint,
+    fluxOracleAppId?: bigint
   ) {
     this.algorand = algorand;
     this.network = network;
     this.registryAppId =
       registryAppId || ALGORAND_NETWORKS[network].registryAppId;
+    this.fluxOracleAppId = fluxOracleAppId || ALGORAND_NETWORKS[network].fluxOracleAppId;
 
     // Set default validity window
     this.algorand.setDefaultValidityWindow(DEFAULT_VALIDITY_WINDOW);
@@ -473,7 +476,7 @@ export class AlgorandTransactions {
       console.log(`Accepting invoice: ${grossAmount} tokens`);
 
       // Create asset transfer transaction
-      const tokenTransfer = await this.algorand.createTransaction.assetTransfer(
+      const tokenTransfer = await appClient.algorand.createTransaction.assetTransfer(
         {
           amount: grossAmount,
           sender: params.payer,
@@ -489,11 +492,10 @@ export class AlgorandTransactions {
         .acceptRoute({
           args: { tokenTransfer },
           sender: params.payer,
-          appReferences: [this.registryAppId],
-          accountReferences: [requester, beneficiary],
+          appReferences: [this.registryAppId, this.fluxOracleAppId],
+          accountReferences: [requester, beneficiary, 'HPD6ZADEDED6EIZ6HDGDJG4QQWVSEPUOKOPJD7BFTKUC7YFHHGFVYTW5QQ'],
           assetReferences: [tokenId],
         })
-
         .send({ populateAppCallResources: true });
 
       console.log("Invoice accepted and funded!");

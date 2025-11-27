@@ -315,6 +315,7 @@ export default function AppDashboard() {
         // Algorand: Use acceptInvoiceRoute
         console.log("Calling algorandWaypointClient.acceptInvoiceRoute...");
         console.log('Payer:', account);
+        console.log('appId:', routeAppId);
         await algorandWaypointClient!.acceptInvoiceRoute({
           routeAppId,
           payer: account,
