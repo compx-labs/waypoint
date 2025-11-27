@@ -353,7 +353,7 @@ export default function AppDashboard() {
         console.log("Aptos transaction confirmed");
       } else {
         // Algorand: Use acceptInvoiceRoute
-        const algorand = algokit.AlgorandClient.mainNet();
+        /* const algorand = algokit.AlgorandClient.mainNet();
         const appClient = new WaypointInvoiceClient({
           algorand: algorand,
           appId: routeAppId,
@@ -372,7 +372,13 @@ export default function AppDashboard() {
         await appClient.send.acceptRoute({
           args: {tokenTransfer: axfer},
           populateAppCallResources: true,
-        })
+        }) */
+
+          const txn = await algorandWaypointClient!.acceptInvoiceRoute({
+            routeAppId: routeAppId,
+            payer: account,
+            signer: transactionSigner!,
+          });
 
         console.log("Algorand transaction successful");
       }
