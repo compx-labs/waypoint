@@ -124,19 +124,24 @@ const GovernanceRewardsButtons: React.FC = () => {
                 "noopener,noreferrer"
               );
             }}
-            className="w-full h-12 px-2 bg-forest-750 border border-forest-600 hover:border-teal-500 hover:bg-forest-700 transition-all duration-200 flex items-center justify-center gap-1.5 rounded"
+            className="w-full h-16 px-2 py-2 bg-forest-750 border border-forest-600 hover:border-teal-500 hover:bg-forest-700 transition-all duration-200 flex flex-col items-center justify-center gap-1 rounded"
           >
             {loadingFluxTier ? (
               <div className="animate-spin rounded-full h-5 w-5 border-2 border-teal-400 border-t-transparent"></div>
             ) : (
               <>
-                <img
-                  src="/FLUX-LOGO-TRANS.svg"
-                  alt="FLUX"
-                  className="w-8 h-8 object-contain"
-                />
-                <span className="text-sm font-display font-bold text-primary-100 uppercase tracking-wide">
-                  T-{fluxTier}
+                <div className="flex items-center gap-1.5">
+                  <img
+                    src="/FLUX-LOGO-TRANS.svg"
+                    alt="FLUX"
+                    className="w-6 h-6 object-contain"
+                  />
+                  <span className="text-sm font-display font-bold text-primary-100 uppercase tracking-wide">
+                    T-{fluxTier}
+                  </span>
+                </div>
+                <span className="text-[10px] font-display font-bold text-primary-300 uppercase tracking-wider">
+                  Governance
                 </span>
               </>
             )}
@@ -158,22 +163,32 @@ const GovernanceRewardsButtons: React.FC = () => {
                 "noopener,noreferrer"
               );
             }}
-            className={`w-full h-12 bg-forest-750 border border-forest-600 hover:border-sunset-500 hover:bg-forest-700 transition-all duration-200 flex items-center justify-center relative overflow-hidden rounded ${
-              galaxyCardImageUrl ? "p-0" : "px-2"
-            }`}
+            className="w-full h-16 px-2 py-2 bg-forest-750 border border-forest-600 hover:border-sunset-500 hover:bg-forest-700 transition-all duration-200 flex flex-col items-center justify-center gap-1 relative overflow-hidden rounded"
           >
             {loadingGalaxyCard ? (
               <div className="animate-spin rounded-full h-5 w-5 border-2 border-sunset-400 border-t-transparent"></div>
             ) : galaxyCardImageUrl ? (
-              <img
-                src={galaxyCardImageUrl}
-                alt="Galaxy Card"
-                className="w-full h-full object-cover"
-              />
+              <>
+                <div className="flex-1 flex items-center justify-center">
+                  <img
+                    src={galaxyCardImageUrl}
+                    alt="Galaxy Card"
+                    className="h-10 w-auto object-contain rounded"
+                  />
+                </div>
+                <span className="text-[10px] font-display font-bold text-primary-300 uppercase tracking-wider">
+                  Rewards
+                </span>
+              </>
             ) : (
-              <span className="text-xs font-display font-bold text-primary-100 uppercase tracking-wide text-center leading-tight">
-                CompX Rewards
-              </span>
+              <>
+                <span className="text-xs font-display font-bold text-primary-100 uppercase tracking-wide text-center leading-tight">
+                  Galaxy Card
+                </span>
+                <span className="text-[10px] font-display font-bold text-primary-300 uppercase tracking-wider">
+                  Rewards
+                </span>
+              </>
             )}
           </button>
           {/* Tooltip */}
