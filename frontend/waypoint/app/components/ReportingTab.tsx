@@ -270,6 +270,17 @@ export default function ReportingTab({ routes, account }: ReportingTabProps) {
     };
   }, [routes, account, dateRange, isDateInRange]);
 
+  // Calculate dynamic font size for Total Routed based on text length
+  const totalRoutedText = formatCurrency(stats.totalRouted);
+  const totalRoutedFontSize = useMemo(() => {
+    const textLength = totalRoutedText.length;
+    // Base size is 1.875rem (text-3xl), scale down for longer text
+    if (textLength <= 6) return "1.875rem"; // text-3xl for short values like "$0.50"
+    if (textLength <= 8) return "1.5rem"; // text-2xl for medium values like "$1,234.56"
+    if (textLength <= 10) return "1.25rem"; // text-xl for longer values like "$123.45K"
+    return "1rem"; // text-base for very long values like "$1,234.56M"
+  }, [totalRoutedText]);
+
   // Calculate daily inflow/outflow data for charts
   const dailyFlowData = useMemo(() => {
     if (!account || !routes) return [];
@@ -476,7 +487,7 @@ export default function ReportingTab({ routes, account }: ReportingTabProps) {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Routed */}
         <div className="bg-gradient-to-br from-forest-800 to-forest-900 border border-forest-600 rounded-xl p-6 shadow-lg">
           <div className="flex items-center justify-between mb-2">
@@ -497,8 +508,13 @@ export default function ReportingTab({ routes, account }: ReportingTabProps) {
               />
             </svg>
           </div>
-          <p className="text-3xl font-display font-bold text-primary-100">
-            {formatCurrency(stats.totalRouted)}
+          <p 
+            className="font-display font-bold text-primary-100 break-words min-w-0 leading-tight"
+            style={{
+              fontSize: totalRoutedFontSize,
+            }}
+          >
+            {totalRoutedText}
           </p>
         </div>
 
