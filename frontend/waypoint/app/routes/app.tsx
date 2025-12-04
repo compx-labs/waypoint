@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import RouteCreationModal from "../components/RouteCreationModal";
 import RoutesList, { type TokenRoute } from "../components/RoutesList";
 import InvoiceCard from "../components/InvoiceCard";
+import ReportingTab from "../components/ReportingTab";
 import { useToast } from "../contexts/ToastContext";
 import { useUnifiedWallet } from "../contexts/UnifiedWalletContext";
 import { useAlgorand } from "../contexts/AlgorandContext";
@@ -57,7 +58,7 @@ export default function AppDashboard() {
   // Initialize Aptos client for waiting for transactions
   const aptos = new Aptos(new AptosConfig({ network: Network.MAINNET }));
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"routes" | "invoices">("routes");
+  const [activeTab, setActiveTab] = useState<"routes" | "invoices" | "reporting">("routes");
 
   // Fetch routes using React Query with automatic refetching
   const {
@@ -619,6 +620,16 @@ export default function AppDashboard() {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab("reporting")}
+                className={`px-6 py-3 font-display font-bold text-sm uppercase tracking-wider transition-all ${
+                  activeTab === "reporting"
+                    ? "text-forest-800 border-b-4 border-forest-600 -mb-0.5"
+                    : "text-forest-600 hover:text-forest-800"
+                }`}
+              >
+                Reporting
+              </button>
             </div>
           )}
         </div>
@@ -741,6 +752,11 @@ export default function AppDashboard() {
           !loading &&
           !error &&
           tokenRoutes.length > 0 && <RoutesList tokenRoutes={tokenRoutes} />}
+
+        {/* Reporting Tab Content */}
+        {activeTab === "reporting" && !loading && !error && account && (
+          <ReportingTab routes={allRoutes || []} account={account} />
+        )}
 
         {/* Invoices Tab Content */}
         {activeTab === "invoices" && !loading && !error && account && (
