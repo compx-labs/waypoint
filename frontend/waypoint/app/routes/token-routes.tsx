@@ -156,7 +156,15 @@ export default function TokenRoutes() {
     if (!tokenIdNum) return null;
     
     // Filter routes for this token
-    const tokenRoutes = allRoutes?.filter(route => route.token_id === tokenIdNum) || [];
+    // Exclude invoice routes that are pending (not yet approved) or declined - they should only appear in invoices tab
+    const tokenRoutes = allRoutes?.filter(route => {
+      const matchesToken = route.token_id === tokenIdNum;
+      const isPendingInvoice =
+        route.route_type === "invoice-routes" && route.status === "pending";
+      const isDeclinedInvoice =
+        route.route_type === "invoice-routes" && route.status === "declined";
+      return matchesToken && !isPendingInvoice && !isDeclinedInvoice;
+    }) || [];
     
     // If we have routes, use the first route's token info
     const token = tokenRoutes.length > 0 ? tokenRoutes[0].token : tokenInfo;
