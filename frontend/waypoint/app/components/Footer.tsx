@@ -114,18 +114,18 @@ export default function Footer() {
             </h4>
             <div className="grid grid-cols-1 gap-4">
               <a 
-                href="https://app.compx.io" 
+                href="https://core.compx.io" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="flex items-center gap-3 text-primary-200 hover:text-primary-100 transition-all duration-200 group"
               >
                 <img 
-                  src="/compx-logo-small.png" 
-                  alt="CompX Core" 
+                  src="/core-logo-small.png" 
+                  alt="Core" 
                   className="w-6 h-6 rounded-full"
                 />
                 <span className="font-display text-sm group-hover:translate-x-1 transform transition-transform">
-                  CompX Core ↗
+                  Core ↗
                 </span>
               </a>
               
@@ -146,18 +146,18 @@ export default function Footer() {
               </a>
               
               <a 
-                href="https://cairn.live" 
+                href="https://canix.compx.io" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="flex items-center gap-3 text-primary-200 hover:text-primary-100 transition-all duration-200 group"
               >
                 <img 
-                  src="/cairn-logo-small.png" 
+                  src="/canix-logo-small.png" 
                   alt="Cairn" 
                   className="w-6 h-6 rounded-full"
                 />
                 <span className="font-display text-sm group-hover:translate-x-1 transform transition-transform">
-                  Cairn ↗
+                  Canix ↗
                 </span>
               </a>
             </div>
