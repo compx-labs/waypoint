@@ -620,7 +620,10 @@ export default function ReportingTab({ routes, account }: ReportingTabProps) {
                   border: "1px solid #4a5568",
                   borderRadius: "8px",
                 }}
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value: any) => {
+                  const numValue = typeof value === 'number' ? value : 0;
+                  return formatCurrency(numValue);
+                }}
                 labelStyle={{ color: "#cbd5e0" }}
               />
               <Legend />
@@ -660,7 +663,10 @@ export default function ReportingTab({ routes, account }: ReportingTabProps) {
                   border: "1px solid #4a5568",
                   borderRadius: "8px",
                 }}
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value: any) => {
+                  const numValue = typeof value === 'number' ? value : 0;
+                  return formatCurrency(numValue);
+                }}
                 labelStyle={{ color: "#cbd5e0" }}
               />
               <Legend />
@@ -724,7 +730,10 @@ export default function ReportingTab({ routes, account }: ReportingTabProps) {
                 border: "1px solid #4a5568",
                 borderRadius: "8px",
               }}
-              formatter={(value: number) => formatCurrency(value)}
+              formatter={(value: any) => {
+                const numValue = typeof value === 'number' ? value : 0;
+                return formatCurrency(numValue);
+              }}
               labelStyle={{ color: "#cbd5e0" }}
             />
             <Legend />
